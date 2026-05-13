@@ -1,0 +1,331 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../../core/constants/app_constants.dart';
+import '../../../../../design_system/components/app_avatar_badge.dart';
+import '../../../../../design_system/components/app_card.dart';
+import '../../../../../design_system/components/app_feedback.dart';
+import '../../../../../design_system/components/app_list_item.dart';
+import '../../../../../design_system/components/organisms/app_top_app_bar.dart';
+import '../../../../../design_system/tokens/app_colors.dart';
+import '../../../../../design_system/tokens/app_radius.dart';
+import '../../../../../design_system/tokens/app_spacing.dart';
+import '../../../../../design_system/tokens/app_typography.dart';
+import '../../../../profile/presentation/controllers/profile_controller.dart';
+import '../../../../profile/presentation/controllers/theme_controller.dart';
+import '../../../../profile/presentation/pages/shift_schedule_page.dart';
+import '../../../../profile/presentation/pages/update_employee_page.dart';
+import '../../../../profile/presentation/pages/update_password_page.dart';
+import '../../../../profile/presentation/pages/update_photo_page.dart';
+
+class ProfileTab extends StatelessWidget {
+  const ProfileTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = Get.find<ProfileController>();
+    final colors = Theme.of(context).extension<AppColors>()!;
+    final typography = Theme.of(context).extension<AppTypography>()!;
+
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: AppTopAppBar(
+        title: 'Profil',
+        variant: AppTopAppBarVariant.standard,
+      ),
+      body: Obx(() {
+        if (ctrl.isLoadingProfile.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return _buildContent(context, ctrl, colors, typography);
+      }),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    ProfileController ctrl,
+    AppColors colors,
+    AppTypography typography,
+  ) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.s16.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ProfileHeader(ctrl: ctrl, colors: colors, typography: typography),
+          SizedBox(height: AppSpacing.s24.h),
+          _SectionLabel(
+            label: 'Pengaturan Akun',
+            colors: colors,
+            typography: typography,
+          ),
+          SizedBox(height: AppSpacing.s8.h),
+          AppCard(
+            outlined: true,
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                AppListItem(
+                  title: 'Update Foto Profil',
+                  subtitle: 'Ganti foto profil Anda',
+                  leading: const Icon(Icons.photo_camera_rounded),
+                  showDivider: true,
+                  onTap: () => Get.to(() => const UpdatePhotoPage()),
+                ),
+                AppListItem(
+                  title: 'Update Password',
+                  subtitle: 'Ubah kata sandi akun',
+                  leading: const Icon(Icons.lock_outline_rounded),
+                  showDivider: true,
+                  onTap: () => Get.to(() => const UpdatePasswordPage()),
+                ),
+                AppListItem(
+                  title: 'Pembaruan Data Pegawai',
+                  subtitle: 'Edit data kontak dan identitas',
+                  leading: const Icon(Icons.manage_accounts_rounded),
+                  onTap: () => Get.to(() => const UpdateEmployeePage()),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: AppSpacing.s16.h),
+          _SectionLabel(
+            label: 'Jadwal & Informasi',
+            colors: colors,
+            typography: typography,
+          ),
+          SizedBox(height: AppSpacing.s8.h),
+          AppCard(
+            outlined: true,
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                AppListItem(
+                  title: 'Atur Jadwal Shift',
+                  subtitle: 'Pilih jadwal shift kerja Anda',
+                  leading: const Icon(Icons.schedule_rounded),
+                  showDivider: true,
+                  onTap: () => Get.to(() => const ShiftSchedulePage()),
+                ),
+                AppListItem(
+                  title: 'FAQ',
+                  subtitle: 'Pertanyaan yang sering diajukan',
+                  leading: const Icon(Icons.help_outline_rounded),
+                  trailing: Icon(
+                    Icons.open_in_new_rounded,
+                    size: 16,
+                    color: colors.outline,
+                  ),
+                  onTap: _openFaq,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: AppSpacing.s16.h),
+          _SectionLabel(
+            label: 'Tampilan',
+            colors: colors,
+            typography: typography,
+          ),
+          SizedBox(height: AppSpacing.s8.h),
+          AppCard(
+            outlined: true,
+            padding: EdgeInsets.zero,
+            child: Obx(() {
+              final themeCtrl = Get.find<ThemeController>();
+              return AppListItem(
+                title: 'Mode Gelap',
+                subtitle: themeCtrl.isSystemMode
+                    ? 'Mengikuti sistem'
+                    : (themeCtrl.isDarkMode ? 'Aktif' : 'Nonaktif'),
+                leading: const Icon(Icons.dark_mode_rounded),
+                trailing: Switch(
+                  value: themeCtrl.isDarkMode,
+                  activeThumbColor: colors.onPrimary,
+                  activeTrackColor: colors.primary,
+                  inactiveThumbColor: colors.outline,
+                  inactiveTrackColor: colors.outline.withValues(alpha: 0.3),
+                  onChanged: (value) => themeCtrl.toggleDarkMode(value),
+                ),
+                onTap: () => themeCtrl.toggleDarkMode(!themeCtrl.isDarkMode),
+              );
+            }),
+          ),
+          SizedBox(height: AppSpacing.s32.h),
+          _LogoutButton(ctrl: ctrl, colors: colors, typography: typography),
+          SizedBox(height: AppSpacing.s32.h),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openFaq() async {
+    final uri = Uri.parse(AppConstants.faqUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: 'Tidak dapat membuka halaman FAQ',
+        isError: true,
+      );
+    }
+  }
+}
+
+class _ProfileHeader extends StatelessWidget {
+  final ProfileController ctrl;
+  final AppColors colors;
+  final AppTypography typography;
+
+  const _ProfileHeader({
+    required this.ctrl,
+    required this.colors,
+    required this.typography,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final emp = ctrl.employee.value;
+
+    return Column(
+      children: [
+        SizedBox(height: AppSpacing.s24.h),
+        Center(
+          child: Stack(
+            children: [
+              AppAvatar(
+                imageUrl: emp?.photoUrl,
+                initials: ctrl.initials,
+                size: 88.r,
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: () => Get.to(() => const UpdatePhotoPage()),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.s8),
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: colors.background, width: 2),
+                    ),
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      size: 14,
+                      color: colors.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: AppSpacing.s12.h),
+        Text(
+          emp?.name ?? '-',
+          style: typography.titleLarge.copyWith(
+            color: colors.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: AppSpacing.s4.h),
+        Text(
+          emp?.nip ?? '-',
+          style: typography.bodySmall.copyWith(color: colors.outline),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: AppSpacing.s8.h),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s12,
+            vertical: AppSpacing.s4,
+          ),
+          decoration: BoxDecoration(
+            color: colors.primaryContainer.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(AppRadius.circular),
+          ),
+          child: Text(
+            emp?.position ?? '-',
+            style: typography.labelSmall.copyWith(
+              color: colors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        SizedBox(height: AppSpacing.s4.h),
+        Text(
+          emp?.unit ?? '-',
+          style: typography.bodySmall.copyWith(
+            color: colors.onSurface.withValues(alpha: 0.6),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: AppSpacing.s8.h),
+      ],
+    );
+  }
+}
+
+class _LogoutButton extends StatelessWidget {
+  final ProfileController ctrl;
+  final AppColors colors;
+  final AppTypography typography;
+
+  const _LogoutButton({
+    required this.ctrl,
+    required this.colors,
+    required this.typography,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: ctrl.logout,
+      icon: Icon(Icons.logout_rounded, color: colors.error),
+      label: Text(
+        'Keluar dari Aplikasi',
+        style: typography.labelLarge.copyWith(
+          color: colors.error,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: colors.error),
+        minimumSize: Size(double.infinity, 48.h),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.s12.h),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.r8),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  final AppColors colors;
+  final AppTypography typography;
+
+  const _SectionLabel({
+    required this.label,
+    required this.colors,
+    required this.typography,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: typography.labelLarge.copyWith(
+        color: colors.onSurface.withValues(alpha: 0.5),
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+}

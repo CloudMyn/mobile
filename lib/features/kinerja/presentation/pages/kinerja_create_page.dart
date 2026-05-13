@@ -1,0 +1,159 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import '../../../../design_system/components/app_button.dart';
+import '../../../../design_system/components/app_dropdown.dart';
+import '../../../../design_system/components/app_text_field.dart';
+import '../../../../design_system/components/organisms/app_top_app_bar.dart';
+import '../../../../design_system/tokens/app_colors.dart';
+import '../../../../design_system/tokens/app_spacing.dart';
+import '../../../../design_system/tokens/app_typography.dart';
+import '../../data/models/activity_item.dart';
+import '../../data/models/activity_type.dart';
+import '../../data/services/kinerja_service.dart';
+import '../controllers/kinerja_controller.dart';
+import '../controllers/kinerja_form_controller.dart';
+import 'widgets/image_picker_field.dart';
+
+class KinerjaCreatePage extends StatelessWidget {
+  /// Jika null → mode create, jika tidak null → mode edit.
+  final ActivityItem? item;
+
+  const KinerjaCreatePage({super.key, this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final tag = item != null ? 'kinerja_edit_${item!.id}' : 'kinerja_create';
+    final ctrl = Get.put(
+      KinerjaFormController(service: Get.find<KinerjaService>()),
+      tag: tag,
+    );
+
+    // Jika mode edit, load data ke form
+    if (item != null) {
+      ctrl.loadFromItem(item!);
+    }
+
+    final colors = Theme.of(context).extension<AppColors>()!;
+    final typography = Theme.of(context).extension<AppTypography>()!;
+    final isEdit = item != null;
+
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: AppTopAppBar(
+        title: isEdit ? 'Edit Kinerja' : 'Buat Kinerja',
+        variant: AppTopAppBarVariant.withBack,
+      ),
+      body: Form(
+        key: ctrl.formKey,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.s16.w,
+            AppSpacing.s16.h,
+            AppSpacing.s16.w,
+            AppSpacing.s32.h,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Jenis Kegiatan ─────────────────────────────
+              Obx(() {
+                final types = Get.isRegistered<KinerjaController>(
+                        tag: 'kinerja_list')
+                    ? Get.find<KinerjaController>(tag: 'kinerja_list').types
+                    : <ActivityType>[].obs;
+                return AppDropdown<ActivityType>(
+                  label: 'Jenis Kegiatan',
+                  hint: 'Pilih jenis kegiatan',
+                  value: ctrl.selectedType.value,
+                  items: types
+                      .map((t) =>
+                          DropdownMenuItem(value: t, child: Text(t.name)))
+                      .toList(),
+                  onChanged: (t) {
+                    if (t != null) ctrl.selectType(t);
+                  },
+                  validator: (_) =>
+                      ctrl.selectedType.value == null ? 'Wajib dipilih' : null,
+                );
+              }),
+              SizedBox(height: AppSpacing.s16.h),
+
+              // ── Deskripsi ──────────────────────────────────
+              AppTextField(
+                label: 'Deskripsi Kegiatan',
+                hint: 'Jelaskan kegiatan kinerja yang dilakukan',
+                controller: ctrl.descriptionCtrl,
+                maxLines: 4,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Deskripsi wajib diisi';
+                  }
+                  if (v.trim().length < 10) {
+                    return 'Deskripsi minimal 10 karakter';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: AppSpacing.s20.h),
+
+              // ── Upload Gambar ──────────────────────────────
+              Obx(
+                () => ImagePickerField(
+                  imagePath: ctrl.originalImagePath.value,
+                  onImagePicked: (path) => ctrl.pickAndCompressImage(path),
+                  onRemove: () => ctrl.removeImage(),
+                ),
+              ),
+
+              // ── Loading kompresi ───────────────────────────
+              Obx(() {
+                if (!ctrl.isCompressing.value) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: EdgeInsets.only(top: AppSpacing.s12.h),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.primary,
+                        ),
+                      ),
+                      SizedBox(width: AppSpacing.s8.w),
+                      Text(
+                        'Mengompresi gambar...',
+                        style: typography.bodySmall.copyWith(
+                          color: colors.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+
+              SizedBox(height: AppSpacing.s24.h),
+
+              // ── Tombol Submit ──────────────────────────────
+              Obx(
+                () => AppButton(
+                  label: isEdit ? 'Simpan Perubahan' : 'Simpan Kinerja',
+                  onPressed:
+                      (ctrl.isLoading.value || ctrl.isCompressing.value)
+                          ? null
+                          : ctrl.submit,
+                  isLoading: ctrl.isLoading.value,
+                  fullWidth: true,
+                  icon: Icons.save_rounded,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
