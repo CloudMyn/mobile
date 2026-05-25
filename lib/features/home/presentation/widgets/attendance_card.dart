@@ -10,15 +10,16 @@ import '../../../../design_system/tokens/app_icon_size.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
-import '../../../presensi/data/models/attendance_submission.dart';
+import '../../../presensi/data/models/attendance_config.dart';
 import '../../../presensi/presentation/controllers/presensi_controller.dart';
 import '../../../presensi/presentation/widgets/geofence_bottom_sheet.dart';
 import '../../../presensi/presentation/widgets/presensi_step_indicator.dart';
 import '../../../profile/presentation/controllers/profile_controller.dart';
-import '../../data/models/attendance_schedule.dart';
+import '../../data/models/dashboard_model.dart';
 import '../controllers/home_controller.dart';
 
 /// Card gabungan: profil pengguna, jadwal hari ini, dan tombol presensi.
+/// Slot presensi dirender secara dinamis dari [TodaySchedule.records].
 class AttendanceCard extends StatefulWidget {
   const AttendanceCard({super.key});
 
@@ -42,14 +43,9 @@ class _AttendanceCardState extends State<AttendanceCard> {
   }
 
   void _setupWorkers() {
+    // Loading overlay
     _workers.add(ever(_presCtrl.step, (PresensiStep step) {
-      final loadingSteps = {
-        PresensiStep.loadingConfig,
-        PresensiStep.faceEmbedding,
-        PresensiStep.uploading,
-        PresensiStep.submitting,
-      };
-
+      final loadingSteps = {PresensiStep.submitting, PresensiStep.geofenceCheck};
       if (loadingSteps.contains(step)) {
         AppLoadingOverlay.show(_presCtrl.stepLabel);
       } else {
@@ -57,6 +53,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
       }
     }));
 
+    // Geofence bottom sheet
     _workers.add(ever(_presCtrl.step, (PresensiStep step) {
       final isGeofenceStep = step == PresensiStep.geofenceCheck;
       final isLocationError = step == PresensiStep.error &&
@@ -77,27 +74,28 @@ class _AttendanceCardState extends State<AttendanceCard> {
       }
     }));
 
+    // Success → refresh dashboard
     _workers.add(ever(_presCtrl.step, (PresensiStep step) {
       if (step != PresensiStep.success) return;
-      final type = _presCtrl.activeType.value;
-      if (type == null) return;
+      final code = _presCtrl.activeCode.value;
+      if (code == null) return;
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Get.snackbar(
           'Presensi Berhasil',
-          '${type.label} telah berhasil dicatat.',
+          'Presensi telah berhasil dicatat.',
           snackPosition: SnackPosition.TOP,
           backgroundColor: Get.theme.extension<AppColors>()!.success,
           colorText: Colors.white,
           duration: const Duration(seconds: 3),
           icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
         );
-
-        _homeCtrl.onPresensiSuccess(type);
+        _homeCtrl.onPresensiSuccess();
         _presCtrl.cancel();
       });
     }));
 
+    // Error dialog (non-location errors)
     _workers.add(ever(_presCtrl.step, (PresensiStep step) {
       if (step != PresensiStep.error) return;
       final err = _presCtrl.errorType.value;
@@ -141,8 +139,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
     final typography = Theme.of(context).extension<AppTypography>()!;
 
     return Obx(() {
-      final sched = _homeCtrl.schedule.value;
-      final status = _homeCtrl.attendanceStatus.value;
+      final schedule = _homeCtrl.todaySchedule.value;
       final presStep = _presCtrl.step.value;
       final presConfig = _presCtrl.config.value;
 
@@ -151,7 +148,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
         outlined: true,
         child: Column(
           children: [
-            _buildUserHeader(sched, colors, typography),
+            _buildUserHeader(schedule, colors, typography),
 
             Divider(
               height: 1,
@@ -169,24 +166,30 @@ class _AttendanceCardState extends State<AttendanceCard> {
                 hasGeofence: presConfig.needsGeofenceCheck,
               ),
 
-            _buildAttendanceSection(colors, typography, status, presStep),
+            _buildAttendanceSection(schedule, colors, typography, presStep),
           ],
         ),
       );
     });
   }
 
-  // ---------------------------------------------------------------------------
-  //  User header: foto, nama, NIP, chip jadwal
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────────────────
+  //  User header
+  // ─────────────────────────────────────────────────────────────────────────
+
   Widget _buildUserHeader(
-    AttendanceSchedule? sched,
+    TodaySchedule? schedule,
     AppColors colors,
     AppTypography typography,
   ) {
     return Obx(() {
+      final user = _homeCtrl.dashboardData.value?.user;
       final employee = _profileCtrl.employee.value;
-      if (employee == null) return const SizedBox.shrink();
+
+      final name = user?.name ?? employee?.name ?? '–';
+      final nip = user?.nip ?? employee?.nip ?? '–';
+      final initials = user?.initials ?? _profileCtrl.initials;
+      final photoUrl = user?.profilePictureUrl ?? employee?.photoUrl;
 
       return Container(
         width: double.infinity,
@@ -204,13 +207,13 @@ class _AttendanceCardState extends State<AttendanceCard> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             AppAvatar(
-              imageUrl: employee.photoUrl,
-              initials: _profileCtrl.initials,
+              imageUrl: photoUrl,
+              initials: initials,
               size: 64.r,
             ),
             SizedBox(height: AppSpacing.s12.h),
             Text(
-              employee.name,
+              name,
               style: typography.titleMedium.copyWith(
                 color: colors.onSurface,
                 fontWeight: FontWeight.bold,
@@ -221,15 +224,15 @@ class _AttendanceCardState extends State<AttendanceCard> {
             ),
             SizedBox(height: AppSpacing.s4.h),
             Text(
-              employee.nip,
+              nip,
               style: typography.bodySmall.copyWith(
                 color: colors.onSurface.withValues(alpha: 0.55),
               ),
               textAlign: TextAlign.center,
             ),
-            if (sched != null) ...[
+            if (schedule != null) ...[
               SizedBox(height: AppSpacing.s12.h),
-              _buildScheduleChip(sched, colors, typography),
+              _buildScheduleChip(schedule, colors, typography),
             ],
           ],
         ),
@@ -238,14 +241,16 @@ class _AttendanceCardState extends State<AttendanceCard> {
   }
 
   Widget _buildScheduleChip(
-    AttendanceSchedule sched,
+    TodaySchedule schedule,
     AppColors colors,
     AppTypography typography,
   ) {
-    final color = _scheduleColor(sched.status, colors);
-    final label = sched.isActive
-        ? '${sched.shiftName ?? 'Shift'}  •  ${sched.checkInTime ?? '--:--'} – ${sched.checkOutTime ?? '--:--'}'
-        : _statusTitle(sched.status);
+    final isWorkday = schedule.isWorkday;
+    final color = isWorkday ? colors.primary : colors.warning;
+    final label = isWorkday
+        ? '${schedule.schedule?.name ?? 'Shift'}  •  '
+            '${_fmtTime(schedule.scheduledStartAt)} – ${_fmtTime(schedule.scheduledEndAt)}'
+        : schedule.dayStatus == 'Holiday' ? 'Hari Libur' : 'Hari Libur';
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -279,114 +284,113 @@ class _AttendanceCardState extends State<AttendanceCard> {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  //  Attendance buttons section
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────────────────────────────────────────────────
+  //  Attendance section — slots from API
+  // ─────────────────────────────────────────────────────────────────────────
+
   Widget _buildAttendanceSection(
+    TodaySchedule? schedule,
     AppColors colors,
     AppTypography typography,
-    AttendanceStatus status,
     PresensiStep presStep,
   ) {
     final isBusy = presStep != PresensiStep.idle &&
         presStep != PresensiStep.success &&
         presStep != PresensiStep.error;
 
+    if (schedule == null || !schedule.isWorkday) {
+      return Padding(
+        padding: EdgeInsets.all(AppSpacing.s16.w),
+        child: Text(
+          'Tidak ada jadwal presensi hari ini.',
+          style: typography.bodyMedium.copyWith(
+            color: colors.onSurface.withValues(alpha: 0.4),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    final records = schedule.records;
+    if (records.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.all(AppSpacing.s16.w),
+        child: Text(
+          'Tidak ada slot presensi hari ini.',
+          style: typography.bodyMedium.copyWith(
+            color: colors.onSurface.withValues(alpha: 0.4),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
     return Padding(
       padding: EdgeInsets.all(AppSpacing.s12.w),
       child: Column(
         children: [
-          _CompactRow(
-            icon: status == AttendanceStatus.checkIn
-                ? Icons.login_rounded
-                : Icons.check_circle_rounded,
-            iconColor: colors.success,
-            label: 'Presensi Masuk',
-            time: _homeCtrl.checkInTime.value != null
-                ? _formatTime(_homeCtrl.checkInTime.value!)
-                : null,
-            scheduledTime: _homeCtrl.schedule.value?.checkInTime,
-            isActive: status == AttendanceStatus.checkIn && !isBusy,
-            isCompleted: status != AttendanceStatus.checkIn,
-            onTap: status == AttendanceStatus.checkIn && !isBusy
-                ? () => _presCtrl.startPresensi(AttendanceType.checkIn)
-                : null,
-            colors: colors,
-            typography: typography,
-          ),
-
-          SizedBox(height: AppSpacing.s8.h),
-
-          if (status == AttendanceStatus.break_ ||
-              status == AttendanceStatus.breakReturn)
-            _CompactRow(
-              icon: status == AttendanceStatus.break_
-                  ? Icons.free_breakfast_rounded
-                  : Icons.restart_alt_rounded,
-              iconColor: colors.warning,
-              label: status == AttendanceStatus.break_
-                  ? 'Mulai Istirahat'
-                  : 'Kembali Istirahat',
-              time: null,
-              scheduledTime: null,
-              isActive: true,
-              isCompleted: false,
-              onTap: isBusy ? null : _homeCtrl.onBreakPressed,
-              colors: colors,
-              typography: typography,
-            ),
-
-          if (status == AttendanceStatus.break_ ||
-              status == AttendanceStatus.breakReturn)
-            SizedBox(height: AppSpacing.s8.h),
-
-          _CompactRow(
-            icon: status == AttendanceStatus.completed
-                ? Icons.check_circle_rounded
-                : Icons.logout_rounded,
-            iconColor: status == AttendanceStatus.checkOut
-                ? colors.error
-                : status == AttendanceStatus.completed
-                    ? colors.success
-                    : colors.outline,
-            label: 'Presensi Pulang',
-            time: _homeCtrl.checkOutTime.value != null
-                ? _formatTime(_homeCtrl.checkOutTime.value!)
-                : null,
-            scheduledTime: _homeCtrl.schedule.value?.checkOutTime,
-            isActive: status == AttendanceStatus.checkOut && !isBusy,
-            isCompleted: status == AttendanceStatus.completed,
-            onTap: status == AttendanceStatus.checkOut && !isBusy
-                ? () => _presCtrl.startPresensi(AttendanceType.checkOut)
-                : null,
-            colors: colors,
-            typography: typography,
-          ),
+          for (var i = 0; i < records.length; i++) ...[
+            if (i > 0) SizedBox(height: AppSpacing.s8.h),
+            _buildRecordRow(records[i], isBusy, colors, typography),
+          ],
         ],
       ),
     );
   }
 
-  String _formatTime(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  Widget _buildRecordRow(
+    TodayRecord record,
+    bool isBusy,
+    AppColors colors,
+    AppTypography typography,
+  ) {
+    final isCompleted = record.isCompleted;
+    final isPending = record.isPending;
+    final canTap = isPending && record.isWindowOpen && !isBusy;
+
+    final IconData icon;
+    final Color iconColor;
+
+    if (isCompleted) {
+      icon = Icons.check_circle_rounded;
+      iconColor = colors.success;
+    } else if (record.attendanceType.direction == 'In') {
+      icon = Icons.login_rounded;
+      iconColor = canTap ? colors.success : colors.outline;
+    } else if (record.attendanceType.direction == 'Out') {
+      icon = Icons.logout_rounded;
+      iconColor = canTap ? colors.error : colors.outline;
+    } else {
+      icon = Icons.swap_horiz_rounded;
+      iconColor = canTap ? colors.primary : colors.outline;
+    }
+
+    return _CompactRow(
+      icon: icon,
+      iconColor: iconColor,
+      label: record.attendanceType.name,
+      time: record.attendedAt != null ? _fmtTime(record.attendedAt) : null,
+      scheduledTime: _fmtTime(record.expectedAt),
+      isActive: canTap,
+      isCompleted: isCompleted,
+      status: record.status,
+      onTap: canTap
+          ? () => _presCtrl.startPresensi(
+                record.attendanceType.code,
+                AttendanceConfig.fromRecord(record),
+              )
+          : null,
+      colors: colors,
+      typography: typography,
+    );
   }
 
-  Color _scheduleColor(ScheduleStatus schedStatus, AppColors colors) {
-    return switch (schedStatus) {
-      ScheduleStatus.active => colors.primary,
-      ScheduleStatus.dayOff => colors.warning,
-      ScheduleStatus.submitted => colors.success,
-      ScheduleStatus.noSchedule => colors.outline,
-    };
-  }
-
-  String _statusTitle(ScheduleStatus status) {
-    return switch (status) {
-      ScheduleStatus.active => '',
-      ScheduleStatus.dayOff => 'Hari Libur',
-      ScheduleStatus.submitted => 'Sudah Pengajuan',
-      ScheduleStatus.noSchedule => 'Tidak Ada Jadwal',
-    };
+  String _fmtTime(String? iso) {
+    if (iso == null) return '--:--';
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return iso;
+    final local = dt.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 }
 
@@ -394,17 +398,6 @@ class _AttendanceCardState extends State<AttendanceCard> {
 //  Compact attendance row widget
 // =============================================================================
 class _CompactRow extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-  final String? time;
-  final String? scheduledTime;
-  final bool isActive;
-  final bool isCompleted;
-  final VoidCallback? onTap;
-  final AppColors colors;
-  final AppTypography typography;
-
   const _CompactRow({
     required this.icon,
     required this.iconColor,
@@ -413,10 +406,23 @@ class _CompactRow extends StatelessWidget {
     this.scheduledTime,
     required this.isActive,
     required this.isCompleted,
+    required this.status,
     this.onTap,
     required this.colors,
     required this.typography,
   });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String? time;
+  final String? scheduledTime;
+  final bool isActive;
+  final bool isCompleted;
+  final String status;
+  final VoidCallback? onTap;
+  final AppColors colors;
+  final AppTypography typography;
 
   @override
   Widget build(BuildContext context) {
@@ -511,11 +517,13 @@ class _CompactRow extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.access_time_rounded,
-                      size: 12.sp,
-                      color: isCompleted
-                          ? iconColor
-                          : colors.onSurface.withValues(alpha: 0.35)),
+                  Icon(
+                    Icons.access_time_rounded,
+                    size: 12.sp,
+                    color: isCompleted
+                        ? iconColor
+                        : colors.onSurface.withValues(alpha: 0.35),
+                  ),
                   SizedBox(width: 3.w),
                   Text(
                     time!,
@@ -530,32 +538,7 @@ class _CompactRow extends StatelessWidget {
                 ],
               )
             else if (isCompleted)
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s8.w,
-                  vertical: AppSpacing.s2.h,
-                ),
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppRadius.r20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle_rounded,
-                        size: 12.sp, color: iconColor),
-                    SizedBox(width: 4.w),
-                    Text(
-                      'Tercatat',
-                      style: typography.caption.copyWith(
-                        color: iconColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 10.sp,
-                      ),
-                    ),
-                  ],
-                ),
-              )
+              _StatusChip(status: status, colors: colors, typography: typography)
             else
               Text(
                 scheduledTime ?? '--:--',
@@ -564,6 +547,49 @@ class _CompactRow extends StatelessWidget {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({
+    required this.status,
+    required this.colors,
+    required this.typography,
+  });
+
+  final String status;
+  final AppColors colors;
+  final AppTypography typography;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (status) {
+      'OnTime' => ('Tepat Waktu', colors.success),
+      'Late' => ('Terlambat', colors.warning),
+      'EarlyLeave' => ('Pulang Cepat', colors.warning),
+      'InvalidLocation' => ('Diluar Lokasi', colors.error),
+      'Absent' => ('Absen', colors.error),
+      _ => ('Tercatat', colors.success),
+    };
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.s8.w,
+        vertical: AppSpacing.s2.h,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.r20),
+      ),
+      child: Text(
+        label,
+        style: typography.caption.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: 10.sp,
         ),
       ),
     );

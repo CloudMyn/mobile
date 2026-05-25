@@ -1,11 +1,11 @@
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
-import 'package:dio/dio.dart';
 
+/// Utility untuk pengolahan gambar wajah sebelum dikirim ke API.
+/// Face upload tidak dilakukan terpisah — foto dikirim langsung sebagai
+/// multipart field "photo" di dalam request presensi.
 class FaceService {
-  final Dio _dio;
-
-  FaceService(this._dio);
+  FaceService();
 
   /// Crop gambar ke aspect ratio 1:1 (center crop) lalu compress ke ≤ maxBytes.
   /// Return null jika gambar tidak valid.
@@ -28,69 +28,15 @@ class FaceService {
   }
 
   Uint8List _compressToMaxBytes(img.Image image, int maxBytes) {
-    // Mulai dari quality 90, turunkan 10 per iterasi
     for (var quality = 90; quality >= 10; quality -= 10) {
       final encoded = img.encodeJpg(image, quality: quality);
       if (encoded.length <= maxBytes) return Uint8List.fromList(encoded);
     }
-    // Jika masih terlalu besar, resize dimensi lalu coba lagi
     final resized = img.copyResize(image, width: 256);
     for (var quality = 90; quality >= 10; quality -= 10) {
       final encoded = img.encodeJpg(resized, quality: quality);
       if (encoded.length <= maxBytes) return Uint8List.fromList(encoded);
     }
-    // Fallback: kembalikan hasil terkecil
     return Uint8List.fromList(img.encodeJpg(resized, quality: 10));
-  }
-
-  /// Upload foto wajah ke server. Return URL foto yang tersimpan.
-  Future<String> uploadFaceImage(
-    Uint8List imageBytes,
-    String filename,
-  ) async {
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(
-        imageBytes,
-        filename: filename,
-        contentType: DioMediaType('image', 'jpeg'),
-      ),
-    });
-
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/presensi/upload-face',
-      data: formData,
-    );
-
-    final data = response.data;
-    if (data == null || data['url'] == null) {
-      throw Exception('Upload berhasil tapi URL tidak diterima');
-    }
-    return data['url'] as String;
-  }
-
-  /// Kirim embedding dari server. Return vector embedding.
-  Future<List<double>> extractEmbedding(
-    Uint8List imageBytes,
-    String filename,
-  ) async {
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(
-        imageBytes,
-        filename: filename,
-        contentType: DioMediaType('image', 'jpeg'),
-      ),
-    });
-
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/presensi/face-embedding',
-      data: formData,
-    );
-
-    final data = response.data;
-    if (data == null || data['embedding'] == null) {
-      throw Exception('Gagal mendapatkan embedding wajah');
-    }
-    final raw = data['embedding'] as List<dynamic>;
-    return raw.map((e) => (e as num).toDouble()).toList();
   }
 }

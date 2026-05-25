@@ -8,10 +8,10 @@ class AppConstants {
   // =========================================================================
 
   /// Nama aplikasi — digunakan di title bar, metadata, dll.
-  static const String appName = 'Barru Presensi';
+  static const String appName = 'Masseddi';
 
   /// Nama pendek untuk notifikasi atau konteks informal.
-  static const String appNameShort = 'Presensi';
+  static const String appNameShort = 'Masseddi';
 
   /// Nama perusahaan/instansi.
   static const String appOrganization = 'Pemerintah Kabupaten Barru';
@@ -68,8 +68,18 @@ class AppConstants {
   //  Preferensi Penyimpanan (SharedPreferences keys)
   // =========================================================================
 
-  /// Key untuk menyimpan token autentikasi.
+  /// Key untuk menyimpan token autentikasi (shared_prefs — deprecated, pakai SecureStorage).
   static const String prefAuthToken = 'auth_token';
+
+  // =========================================================================
+  //  Secure Storage Keys (FlutterSecureStorage)
+  // =========================================================================
+
+  /// Bearer token dari login — disimpan di secure storage.
+  static const String secureKeyAccessToken = 'access_token';
+
+  /// Device UUID — di-generate sekali, disimpan permanen di secure storage.
+  static const String secureKeyDeviceUuid = 'device_uuid';
 
   /// Key untuk menyimpan preferensi "ingat saya".
   static const String prefRememberMe = 'remember_me';
@@ -88,7 +98,7 @@ class AppConstants {
   // =========================================================================
 
   /// Base URL API — sesuaikan dengan environment.
-  static const String apiBaseUrl = 'https://api.barrukab.go.id';
+  static const String apiBaseUrl = 'https://eoff-api.barrukab.go.id';
 
   /// Default timeout untuk request HTTP (dalam detik).
   static const int apiTimeoutSeconds = 30;

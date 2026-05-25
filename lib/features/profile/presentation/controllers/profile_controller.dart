@@ -2,12 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/network/session_manager.dart';
 import '../../../../design_system/components/app_button.dart';
 import '../../../../design_system/components/app_feedback.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
+import '../../../auth/data/services/auth_service.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../data/models/employee_model.dart';
 import '../../data/models/shift_model.dart';
@@ -268,6 +270,12 @@ class ProfileController extends GetxController {
     );
 
     if (confirmed != true) return;
+    try {
+      await Get.find<AuthService>().logout();
+    } catch (_) {
+      // Lanjutkan logout lokal meski request ke server gagal
+    }
+    Get.find<SessionManager>().clear();
     Get.offAll(() => const LoginPage());
   }
 

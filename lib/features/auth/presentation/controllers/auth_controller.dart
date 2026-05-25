@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/error/app_exception.dart';
+import '../../../../core/network/session_manager.dart';
+import '../../../../core/network/token_storage.dart';
+import '../../data/services/auth_service.dart';
 import '../../../home/presentation/pages/home_page.dart';
 
 class AuthController extends GetxController {
@@ -17,21 +21,15 @@ class AuthController extends GetxController {
     super.onClose();
   }
 
-  void togglePasswordVisibility() {
-    isPasswordVisible.toggle();
-  }
+  void togglePasswordVisibility() => isPasswordVisible.toggle();
 
   String? validateNip(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'NIP tidak boleh kosong';
-    }
+    if (value == null || value.trim().isEmpty) return 'NIP tidak boleh kosong';
     return null;
   }
 
   String? validatePassword(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Kata sandi tidak boleh kosong';
-    }
+    if (value == null || value.trim().isEmpty) return 'Kata sandi tidak boleh kosong';
     return null;
   }
 
@@ -39,27 +37,60 @@ class AuthController extends GetxController {
     if (!formKey.currentState!.validate()) return;
 
     isLoading.value = true;
-
     try {
-      // Simulasi proses login
-      await Future.delayed(const Duration(seconds: 2));
+      final authService = Get.find<AuthService>();
+      final tokenStorage = Get.find<TokenStorage>();
+      final sessionManager = Get.find<SessionManager>();
 
-      final nip = nipController.text.trim();
-      final password = passwordController.text.trim();
-      debugPrint('Login attempt — NIP: $nip | Password length: ${password.length}');
+      final deviceUuid = await tokenStorage.getOrCreateDeviceUuid();
 
-      // Navigasi ke halaman home, hapus semua route sebelumnya
-      Get.offAll(() => const HomePage());
-    } catch (e) {
-      Get.snackbar(
-        'Gagal',
-        'Terjadi kesalahan: $e',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+      final result = await authService.login(
+        email: nipController.text.trim(),
+        password: passwordController.text.trim(),
+        deviceUuid: deviceUuid,
+        platform: _detectPlatform(),
+        appVersion: '1.0.0',
       );
+
+      await tokenStorage.saveToken(result.accessToken);
+      sessionManager.setUser(result.user);
+
+      Get.offAll(() => const HomePage());
+    } on ApiException catch (e) {
+      _showError(_mapApiErrorMessage(e));
+    } on NetworkException {
+      _showError('Tidak ada koneksi internet. Periksa jaringan Anda.');
+    } catch (e) {
+      _showError('Terjadi kesalahan. Silakan coba lagi.');
     } finally {
       isLoading.value = false;
     }
+  }
+
+  String _detectPlatform() {
+    if (GetPlatform.isAndroid) return 'android';
+    if (GetPlatform.isIOS) return 'ios';
+    return 'android';
+  }
+
+  String _mapApiErrorMessage(ApiException e) {
+    return switch (e.statusCode) {
+      401 => 'NIP atau kata sandi salah.',
+      422 => e.message.isNotEmpty ? e.message : 'Data login tidak valid.',
+      429 => 'Terlalu banyak percobaan. Coba lagi nanti.',
+      >= 500 => 'Server sedang bermasalah. Coba lagi nanti.',
+      _ => e.message.isNotEmpty ? e.message : 'Terjadi kesalahan.',
+    };
+  }
+
+  void _showError(String message) {
+    Get.snackbar(
+      'Login Gagal',
+      message,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: Get.theme.colorScheme.error,
+      colorText: Get.theme.colorScheme.onError,
+      duration: const Duration(seconds: 4),
+    );
   }
 }

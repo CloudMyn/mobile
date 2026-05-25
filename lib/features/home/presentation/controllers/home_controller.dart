@@ -1,29 +1,38 @@
 import 'dart:async';
 import 'package:get/get.dart';
+import '../../../../core/error/app_exception.dart';
+import '../../../../core/network/session_manager.dart';
 import '../../../../design_system/components/feedback/app_dialog.dart';
-import '../../../presensi/data/models/attendance_submission.dart';
-import '../../data/models/attendance_schedule.dart';
-import '../../data/models/leave_quota.dart';
-import '../../data/models/monthly_attendance.dart';
+import '../../data/models/dashboard_model.dart';
 import '../../data/models/tpp_statistic.dart';
-
-/// Status alur presensi dalam satu hari kerja
-enum AttendanceStatus { checkIn, break_, breakReturn, checkOut, completed }
+import '../../data/models/monthly_attendance.dart';
+import '../../data/models/leave_quota.dart';
+import '../../data/services/dashboard_service.dart';
 
 class HomeController extends GetxController {
+  HomeController({required DashboardService dashboardService})
+      : _dashboardService = dashboardService;
+
+  final DashboardService _dashboardService;
+
   // =========================================================================
   //  Reactive State
   // =========================================================================
 
   final currentDateTime = DateTime.now().obs;
-  final unreadNotifications = 3.obs;
+  final unreadNotifications = 0.obs;
+
+  // Dashboard data dari API
+  final dashboardData = Rx<DashboardModel?>(null);
+  final todaySchedule = Rx<TodaySchedule?>(null);
+  final attendanceTypes = <AttendanceTypeConfig>[].obs;
   final tppStatistic = Rx<TppStatistic?>(null);
-  final schedule = Rx<AttendanceSchedule?>(null);
-  final attendanceStatus = AttendanceStatus.checkIn.obs;
-  final checkInTime = Rx<DateTime?>(null);
-  final checkOutTime = Rx<DateTime?>(null);
   final monthlyAttendance = Rx<MonthlyAttendance?>(null);
+  final pendingSubmission = Rx<DashboardPendingSubmission?>(null);
+
+  // Kept for backward compat with CutiStatCard — populated lazily
   final leaveQuota = Rx<LeaveQuota?>(null);
+
   final isLoading = false.obs;
   final errorMessage = Rx<String?>(null);
 
@@ -33,7 +42,7 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     _startClock();
-    loadAllData();
+    loadDashboard();
   }
 
   @override
@@ -53,125 +62,83 @@ class HomeController extends GetxController {
   }
 
   // =========================================================================
-  //  Data Loading (Mock — ganti dengan API nyata)
+  //  Dashboard API
   // =========================================================================
 
-  Future<void> loadAllData() async {
+  Future<void> loadDashboard() async {
     isLoading.value = true;
     errorMessage.value = null;
-
     try {
-      await Future.delayed(const Duration(milliseconds: 600));
+      final data = await _dashboardService.fetchDashboard();
 
-      tppStatistic.value = const TppStatistic(
-        totalAmount: 5_000_000,
-        totalDeduction: 750_000,
-        netResult: 4_250_000,
-        period: 'Mei 2026',
-      );
+      dashboardData.value = data;
+      todaySchedule.value = data.todaySchedule;
+      attendanceTypes.assignAll(data.attendanceTypes);
+      pendingSubmission.value = data.pendingSubmission;
 
-      schedule.value = const AttendanceSchedule(
-        shiftName: 'Pagi',
-        checkInTime: '07:30',
-        checkOutTime: '16:00',
-        status: ScheduleStatus.active,
-      );
+      if (data.currentTpp != null) {
+        tppStatistic.value = TppStatistic.fromDashboard(data.currentTpp!);
+      }
 
-      monthlyAttendance.value = const MonthlyAttendance(
-        present: 18,
-        permission: 2,
-        leave: 1,
-        absent: 0,
-        total: 22,
-        month: 'Mei 2026',
-      );
-
-      leaveQuota.value = LeaveQuota(
-        yearlyQuota: 12,
-        usedThisYear: 5,
-        prevYearQuota: 12,
-        prevYearRemaining: 3,
-        year: '2026',
-        recentUsages: [
-          LeaveUsage(
-            type: 'Cuti Tahunan',
-            days: 3,
-            startDate: DateTime(2026, 3, 10),
-            endDate: DateTime(2026, 3, 12),
-            status: 'approved',
-          ),
-          LeaveUsage(
-            type: 'Cuti Sakit',
-            days: 2,
-            startDate: DateTime(2026, 4, 22),
-            endDate: DateTime(2026, 4, 23),
-            status: 'approved',
-          ),
-        ],
-      );
+      // Update session user dengan data terkini dari dashboard
+      Get.find<SessionManager>().setUser(data.user);
+    } on NetworkException {
+      errorMessage.value = 'Tidak ada koneksi internet.';
+    } on ApiException catch (e) {
+      errorMessage.value = e.message;
     } catch (e) {
-      errorMessage.value = 'Gagal memuat data: $e';
+      errorMessage.value = 'Gagal memuat data.';
     } finally {
       isLoading.value = false;
     }
   }
 
   Future<void> refreshData() async {
-    attendanceStatus.value = AttendanceStatus.checkIn;
-    checkInTime.value = null;
-    checkOutTime.value = null;
-    await loadAllData();
+    await loadDashboard();
   }
 
   // =========================================================================
-  //  Presensi Success — dipanggil oleh AttendanceCard setelah flow selesai
+  //  Presensi Success — dipanggil oleh PresensiController setelah berhasil
   // =========================================================================
 
-  void onPresensiSuccess(AttendanceType type) {
-    final now = DateTime.now();
-    switch (type) {
-      case AttendanceType.checkIn:
-        checkInTime.value = now;
-        attendanceStatus.value = AttendanceStatus.break_;
-      case AttendanceType.checkOut:
-        checkOutTime.value = now;
-        attendanceStatus.value = AttendanceStatus.completed;
+  /// Refresh schedule setelah presensi berhasil agar status slot diperbarui.
+  Future<void> onPresensiSuccess() async {
+    try {
+      final updated = await _dashboardService.fetchTodayPresensi();
+      todaySchedule.value = updated;
+    } catch (_) {
+      // Jika gagal refresh, tidak apa-apa — user bisa pull-to-refresh manual
     }
   }
 
   // =========================================================================
-  //  Break — tidak memerlukan alur presensi penuh
+  //  Break — tidak memerlukan API call
   // =========================================================================
 
-  void onBreakPressed() {
-    if (attendanceStatus.value == AttendanceStatus.break_) {
-      _confirmBreak(
-        'Mulai Istirahat',
-        'Apakah Anda ingin memulai waktu istirahat?',
-        AttendanceStatus.breakReturn,
-      );
-    } else if (attendanceStatus.value == AttendanceStatus.breakReturn) {
-      _confirmBreak(
-        'Kembali dari Istirahat',
-        'Apakah Anda sudah kembali dari istirahat?',
-        AttendanceStatus.checkOut,
-      );
-    }
-  }
+  Future<void> onBreakPressed(bool isStartBreak) async {
+    final title = isStartBreak ? 'Mulai Istirahat' : 'Kembali dari Istirahat';
+    final message = isStartBreak
+        ? 'Apakah Anda ingin memulai waktu istirahat?'
+        : 'Apakah Anda sudah kembali dari istirahat?';
 
-  Future<void> _confirmBreak(
-    String title,
-    String message,
-    AttendanceStatus nextStatus,
-  ) async {
-    final confirmed = await AppDialog.confirm(
+    await AppDialog.confirm(
       title: title,
       message: message,
       confirmLabel: 'Ya',
       cancelLabel: 'Batal',
     );
-    if (confirmed == true) {
-      attendanceStatus.value = nextStatus;
-    }
   }
+
+  // =========================================================================
+  //  Convenience getters
+  // =========================================================================
+
+  List<TodayRecord> get pendingRecords =>
+      todaySchedule.value?.records
+          .where((r) => r.isPending && r.isWindowOpen)
+          .toList() ??
+      [];
+
+  TodayRecord? get nextPendingRecord =>
+      todaySchedule.value?.records.firstWhereOrNull((r) => r.isPending);
 }

@@ -6,7 +6,6 @@ import '../../../../design_system/tokens/app_typography.dart';
 import '../controllers/presensi_controller.dart';
 
 /// Menampilkan progress langkah presensi berdasarkan [PresensiStep].
-/// Hanya menampilkan langkah yang relevan berdasarkan konfigurasi aktif.
 class PresensiStepIndicator extends StatelessWidget {
   final PresensiStep currentStep;
   final bool hasFaceRecognition;
@@ -64,23 +63,13 @@ class PresensiStepIndicator extends StatelessWidget {
         icon: Icons.face_rounded,
         label: 'Liveness',
       ));
-      list.add(_StepMeta(
-        step: PresensiStep.faceEmbedding,
-        icon: Icons.manage_accounts_rounded,
-        label: 'Verifikasi',
-      ));
     }
 
-    if (hasFaceCapture) {
+    if (hasFaceCapture || hasFaceRecognition) {
       list.add(_StepMeta(
         step: PresensiStep.faceCapture,
         icon: Icons.camera_alt_rounded,
         label: 'Foto',
-      ));
-      list.add(_StepMeta(
-        step: PresensiStep.uploading,
-        icon: Icons.cloud_upload_rounded,
-        label: 'Upload',
       ));
     }
 
@@ -104,7 +93,6 @@ class PresensiStepIndicator extends StatelessWidget {
   _StepNodeState _stateFor(PresensiStep step) {
     if (currentStep == PresensiStep.success) return _StepNodeState.completed;
     if (currentStep == PresensiStep.error) {
-      // Jika error, semua yang belum aktif tetap pending
       if (_stepIndex(step) < _stepIndex(currentStep)) {
         return _StepNodeState.completed;
       }
@@ -121,20 +109,16 @@ class PresensiStepIndicator extends StatelessWidget {
       _stateFor(step) == _StepNodeState.completed;
 
   int _stepIndex(PresensiStep s) => switch (s) {
-        PresensiStep.idle || PresensiStep.loadingConfig => 0,
+        PresensiStep.idle => 0,
         PresensiStep.liveness => 1,
-        PresensiStep.faceEmbedding => 2,
-        PresensiStep.faceCapture => 3,
-        PresensiStep.uploading => 4,
-        PresensiStep.geofenceCheck => 5,
-        PresensiStep.submitting => 6,
-        PresensiStep.success => 7,
-        PresensiStep.error => 8,
+        PresensiStep.faceCapture => 2,
+        PresensiStep.geofenceCheck => 3,
+        PresensiStep.submitting => 4,
+        PresensiStep.success => 5,
+        PresensiStep.error => 6,
       };
 }
 
-// =============================================================================
-//  Step node
 // =============================================================================
 enum _StepNodeState { pending, active, completed }
 
@@ -170,7 +154,8 @@ class _StepNode extends StatelessWidget {
           height: 36.w,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: color.withValues(alpha: state == _StepNodeState.pending ? 0.08 : 0.15),
+            color: color.withValues(
+                alpha: state == _StepNodeState.pending ? 0.08 : 0.15),
             border: Border.all(
               color: color,
               width: state == _StepNodeState.active ? 2.0 : 1.0,
@@ -196,9 +181,6 @@ class _StepNode extends StatelessWidget {
   }
 }
 
-// =============================================================================
-//  Connector line between nodes
-// =============================================================================
 class _StepConnector extends StatelessWidget {
   final bool isCompleted;
   final AppColors colors;
@@ -219,9 +201,6 @@ class _StepConnector extends StatelessWidget {
   }
 }
 
-// =============================================================================
-//  Step metadata helper
-// =============================================================================
 class _StepMeta {
   final PresensiStep step;
   final IconData icon;

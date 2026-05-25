@@ -1,3 +1,5 @@
+import '../../../home/data/models/dashboard_model.dart';
+
 class AttendanceConfig {
   final bool faceRecognition;
   final bool faceCapture;
@@ -31,6 +33,20 @@ class AttendanceConfig {
       geofenceLat: (json['geofence_lat'] as num?)?.toDouble(),
       geofenceLng: (json['geofence_lng'] as num?)?.toDouble(),
       geofenceRadius: (json['geofence_radius'] as num?)?.toDouble(),
+    );
+  }
+
+  /// Buat config dari data [TodayRecord] yang berasal dari dashboard response.
+  factory AttendanceConfig.fromRecord(TodayRecord record) {
+    final loc = record.requiredLocation;
+    return AttendanceConfig(
+      faceRecognition: record.attendanceType.requiresFaceVerification,
+      faceCapture: record.attendanceType.requiresPhoto,
+      geofenceEnabled: record.attendanceType.requiresLocation,
+      requiredLocation: record.attendanceType.requiresLocation,
+      geofenceLat: loc?.latitude,
+      geofenceLng: loc?.longitude,
+      geofenceRadius: loc?.radiusMeters.toDouble(),
     );
   }
 

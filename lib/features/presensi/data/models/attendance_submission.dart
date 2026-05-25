@@ -1,64 +1,65 @@
-/// Tipe presensi
-enum AttendanceType { checkIn, checkOut }
+import 'dart:typed_data';
 
-extension AttendanceTypeExtension on AttendanceType {
-  String get value => switch (this) {
-        AttendanceType.checkIn => 'check_in',
-        AttendanceType.checkOut => 'check_out',
-      };
-  String get label => switch (this) {
-        AttendanceType.checkIn => 'Presensi Masuk',
-        AttendanceType.checkOut => 'Presensi Pulang',
-      };
-}
-
-/// Request body ke API submit presensi
+/// Request body ke POST /mobile/presensi/{code}
 class AttendanceSubmissionRequest {
-  final AttendanceType type;
-  final String? faceImageUrl;
-  final List<double>? faceEmbedding;
-  final double? latitude;
-  final double? longitude;
-  final double? accuracy;
-
   const AttendanceSubmissionRequest({
-    required this.type,
-    this.faceImageUrl,
-    this.faceEmbedding,
+    required this.code,
+    this.shiftNo = 1,
     this.latitude,
     this.longitude,
-    this.accuracy,
+    this.accuracyMeters,
+    required this.deviceUuid,
+    this.faceScore,
+    this.photoBytes,
+    this.note,
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'type': type.value,
-      if (faceImageUrl != null) 'face_image_url': faceImageUrl,
-      if (faceEmbedding != null) 'face_embedding': faceEmbedding,
-      if (latitude != null) 'latitude': latitude,
-      if (longitude != null) 'longitude': longitude,
-      if (accuracy != null) 'accuracy': accuracy,
-    };
-  }
+  /// AttendanceType.code — dipakai sebagai URL segment: /mobile/presensi/{code}
+  final String code;
+
+  final int shiftNo;
+  final double? latitude;
+  final double? longitude;
+  final double? accuracyMeters;
+
+  /// UUID perangkat dari [TokenStorage.getOrCreateDeviceUuid()]
+  final String deviceUuid;
+
+  /// Confidence score dari ML Kit face detection (0.0–1.0)
+  final double? faceScore;
+
+  /// Bytes foto wajah — dikirim sebagai multipart file
+  final Uint8List? photoBytes;
+
+  final String? note;
 }
 
-/// Response dari API submit presensi
+/// Response dari POST /mobile/presensi/{code}
 class AttendanceSubmissionResponse {
-  final bool success;
-  final String message;
-  final String? recordedAt;
-
   const AttendanceSubmissionResponse({
-    required this.success,
-    required this.message,
-    this.recordedAt,
+    required this.id,
+    required this.status,
+    required this.attendedAt,
+    this.distanceToLocationMeters,
+    this.message,
   });
+
+  final int id;
+
+  /// Status slot setelah presensi: "OnTime" | "Late" | "InvalidLocation"
+  final String status;
+  final String attendedAt;
+  final double? distanceToLocationMeters;
+  final String? message;
 
   factory AttendanceSubmissionResponse.fromJson(Map<String, dynamic> json) {
     return AttendanceSubmissionResponse(
-      success: json['success'] as bool? ?? false,
-      message: json['message'] as String? ?? '',
-      recordedAt: json['recorded_at'] as String?,
+      id: json['id'] as int,
+      status: json['status'] as String? ?? '',
+      attendedAt: json['attended_at'] as String? ?? '',
+      distanceToLocationMeters:
+          (json['distance_to_location_meters'] as num?)?.toDouble(),
+      message: null,
     );
   }
 }

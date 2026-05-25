@@ -1,3 +1,5 @@
+import 'dashboard_model.dart';
+
 class TppStatistic {
   final double totalAmount;
   final double totalDeduction;
@@ -10,4 +12,13 @@ class TppStatistic {
     required this.netResult,
     required this.period,
   });
+
+  factory TppStatistic.fromDashboard(DashboardTpp tpp) {
+    return TppStatistic(
+      totalAmount: tpp.amountBeforeDeduction,
+      totalDeduction: tpp.deductionAmount,
+      netResult: tpp.amountAfterDeduction,
+      period: tpp.periodDate,
+    );
+  }
 }

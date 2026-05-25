@@ -6,25 +6,75 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
-import '../../data/models/leave_quota.dart';
-import '../controllers/home_controller.dart';
+import '../../data/models/statistik_model.dart';
+import '../controllers/statistik_controller.dart';
 
 class CutiStatCard extends StatelessWidget {
   const CutiStatCard({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<HomeController>();
+    final ctrl = Get.find<StatistikController>();
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
 
     return Obx(() {
-      final quota = controller.leaveQuota.value;
-      if (quota == null) return const SizedBox.shrink();
+      final balance = ctrl.primaryLeaveBalance;
+      final submissions = ctrl.data.value?.recentSubmissions ?? [];
+      final year = ctrl.selectedYear.value;
 
-      final remainColor = quota.remaining <= 3
+      if (balance == null) {
+        return AppCard(
+          outlined: true,
+          child: Row(
+            children: [
+              Container(
+                width: 36.w,
+                height: 36.w,
+                decoration: BoxDecoration(
+                  color: colors.outline.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppRadius.r8),
+                ),
+                child: Icon(
+                  Icons.beach_access_rounded,
+                  color: colors.outline,
+                  size: 20,
+                ),
+              ),
+              SizedBox(width: AppSpacing.s12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Kuota Cuti',
+                      style: typography.titleSmall.copyWith(
+                        color: colors.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Belum ada saldo cuti untuk tahun $year',
+                      style: typography.caption.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      final remaining = balance.remainingBalance;
+      final total = balance.totalAvailable;
+      final used = balance.usedBalance;
+      final usedPct = total > 0 ? (used / total).clamp(0.0, 1.0) : 0.0;
+
+      final remainColor = remaining <= 3
           ? colors.error
-          : quota.remaining <= 6
+          : remaining <= 6
               ? colors.warning
               : colors.success;
 
@@ -33,7 +83,7 @@ class CutiStatCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header ──────────────────────────────────────────────────────
+            // ── Header ────────────────────────────────────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -57,14 +107,16 @@ class CutiStatCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Kuota Cuti',
+                          balance.leaveTypeName.isNotEmpty
+                              ? balance.leaveTypeName
+                              : 'Kuota Cuti',
                           style: typography.titleSmall.copyWith(
                             color: colors.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          'Tahun ${quota.year}',
+                          'Tahun $year',
                           style: typography.caption.copyWith(
                             color: colors.onSurface.withValues(alpha: 0.4),
                           ),
@@ -73,7 +125,6 @@ class CutiStatCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                // Sisa kuota badge
                 Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.s8.w,
@@ -87,7 +138,7 @@ class CutiStatCard extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    '${quota.remaining} hari tersisa',
+                    '${_fmt(remaining)} hari tersisa',
                     style: typography.caption.copyWith(
                       color: remainColor,
                       fontWeight: FontWeight.bold,
@@ -99,18 +150,18 @@ class CutiStatCard extends StatelessWidget {
 
             SizedBox(height: AppSpacing.s16.h),
 
-            // ── Progress bar ─────────────────────────────────────────────────
+            // ── Progress bar ──────────────────────────────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${quota.usedThisYear} terpakai dari ${quota.totalAvailable} hari tersedia',
+                  '${_fmt(used)} terpakai dari ${_fmt(total)} hari tersedia',
                   style: typography.bodySmall.copyWith(
                     color: colors.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
                 Text(
-                  '${(quota.usedPercentage * 100).toStringAsFixed(0)}%',
+                  '${(usedPct * 100).toStringAsFixed(0)}%',
                   style: typography.titleSmall.copyWith(
                     color: remainColor,
                     fontWeight: FontWeight.bold,
@@ -122,7 +173,7 @@ class CutiStatCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.r4),
               child: LinearProgressIndicator(
-                value: quota.usedPercentage,
+                value: usedPct,
                 backgroundColor: colors.outline.withValues(alpha: 0.12),
                 valueColor: AlwaysStoppedAnimation<Color>(remainColor),
                 minHeight: 6.h,
@@ -131,7 +182,7 @@ class CutiStatCard extends StatelessWidget {
 
             SizedBox(height: AppSpacing.s16.h),
 
-            // ── Detail rows ──────────────────────────────────────────────────
+            // ── Detail grid ───────────────────────────────────────────────────
             Container(
               padding: EdgeInsets.all(AppSpacing.s12.w),
               decoration: BoxDecoration(
@@ -141,32 +192,36 @@ class CutiStatCard extends StatelessWidget {
               child: Column(
                 children: [
                   _DetailRow(
-                    label: 'Kuota Tahun ${quota.year}',
-                    value: '${quota.yearlyQuota} hari',
+                    label: 'Kuota Tahun $year',
+                    value: '${_fmt(balance.currentYearQuota)} hari',
                     color: colors.onSurface,
                     typography: typography,
                   ),
-                  SizedBox(height: AppSpacing.s8.h),
-                  _DetailRow(
-                    label: 'Sisa Tahun ${int.parse(quota.year) - 1}',
-                    value: quota.prevYearRemaining > 0
-                        ? '+${quota.prevYearRemaining} hari'
-                        : '0 hari',
-                    valueNote: quota.prevYearRemaining > 0
-                        ? '(dari ${quota.prevYearQuota} hari)'
-                        : null,
-                    color: quota.prevYearRemaining > 0
-                        ? colors.primary
-                        : colors.outline,
-                    typography: typography,
-                  ),
+                  if (balance.carryForwardBalance > 0) ...[
+                    SizedBox(height: AppSpacing.s8.h),
+                    _DetailRow(
+                      label: 'Carry Forward',
+                      value: '+${_fmt(balance.carryForwardBalance)} hari',
+                      color: colors.primary,
+                      typography: typography,
+                    ),
+                  ],
+                  if (balance.additionalQuota > 0) ...[
+                    SizedBox(height: AppSpacing.s8.h),
+                    _DetailRow(
+                      label: 'Tambahan',
+                      value: '+${_fmt(balance.additionalQuota)} hari',
+                      color: colors.primary,
+                      typography: typography,
+                    ),
+                  ],
                   Divider(
                     height: AppSpacing.s16.h,
                     color: colors.outline.withValues(alpha: 0.15),
                   ),
                   _DetailRow(
                     label: 'Total Tersedia',
-                    value: '${quota.totalAvailable} hari',
+                    value: '${_fmt(total)} hari',
                     color: colors.onSurface,
                     bold: true,
                     typography: typography,
@@ -174,7 +229,7 @@ class CutiStatCard extends StatelessWidget {
                   SizedBox(height: AppSpacing.s8.h),
                   _DetailRow(
                     label: 'Sudah Terpakai',
-                    value: '${quota.usedThisYear} hari',
+                    value: '${_fmt(used)} hari',
                     color: colors.warning,
                     typography: typography,
                   ),
@@ -184,7 +239,7 @@ class CutiStatCard extends StatelessWidget {
                   ),
                   _DetailRow(
                     label: 'Sisa Kuota',
-                    value: '${quota.remaining} hari',
+                    value: '${_fmt(remaining)} hari',
                     color: remainColor,
                     bold: true,
                     typography: typography,
@@ -193,19 +248,23 @@ class CutiStatCard extends StatelessWidget {
               ),
             ),
 
-            // ── Rincian penggunaan ───────────────────────────────────────────
-            if (quota.recentUsages.isNotEmpty) ...[
+            // ── Riwayat penggunaan dari recent submissions ────────────────────
+            if (submissions.isNotEmpty) ...[
               SizedBox(height: AppSpacing.s16.h),
               Text(
-                'Riwayat Penggunaan',
+                'Riwayat Pengajuan Terakhir',
                 style: typography.labelLarge.copyWith(
                   color: colors.onSurface.withValues(alpha: 0.55),
                   fontWeight: FontWeight.w600,
                 ),
               ),
               SizedBox(height: AppSpacing.s8.h),
-              ...quota.recentUsages.map(
-                (u) => _UsageRow(usage: u, colors: colors, typography: typography),
+              ...submissions.map(
+                (s) => _SubmissionRow(
+                  submission: s,
+                  colors: colors,
+                  typography: typography,
+                ),
               ),
             ],
           ],
@@ -213,26 +272,30 @@ class CutiStatCard extends StatelessWidget {
       );
     });
   }
+
+  /// Format angka ke string tanpa desimal jika bulat
+  String _fmt(double v) {
+    if (v == v.roundToDouble()) return v.toInt().toString();
+    return v.toStringAsFixed(1);
+  }
 }
 
-// ── Detail row ────────────────────────────────────────────────────────────────
+// ── Supporting widgets ────────────────────────────────────────────────────────
 
 class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final String? valueNote;
-  final Color color;
-  final bool bold;
-  final AppTypography typography;
-
   const _DetailRow({
     required this.label,
     required this.value,
-    this.valueNote,
     required this.color,
     this.bold = false,
     required this.typography,
   });
+
+  final String label;
+  final String value;
+  final Color color;
+  final bool bold;
+  final AppTypography typography;
 
   @override
   Widget build(BuildContext context) {
@@ -241,72 +304,31 @@ class _DetailRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: typography.bodySmall.copyWith(
-            color: color.withValues(alpha: 0.65),
-          ),
+          style: typography.bodySmall
+              .copyWith(color: color.withValues(alpha: 0.65)),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              value,
-              style: typography.bodyMedium.copyWith(
-                color: color,
-                fontWeight: bold ? FontWeight.bold : FontWeight.w600,
-              ),
-            ),
-            if (valueNote != null) ...[
-              SizedBox(width: 4.w),
-              Text(
-                valueNote!,
-                style: typography.caption.copyWith(
-                  color: color.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
-          ],
+        Text(
+          value,
+          style: typography.bodyMedium.copyWith(
+            color: color,
+            fontWeight: bold ? FontWeight.bold : FontWeight.w600,
+          ),
         ),
       ],
     );
   }
 }
 
-// ── Usage row ─────────────────────────────────────────────────────────────────
-
-class _UsageRow extends StatelessWidget {
-  final LeaveUsage usage;
-  final AppColors colors;
-  final AppTypography typography;
-
-  const _UsageRow({
-    required this.usage,
+class _SubmissionRow extends StatelessWidget {
+  const _SubmissionRow({
+    required this.submission,
     required this.colors,
     required this.typography,
   });
 
-  Color get _statusColor {
-    return switch (usage.status) {
-      'approved' => colors.success,
-      'pending' => colors.warning,
-      _ => colors.error,
-    };
-  }
-
-  String get _statusLabel {
-    return switch (usage.status) {
-      'approved' => 'Disetujui',
-      'pending' => 'Menunggu',
-      _ => 'Ditolak',
-    };
-  }
-
-  String _fmt(DateTime d) {
-    const m = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-    ];
-    return '${d.day} ${m[d.month]}';
-  }
+  final StatistikRecentSubmission submission;
+  final AppColors colors;
+  final AppTypography typography;
 
   @override
   Widget build(BuildContext context) {
@@ -318,12 +340,12 @@ class _UsageRow extends StatelessWidget {
             width: 36.w,
             height: 36.w,
             decoration: BoxDecoration(
-              color: _statusColor.withValues(alpha: 0.1),
+              color: colors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppRadius.r8),
             ),
             child: Icon(
               Icons.event_available_rounded,
-              color: _statusColor,
+              color: colors.success,
               size: 18,
             ),
           ),
@@ -333,14 +355,14 @@ class _UsageRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  usage.type,
+                  submission.typeName,
                   style: typography.bodySmall.copyWith(
                     color: colors.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  '${_fmt(usage.startDate)} – ${_fmt(usage.endDate)}',
+                  '${_fmtDate(submission.startDate)} – ${_fmtDate(submission.endDate)}',
                   style: typography.caption.copyWith(
                     color: colors.onSurface.withValues(alpha: 0.45),
                   ),
@@ -352,7 +374,7 @@ class _UsageRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${usage.days} hari',
+                '${_fmtDays(submission.totalDays)} hari',
                 style: typography.bodySmall.copyWith(
                   color: colors.onSurface,
                   fontWeight: FontWeight.bold,
@@ -364,13 +386,13 @@ class _UsageRow extends StatelessWidget {
                   vertical: 2.h,
                 ),
                 decoration: BoxDecoration(
-                  color: _statusColor.withValues(alpha: 0.1),
+                  color: colors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppRadius.r4),
                 ),
                 child: Text(
-                  _statusLabel,
+                  'Disetujui',
                   style: typography.caption.copyWith(
-                    color: _statusColor,
+                    color: colors.success,
                     fontWeight: FontWeight.w600,
                     fontSize: 10.sp,
                   ),
@@ -381,5 +403,20 @@ class _UsageRow extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _fmtDate(String iso) {
+    const m = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+    ];
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return iso;
+    return '${dt.day} ${m[dt.month]}';
+  }
+
+  String _fmtDays(double v) {
+    if (v == v.roundToDouble()) return v.toInt().toString();
+    return v.toStringAsFixed(1);
   }
 }

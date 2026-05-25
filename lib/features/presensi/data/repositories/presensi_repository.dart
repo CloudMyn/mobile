@@ -1,77 +1,57 @@
 import 'package:dio/dio.dart';
-import '../models/attendance_config.dart';
+import '../../../../core/error/app_exception.dart';
+import '../../../../core/network/api_response.dart';
 import '../models/attendance_submission.dart';
 
 abstract class PresensiRepository {
-  Future<AttendanceConfig> fetchConfig();
-  Future<AttendanceSubmissionResponse> submit(
-      AttendanceSubmissionRequest request);
+  Future<AttendanceSubmissionResponse> submit(AttendanceSubmissionRequest request);
 }
 
 class PresensiRepositoryImpl implements PresensiRepository {
-  final Dio _dio;
-
   PresensiRepositoryImpl(this._dio);
 
-  @override
-  Future<AttendanceConfig> fetchConfig() async {
-    final response =
-        await _dio.get<Map<String, dynamic>>('/presensi/config');
-    final data = response.data;
-    if (data == null) throw Exception('Konfigurasi presensi tidak ditemukan');
-    return AttendanceConfig.fromJson(data);
-  }
+  final Dio _dio;
 
   @override
   Future<AttendanceSubmissionResponse> submit(
       AttendanceSubmissionRequest request) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '/presensi/submit',
-      data: request.toJson(),
-    );
-    final data = response.data;
-    if (data == null) throw Exception('Response tidak valid');
-    return AttendanceSubmissionResponse.fromJson(data);
-  }
-}
+    try {
+      final formData = FormData.fromMap({
+        'shift_no': request.shiftNo,
+        if (request.latitude != null) 'latitude': request.latitude,
+        if (request.longitude != null) 'longitude': request.longitude,
+        if (request.accuracyMeters != null)
+          'accuracy_meters': request.accuracyMeters,
+        'device_uuid': request.deviceUuid,
+        if (request.faceScore != null) 'face_score': request.faceScore,
+        if (request.photoBytes != null)
+          'photo': MultipartFile.fromBytes(
+            request.photoBytes!,
+            filename:
+                'attendance_${DateTime.now().millisecondsSinceEpoch}.jpg',
+            contentType: DioMediaType('image', 'jpeg'),
+          ),
+        if (request.note != null) 'note': request.note,
+      });
 
-/// Implementasi mock untuk development dan testing
-class MockPresensiRepository implements PresensiRepository {
-  /// Ubah nilai ini untuk mensimulasikan skenario berbeda
-  final AttendanceConfig mockConfig;
-  final bool shouldFail;
-  final Duration delay;
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/mobile/presensi/${request.code}',
+        data: formData,
+      );
 
-  MockPresensiRepository({
-    this.mockConfig = const AttendanceConfig(
-      faceRecognition: false,
-      faceCapture: true,
-      geofenceEnabled: true,
-      requiredLocation: true,
-      geofenceLat: -4.604483,
-      geofenceLng: 119.873190,
-      geofenceRadius: 200,
-    ),
-    this.shouldFail = false,
-    this.delay = const Duration(milliseconds: 800),
-  });
-
-  @override
-  Future<AttendanceConfig> fetchConfig() async {
-    await Future.delayed(delay);
-    if (shouldFail) throw Exception('Gagal memuat konfigurasi (mock)');
-    return mockConfig;
-  }
-
-  @override
-  Future<AttendanceSubmissionResponse> submit(
-      AttendanceSubmissionRequest request) async {
-    await Future.delayed(delay);
-    if (shouldFail) throw Exception('Gagal submit presensi (mock)');
-    return AttendanceSubmissionResponse(
-      success: true,
-      message: '${request.type.label} berhasil dicatat',
-      recordedAt: DateTime.now().toIso8601String(),
-    );
+      return ApiResponse.fromJson(
+        response.data!,
+        (data) => AttendanceSubmissionResponse.fromJson(
+            data as Map<String, dynamic>),
+      ).data!;
+    } on DioException catch (e) {
+      final err = e.error;
+      if (err is ApiException) throw err;
+      if (err is NetworkException) throw err;
+      throw ApiException(
+        statusCode: e.response?.statusCode ?? 0,
+        message: e.message ?? 'Gagal submit presensi',
+      );
+    }
   }
 }
