@@ -19,6 +19,7 @@ import '../../../../profile/presentation/pages/shift_schedule_page.dart';
 import '../../../../profile/presentation/pages/update_employee_page.dart';
 import '../../../../profile/presentation/pages/update_password_page.dart';
 import '../../../../profile/presentation/pages/update_photo_page.dart';
+import '../../../../../core/network/session_manager.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -90,13 +91,18 @@ class ProfileTab extends StatelessWidget {
                   showDivider: true,
                   onTap: () => Get.to(() => const UpdatePasswordPage()),
                 ),
-                AppListItem(
-                  title: 'Daftarkan Wajah',
-                  subtitle: 'Untuk absensi dengan Face Recognition',
-                  leading: const Icon(Icons.face_retouching_natural_rounded),
-                  showDivider: true,
-                  onTap: () => Get.to(() => const FaceEnrollmentPage()),
-                ),
+                Obx(() {
+                  final session = Get.find<SessionManager>();
+                  final user = session.currentUser.value;
+                  final hasFace = user?.faceData != null && user!.faceData!.isNotEmpty;
+                  return AppListItem(
+                    title: hasFace ? 'Pengaturan Wajah' : 'Daftarkan Wajah',
+                    subtitle: hasFace ? 'Wajah sudah terdaftar' : 'Untuk absensi dengan Face Recognition',
+                    leading: const Icon(Icons.face_retouching_natural_rounded),
+                    showDivider: true,
+                    onTap: () => Get.to(() => const FaceEnrollmentPage()),
+                  );
+                }),
                 AppListItem(
                   title: 'Pembaruan Data Pegawai',
                   subtitle: 'Edit data kontak dan identitas',

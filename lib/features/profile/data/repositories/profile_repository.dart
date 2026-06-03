@@ -5,6 +5,7 @@ import '../../../auth/data/models/user_model.dart';
 
 abstract class ProfileRepository {
   Future<UserModel> enrollFace(String faceDataBase64);
+  Future<UserModel> deleteFace();
 }
 
 class ProfileRepositoryImpl implements ProfileRepository {
@@ -31,6 +32,28 @@ class ProfileRepositoryImpl implements ProfileRepository {
       throw ApiException(
         statusCode: e.response?.statusCode ?? 0,
         message: e.message ?? 'Gagal mendaftar wajah',
+      );
+    }
+  }
+
+  @override
+  Future<UserModel> deleteFace() async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/mobile/profile/face',
+      );
+
+      return ApiResponse.fromJson(
+        response.data!,
+        (data) => UserModel.fromJson(data as Map<String, dynamic>),
+      ).data!;
+    } on DioException catch (e) {
+      final err = e.error;
+      if (err is ApiException) throw err;
+      if (err is NetworkException) throw err;
+      throw ApiException(
+        statusCode: e.response?.statusCode ?? 0,
+        message: e.message ?? 'Gagal menghapus data wajah',
       );
     }
   }

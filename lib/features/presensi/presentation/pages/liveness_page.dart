@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:permission_handler/permission_handler.dart' show openAppSettings;
+import 'package:image/image.dart' as img;
 import '../../../../design_system/components/app_button.dart';
 import '../../data/services/permission_helper.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
@@ -34,6 +35,7 @@ class _LivenessPageState extends State<LivenessPage>
   bool _isDetecting = false;
   String? _initError;
   Size? _screenSize;
+  CameraImage? _lastFrame;
 
   _LivenessStep _step = _LivenessStep.align;
   int _failCount = 0;
@@ -151,6 +153,7 @@ class _LivenessPageState extends State<LivenessPage>
 
   Future<void> _processFrame(CameraImage image) async {
     if (_detector == null || _step == _LivenessStep.done) return;
+    _lastFrame = image;
 
     final inputImage = _toInputImage(image);
     if (inputImage == null) return;
@@ -269,24 +272,103 @@ class _LivenessPageState extends State<LivenessPage>
     if (mounted) setState(() => _step = next);
   }
 
-  Future<void> _onLivenessPassed() async {
-    await _camCtrl?.stopImageStream();
+  Uint8List _convertNv21ToJpg(CameraImage image) {
+    final width = image.width;
+    final height = image.height;
     
-    // Beri sedikit waktu untuk memastikan stream benar-benar berhenti
-    await Future.delayed(const Duration(milliseconds: 200));
+    final yPlane = image.planes[0];
+    final vuPlane = image.planes[1];
     
-    Uint8List? capturedBytes;
-    try {
-      if (_camCtrl != null && _camCtrl!.value.isInitialized) {
-        final xFile = await _camCtrl!.takePicture();
-        capturedBytes = await xFile.readAsBytes();
+    final yBytes = yPlane.bytes;
+    final vuBytes = vuPlane.bytes;
+    
+    final yRowStride = yPlane.bytesPerRow;
+    final vuRowStride = vuPlane.bytesPerRow;
+    final vuPixelStride = vuPlane.bytesPerPixel ?? 2;
+    
+    final rgbImage = img.Image(width: width, height: height);
+    
+    for (int y = 0; y < height; y++) {
+      final int yRowOffset = y * yRowStride;
+      final int uvRowOffset = (y >> 1) * vuRowStride;
+      
+      for (int x = 0; x < width; x++) {
+        final int yIndex = yRowOffset + x;
+        if (yIndex < yBytes.length) {
+          final int yVal = yBytes[yIndex] & 0xFF;
+          final int uvIndex = uvRowOffset + (x >> 1) * vuPixelStride;
+          
+          if (uvIndex < vuBytes.length && uvIndex + 1 < vuBytes.length) {
+            final int vVal = vuBytes[uvIndex] & 0xFF;
+            final int uVal = vuBytes[uvIndex + 1] & 0xFF;
+            
+            final int c = yVal;
+            final int d = uVal - 128;
+            final int e = vVal - 128;
+            
+            final int r = (c + 1.402 * e).round().clamp(0, 255);
+            final int g = (c - 0.344136 * d - 0.714136 * e).round().clamp(0, 255);
+            final int b = (c + 1.772 * d).round().clamp(0, 255);
+            
+            rgbImage.setPixel(x, y, rgbImage.getColor(r, g, b));
+          } else {
+            rgbImage.setPixel(x, y, rgbImage.getColor(yVal, yVal, yVal));
+          }
+        }
       }
-    } catch (e) {
-      debugPrint('Error taking picture after liveness: $e');
+    }
+    
+    img.Image orientedImage = rgbImage;
+    if (_camCtrl != null) {
+      final sensorOrientation = _camCtrl!.description.sensorOrientation;
+      if (sensorOrientation == 90) {
+        orientedImage = img.copyRotate(rgbImage, angle: 90);
+      } else if (sensorOrientation == 180) {
+        orientedImage = img.copyRotate(rgbImage, angle: 180);
+      } else if (sensorOrientation == 270) {
+        orientedImage = img.copyRotate(rgbImage, angle: 270);
+      }
+      
+      if (_camCtrl!.description.lensDirection == CameraLensDirection.front) {
+        orientedImage = img.copyFlip(orientedImage, direction: img.FlipDirection.horizontal);
+      }
+    }
+    
+    return Uint8List.fromList(img.encodeJpg(orientedImage));
+  }
+
+  Future<void> _onLivenessPassed() async {
+    Uint8List? capturedBytes;
+    if (_lastFrame != null) {
+      try {
+        capturedBytes = _convertNv21ToJpg(_lastFrame!);
+      } catch (e) {
+        debugPrint('Error converting nv21 frame to jpg: $e');
+      }
+    }
+
+    // Fallback to takePicture if conversion is null
+    if (capturedBytes == null) {
+      try {
+        await _camCtrl?.stopImageStream();
+        await Future.delayed(const Duration(milliseconds: 200));
+        if (_camCtrl != null && _camCtrl!.value.isInitialized) {
+          final xFile = await _camCtrl!.takePicture();
+          capturedBytes = await xFile.readAsBytes();
+        }
+      } catch (e) {
+        debugPrint('Error taking picture after liveness: $e');
+      }
+    } else {
+      try {
+        await _camCtrl?.stopImageStream();
+      } catch (e) {
+        debugPrint('Error stopping image stream: $e');
+      }
     }
 
     await Future.delayed(const Duration(milliseconds: 400));
-    if (mounted) Get.back(result: capturedBytes); // Mengembalikan byte gambar, bukan bool
+    if (mounted) Get.back(result: capturedBytes);
   }
 
   // =========================================================================
@@ -296,7 +378,7 @@ class _LivenessPageState extends State<LivenessPage>
   void _recordFail() {
     _failCount++;
     if (_failCount >= _maxFails) {
-      Get.back(result: false);
+      Get.back(result: null); // Return null instead of false to prevent TypeError
     } else {
       setState(() => _step = _LivenessStep.align);
       _lastStepChange = DateTime.now();
