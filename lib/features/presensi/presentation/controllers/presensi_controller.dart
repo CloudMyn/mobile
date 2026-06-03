@@ -177,6 +177,14 @@ class PresensiController extends GetxController {
     }
 
     if (cfg.faceRecognition) {
+      if (cfg.storedFaceData == null || cfg.storedFaceData!.isEmpty) {
+        _setError(
+          PresensiErrorType.livenessFailed,
+          'Wajah Anda belum terdaftar. Silakan daftarkan wajah terlebih dahulu melalui halaman Profil.',
+        );
+        return;
+      }
+
       step.value = PresensiStep.liveness;
       final resultBytes = await Get.to<Uint8List?>(() => const LivenessPage());
       if (resultBytes == null) {
@@ -186,13 +194,32 @@ class PresensiController extends GetxController {
         );
         return;
       }
-      // Liveness passed — set default score
-      faceScore.value = 0.92;
+      
+      step.value = PresensiStep.submitting;
+      
+      try {
+        final liveResult = await _faceService.extractEmbeddingFromBytes(resultBytes);
+        if (liveResult == null) {
+          _setError(PresensiErrorType.livenessFailed, 'Wajah tidak terdeteksi pada foto.');
+          return;
+        }
 
-      // Langsung gunakan foto dari liveness, kompres, dan submit (skip FaceCapturePage)
-      final compressed = await _faceService.cropAndCompress(resultBytes);
-      faceImageBytes.value = compressed ?? resultBytes;
-      await _submitPresensi();
+        final storedEmb = _faceService.base64ToEmbedding(cfg.storedFaceData!);
+        final verifyResult = _faceService.verify(liveResult.embedding, storedEmb);
+
+        if (!verifyResult.isMatch) {
+          _setError(PresensiErrorType.livenessFailed, 'Wajah tidak dikenali. Pastikan Anda menghadap kamera dengan jelas.');
+          return;
+        }
+
+        faceScore.value = verifyResult.cosineSimilarity;
+        faceImageBytes.value = liveResult.processedImageBytes ?? resultBytes;
+
+        await _submitPresensi();
+      } catch (e) {
+        _setError(PresensiErrorType.livenessFailed, 'Gagal memproses pengenalan wajah.');
+        return;
+      }
 
     } else if (cfg.faceCapture) {
       step.value = PresensiStep.faceCapture;

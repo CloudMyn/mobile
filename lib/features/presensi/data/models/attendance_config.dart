@@ -7,6 +7,7 @@ class AttendanceConfig {
   final bool requiredLocation;
   final List<RequiredLocation> validLocations;
   final int defaultRadius;
+  final String? storedFaceData;
 
   const AttendanceConfig({
     required this.faceRecognition,
@@ -15,6 +16,7 @@ class AttendanceConfig {
     required this.requiredLocation,
     required this.validLocations,
     required this.defaultRadius,
+    this.storedFaceData,
   });
 
   bool get needsGeofenceCheck => geofenceEnabled && requiredLocation;
@@ -36,8 +38,9 @@ class AttendanceConfig {
   factory AttendanceConfig.fromRecord(
     TodayRecord record,
     List<RequiredLocation> locations,
-    int defaultRadius,
-  ) {
+    int defaultRadius, {
+    String? storedFaceData,
+  }) {
     return AttendanceConfig(
       faceRecognition: record.attendanceType.requiresFaceVerification,
       faceCapture: record.attendanceType.requiresPhoto,
@@ -45,6 +48,7 @@ class AttendanceConfig {
       requiredLocation: record.attendanceType.requiresLocation,
       validLocations: locations,
       defaultRadius: defaultRadius,
+      storedFaceData: storedFaceData,
     );
   }
 
@@ -55,6 +59,7 @@ class AttendanceConfig {
     bool? requiredLocation,
     List<RequiredLocation>? validLocations,
     int? defaultRadius,
+    String? storedFaceData,
   }) {
     return AttendanceConfig(
       faceRecognition: faceRecognition ?? this.faceRecognition,
@@ -63,6 +68,7 @@ class AttendanceConfig {
       requiredLocation: requiredLocation ?? this.requiredLocation,
       validLocations: validLocations ?? this.validLocations,
       defaultRadius: defaultRadius ?? this.defaultRadius,
+      storedFaceData: storedFaceData ?? this.storedFaceData,
     );
   }
 }

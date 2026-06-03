@@ -147,7 +147,12 @@ class HomeController extends GetxController {
         ? (num.tryParse(rawRadius.toString())?.toInt() ?? 100)
         : 100;
 
-    final config = AttendanceConfig.fromRecord(record, locations, defaultRadius);
+    final config = AttendanceConfig.fromRecord(
+      record, 
+      locations, 
+      defaultRadius,
+      storedFaceData: dashboardData.value?.user.faceData,
+    );
     Get.find<PresensiController>().setConfig(record.attendanceType.code, config);
     Get.to(() => const PresencePage());
   }

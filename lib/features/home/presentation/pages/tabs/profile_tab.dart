@@ -14,6 +14,7 @@ import '../../../../../design_system/tokens/app_spacing.dart';
 import '../../../../../design_system/tokens/app_typography.dart';
 import '../../../../profile/presentation/controllers/profile_controller.dart';
 import '../../../../profile/presentation/controllers/theme_controller.dart';
+import '../../../../profile/presentation/pages/face_enrollment_page.dart';
 import '../../../../profile/presentation/pages/shift_schedule_page.dart';
 import '../../../../profile/presentation/pages/update_employee_page.dart';
 import '../../../../profile/presentation/pages/update_password_page.dart';
@@ -88,6 +89,13 @@ class ProfileTab extends StatelessWidget {
                   leading: const Icon(Icons.lock_outline_rounded),
                   showDivider: true,
                   onTap: () => Get.to(() => const UpdatePasswordPage()),
+                ),
+                AppListItem(
+                  title: 'Daftarkan Wajah',
+                  subtitle: 'Untuk absensi dengan Face Recognition',
+                  leading: const Icon(Icons.face_retouching_natural_rounded),
+                  showDivider: true,
+                  onTap: () => Get.to(() => const FaceEnrollmentPage()),
                 ),
                 AppListItem(
                   title: 'Pembaruan Data Pegawai',

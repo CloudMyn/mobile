@@ -9,6 +9,7 @@ class UserModel {
     required this.email,
     this.phone,
     this.profilePictureUrl,
+    this.faceData,
     this.institution,
     this.department,
     this.jobTitle,
@@ -24,6 +25,7 @@ class UserModel {
   final String email;
   final String? phone;
   final String? profilePictureUrl;
+  final String? faceData;
   final UserOrgUnit? institution;
   final UserOrgUnit? department;
   final UserOrgUnit? jobTitle;
@@ -40,6 +42,7 @@ class UserModel {
       email: json['email'] as String? ?? '',
       phone: json['phone'] as String?,
       profilePictureUrl: json['profile_picture_url'] as String?,
+      faceData: json['face_data'] as String?,
       institution: json['institution'] != null
           ? UserOrgUnit.fromJson(json['institution'] as Map<String, dynamic>)
           : null,

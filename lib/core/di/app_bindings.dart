@@ -20,6 +20,7 @@ import '../../features/presensi/data/repositories/presensi_repository.dart';
 import '../../features/presensi/data/services/face_service.dart';
 import '../../features/presensi/data/services/location_service.dart';
 import '../../features/presensi/presentation/controllers/presensi_controller.dart';
+import '../../features/profile/data/repositories/profile_repository.dart';
 import '../../features/profile/presentation/controllers/profile_controller.dart';
 import '../../features/profile/presentation/controllers/theme_controller.dart';
 import '../../features/submission/data/services/submission_service.dart';
@@ -119,6 +120,7 @@ class AppBindings extends Bindings {
     );
 
     // ── Profile ───────────────────────────────────────────────────────────────
+    Get.put<ProfileRepository>(ProfileRepositoryImpl(dio), permanent: true);
     Get.put<ProfileController>(ProfileController(), permanent: true);
 
     // ── Theme ─────────────────────────────────────────────────────────────────
