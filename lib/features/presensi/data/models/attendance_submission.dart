@@ -59,8 +59,9 @@ class AttendanceSubmissionResponse {
       id: json['id'] as int,
       status: json['status'] as String? ?? '',
       attendedAt: json['attended_at'] as String? ?? '',
-      distanceToLocationMeters:
-          (json['distance_to_location_meters'] as num?)?.toDouble(),
+      distanceToLocationMeters: json['distance_to_location_meters'] != null
+          ? double.tryParse(json['distance_to_location_meters'].toString())
+          : null,
       message: null,
     );
   }

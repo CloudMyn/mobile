@@ -142,7 +142,10 @@ class HomeController extends GetxController {
 
     final locations = dashboardData.value?.institutionInfo?.locations ?? [];
     final settings = dashboardData.value?.settings;
-    final defaultRadius = (settings?['attendance']?['default_radius_meters'] as num?)?.toInt() ?? 100;
+    final rawRadius = settings?['attendance']?['default_radius_meters'];
+    final defaultRadius = rawRadius != null
+        ? (num.tryParse(rawRadius.toString())?.toInt() ?? 100)
+        : 100;
 
     final config = AttendanceConfig.fromRecord(record, locations, defaultRadius);
     Get.find<PresensiController>().setConfig(record.attendanceType.code, config);

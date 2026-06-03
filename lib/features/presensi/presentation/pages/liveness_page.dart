@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,7 +17,7 @@ import '../../../../design_system/tokens/app_typography.dart';
 enum _LivenessStep { align, blink, smile, done }
 
 /// Halaman liveness detection berbasis ML Kit.
-/// Mengembalikan [true] jika semua langkah berhasil, [null] jika dibatalkan.
+/// Mengembalikan [Uint8List] jika semua langkah berhasil (foto ditangkap otomatis), [null] jika dibatalkan.
 /// Setelah 3 kegagalan berturut-turut, mengembalikan [false].
 class LivenessPage extends StatefulWidget {
   const LivenessPage({super.key});
@@ -121,7 +122,7 @@ class _LivenessPageState extends State<LivenessPage>
       );
       await _camCtrl!.initialize();
 
-      if (mounted) {
+      if (mounted && _camCtrl != null && _camCtrl!.value.isInitialized) {
         setState(() => _isInitialized = true);
         _startStream();
       }
@@ -135,6 +136,8 @@ class _LivenessPageState extends State<LivenessPage>
   // =========================================================================
 
   void _startStream() {
+    if (_camCtrl == null || !_camCtrl!.value.isInitialized) return;
+    
     _camCtrl?.startImageStream((CameraImage image) async {
       if (_isDetecting || !mounted) return;
       _isDetecting = true;
@@ -268,8 +271,22 @@ class _LivenessPageState extends State<LivenessPage>
 
   Future<void> _onLivenessPassed() async {
     await _camCtrl?.stopImageStream();
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (mounted) Get.back(result: true);
+    
+    // Beri sedikit waktu untuk memastikan stream benar-benar berhenti
+    await Future.delayed(const Duration(milliseconds: 200));
+    
+    Uint8List? capturedBytes;
+    try {
+      if (_camCtrl != null && _camCtrl!.value.isInitialized) {
+        final xFile = await _camCtrl!.takePicture();
+        capturedBytes = await xFile.readAsBytes();
+      }
+    } catch (e) {
+      debugPrint('Error taking picture after liveness: $e');
+    }
+
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (mounted) Get.back(result: capturedBytes); // Mengembalikan byte gambar, bukan bool
   }
 
   // =========================================================================
@@ -393,24 +410,26 @@ class _LivenessPageState extends State<LivenessPage>
 
   Widget _buildError(AppColors colors, AppTypography typography) {
     return Center(
-      child: Padding(
-        padding: EdgeInsets.all(AppSpacing.s32.w),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          spacing: AppSpacing.s16,
-          children: [
-            Icon(Icons.face_retouching_off_rounded,
-                color: Colors.white54, size: 64.sp),
-            Text(
-              _initError!,
-              textAlign: TextAlign.center,
-              style: typography.bodyMedium.copyWith(color: Colors.white70),
-            ),
-            AppButton(
-              label: 'Buka Pengaturan',
-              onPressed: openAppSettings,
-            ),
-          ],
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.s32.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: AppSpacing.s16,
+            children: [
+              Icon(Icons.face_retouching_off_rounded,
+                  color: Colors.white54, size: 64.sp),
+              Text(
+                _initError!,
+                textAlign: TextAlign.center,
+                style: typography.bodyMedium.copyWith(color: Colors.white70),
+              ),
+              AppButton(
+                label: 'Buka Pengaturan',
+                onPressed: openAppSettings,
+              ),
+            ],
+          ),
         ),
       ),
     );

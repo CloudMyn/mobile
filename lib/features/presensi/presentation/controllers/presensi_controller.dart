@@ -178,22 +178,22 @@ class PresensiController extends GetxController {
 
     if (cfg.faceRecognition) {
       step.value = PresensiStep.liveness;
-      final result = await Get.to<bool?>(() => const LivenessPage());
-      if (result != true) {
+      final resultBytes = await Get.to<Uint8List?>(() => const LivenessPage());
+      if (resultBytes == null) {
         _setError(
           PresensiErrorType.livenessFailed,
-          'Liveness detection tidak berhasil. Silakan coba lagi.',
+          'Liveness detection tidak berhasil atau dibatalkan. Silakan coba lagi.',
         );
         return;
       }
-      // Liveness passed — set default score; face capture berikutnya jika diperlukan
+      // Liveness passed — set default score
       faceScore.value = 0.92;
 
-      if (cfg.faceCapture) {
-        await _handleFaceCapture();
-      } else {
-        await _submitPresensi();
-      }
+      // Langsung gunakan foto dari liveness, kompres, dan submit (skip FaceCapturePage)
+      final compressed = await _faceService.cropAndCompress(resultBytes);
+      faceImageBytes.value = compressed ?? resultBytes;
+      await _submitPresensi();
+
     } else if (cfg.faceCapture) {
       step.value = PresensiStep.faceCapture;
       await _handleFaceCapture();
