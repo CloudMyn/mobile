@@ -32,6 +32,7 @@ class _LivenessPageState extends State<LivenessPage>
   bool _isInitialized = false;
   bool _isDetecting = false;
   String? _initError;
+  Size? _screenSize;
 
   _LivenessStep _step = _LivenessStep.align;
   int _failCount = 0;
@@ -152,15 +153,32 @@ class _LivenessPageState extends State<LivenessPage>
     if (inputImage == null) return;
 
     final faces = await _detector!.processImage(inputImage);
-    if (faces.isEmpty || !mounted) return;
+    if (faces.isEmpty || !mounted) {
+      // Jika wajah tidak terdeteksi, reset progres kembali ke langkah awal (align)
+      if (_step != _LivenessStep.align && _step != _LivenessStep.done) {
+        _advanceTo(_LivenessStep.align);
+      }
+      return;
+    }
 
     final face = faces.first;
+
+    // Pastikan wajah berada di dalam area lingkaran panduan
+    final isInside = _isFaceInCircle(face, image);
+    if (!isInside) {
+      // Jika wajah keluar dari lingkaran, reset progres kembali ke langkah awal (align)
+      if (_step != _LivenessStep.align && _step != _LivenessStep.done) {
+        _advanceTo(_LivenessStep.align);
+      }
+      return;
+    }
+
     final now = DateTime.now();
     if (now.difference(_lastStepChange) < _stepCooldown) return;
 
     switch (_step) {
       case _LivenessStep.align:
-        // Wajah terdeteksi → lanjut ke blink
+        // Wajah terdeteksi di dalam circle → lanjut ke blink
         _advanceTo(_LivenessStep.blink);
       case _LivenessStep.blink:
         final leftEye = face.leftEyeOpenProbability ?? 1.0;
@@ -177,6 +195,47 @@ class _LivenessPageState extends State<LivenessPage>
       case _LivenessStep.done:
         break;
     }
+  }
+
+  bool _isFaceInCircle(Face face, CameraImage image) {
+    if (_screenSize == null || _camCtrl == null) return false;
+
+    final camera = _camCtrl!.description;
+    final rotation = InputImageRotationValue.fromRawValue(
+          camera.sensorOrientation,
+        ) ??
+        InputImageRotation.rotation0deg;
+
+    final isRotated = rotation == InputImageRotation.rotation90deg ||
+        rotation == InputImageRotation.rotation270deg;
+
+    final double imageWidth = (isRotated ? image.height : image.width).toDouble();
+    final double imageHeight = (isRotated ? image.width : image.height).toDouble();
+
+    final double scaleX = _screenSize!.width / imageWidth;
+    final double scaleY = _screenSize!.height / imageHeight;
+    final double scale = scaleX > scaleY ? scaleX : scaleY;
+
+    final double dx = (_screenSize!.width - imageWidth * scale) / 2;
+    final double dy = (_screenSize!.height - imageHeight * scale) / 2;
+
+    final double faceScreenX = face.boundingBox.center.dx * scale + dx;
+    final double faceScreenY = face.boundingBox.center.dy * scale + dy;
+    final double faceScreenWidth = face.boundingBox.width * scale;
+
+    final faceCenter = Offset(faceScreenX, faceScreenY);
+    final circleCenter = Offset(_screenSize!.width / 2, _screenSize!.height * 0.42);
+    final circleRadius = _screenSize!.width * 0.4;
+
+    final dist = (faceCenter - circleCenter).distance;
+
+    // Deteksi valid jika pusat wajah dekat dengan pusat lingkaran
+    // dan ukuran wajah proporsional terhadap ukuran lingkaran
+    final isCentered = dist < circleRadius * 0.4;
+    final isRightSize = faceScreenWidth >= circleRadius * 0.8 &&
+        faceScreenWidth <= circleRadius * 1.8;
+
+    return isCentered && isRightSize;
   }
 
   InputImage? _toInputImage(CameraImage image) {
@@ -233,6 +292,7 @@ class _LivenessPageState extends State<LivenessPage>
 
   @override
   Widget build(BuildContext context) {
+    _screenSize = MediaQuery.of(context).size;
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
 

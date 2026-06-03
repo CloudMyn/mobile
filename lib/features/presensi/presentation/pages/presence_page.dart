@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../design_system/components/app_button.dart';
+import '../../../../design_system/components/app_skeleton.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
@@ -53,91 +56,251 @@ class _PresencePageState extends State<PresencePage> {
         final config = ctrl.config.value;
 
         if (config == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(AppSpacing.s24.w),
+          return SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  config.faceRecognition || config.faceCapture
-                      ? 'Autentikasi Wajah & Lokasi'
-                      : 'Verifikasi Lokasi',
-                  style: typography.headlineSmall.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colors.onSurface,
-                  ),
+                const Expanded(
+                  flex: 6,
+                  child: AppSkeleton(),
                 ),
-                SizedBox(height: AppSpacing.s24.h),
-                _buildRequirementsCard(colors, typography),
-                SizedBox(height: AppSpacing.s24.h),
-                _buildLocationStatusCard(colors, typography),
-                const Spacer(),
-                if (step == PresensiStep.geofenceCheck ||
-                    step == PresensiStep.submitting)
-                  Center(child: CircularProgressIndicator(color: colors.primary))
-                else if (step == PresensiStep.error)
-                  Text(
-                    ctrl.errorMessage.value ?? 'Terjadi kesalahan',
-                    style: typography.bodyMedium.copyWith(color: colors.error),
-                    textAlign: TextAlign.center,
+                Expanded(
+                  flex: 6,
+                  child: Padding(
+                    padding: EdgeInsets.all(AppSpacing.s20.w),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            physics: const NeverScrollableScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                AppSkeleton(
+                                  height: 90.h,
+                                  borderRadius: AppRadius.r16,
+                                ),
+                                SizedBox(height: AppSpacing.s16.h),
+                                AppSkeleton(
+                                  height: 80.h,
+                                  borderRadius: AppRadius.r16,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: AppSpacing.s16.h),
+                        AppSkeleton(
+                          height: 50.h,
+                          borderRadius: AppRadius.r8,
+                        ),
+                      ],
+                    ),
                   ),
-                SizedBox(height: AppSpacing.s16.h),
-                AppButton(
-                  label: 'Lanjutkan Presensi',
-                  onPressed: ctrl.isInsideGeofence.value ? ctrl.proceedPresensi : null,
-                  fullWidth: true,
                 ),
               ],
             ),
+          );
+        }
+
+        return SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 6,
+                child: _buildMap(colors, typography),
+              ),
+              Expanded(
+                flex: 6,
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.s20.w),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildLocationStatusCard(colors, typography),
+                              SizedBox(height: AppSpacing.s16.h),
+                              _buildCompactRequirements(colors, typography),
+                              if (step == PresensiStep.error) ...[
+                                SizedBox(height: AppSpacing.s16.h),
+                                Text(
+                                  ctrl.errorMessage.value ?? 'Terjadi kesalahan',
+                                  style: typography.bodyMedium.copyWith(color: colors.error),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: AppSpacing.s16.h),
+                      AppButton(
+                        label: 'Lanjutkan Presensi',
+                        onPressed: ctrl.isInsideGeofence.value ? ctrl.proceedPresensi : null,
+                        isLoading: step == PresensiStep.submitting,
+                        fullWidth: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       }),
     );
   }
 
-  Widget _buildRequirementsCard(AppColors colors, AppTypography typography) {
+  Widget _buildMap(AppColors colors, AppTypography typography) {
+    final pos = ctrl.currentPosition.value;
+    final cfg = ctrl.config.value;
+
+    if (pos == null || cfg == null) {
+      return const AppSkeleton();
+    }
+
+    final userLatLng = LatLng(pos.latitude, pos.longitude);
+    final validLocations = cfg.validLocations;
+
+    return FlutterMap(
+      options: MapOptions(
+        initialCenter: userLatLng,
+        initialZoom: 16.0,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+        ),
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.barru_kab.presensi',
+        ),
+        CircleLayer(
+          circles: validLocations.map((loc) {
+            return CircleMarker(
+              point: LatLng(loc.latitude, loc.longitude),
+              color: colors.primary.withValues(alpha: 0.2),
+              borderColor: colors.primary,
+              borderStrokeWidth: 2,
+              useRadiusInMeter: true,
+              radius: (loc.radiusMeters ?? cfg.defaultRadius).toDouble(),
+            );
+          }).toList(),
+        ),
+        MarkerLayer(
+          markers: [
+            Marker(
+              point: userLatLng,
+              width: 40,
+              height: 40,
+              child: const Icon(Icons.person_pin_circle, color: Colors.blue, size: 40),
+            ),
+            ...validLocations.map((loc) {
+              return Marker(
+                point: LatLng(loc.latitude, loc.longitude),
+                width: 40,
+                height: 40,
+                child: Icon(Icons.location_on, color: colors.error, size: 40),
+              );
+            }),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompactRequirements(AppColors colors, AppTypography typography) {
     final cfg = ctrl.config.value!;
 
     return Container(
-      padding: EdgeInsets.all(AppSpacing.s16.w),
+      padding: EdgeInsets.all(AppSpacing.s12.w),
       decoration: BoxDecoration(
         color: colors.background,
         borderRadius: BorderRadius.circular(AppRadius.r16),
+        border: Border.all(color: colors.onSurface.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Syarat Presensi:',
-            style: typography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: AppSpacing.s12.h),
-          _RequirementRow(
-            colors: colors,
-            typography: typography,
-            icon: Icons.location_on_rounded,
-            title: 'Lokasi (GPS)',
-            isMet: cfg.requiredLocation,
+            'Syarat Presensi',
+            style: typography.titleSmall.copyWith(fontWeight: FontWeight.bold),
           ),
           SizedBox(height: AppSpacing.s8.h),
-          _RequirementRow(
-            colors: colors,
-            typography: typography,
-            icon: Icons.camera_alt_rounded,
-            title: 'Foto / Selfie',
-            isMet: cfg.faceCapture,
+          Wrap(
+            spacing: AppSpacing.s8.w,
+            runSpacing: AppSpacing.s8.h,
+            children: [
+              _buildCompactChip(
+                colors,
+                typography,
+                Icons.location_on_rounded,
+                'Lokasi',
+                cfg.requiredLocation,
+              ),
+              _buildCompactChip(
+                colors,
+                typography,
+                Icons.camera_alt_rounded,
+                'Foto',
+                cfg.faceCapture,
+              ),
+              _buildCompactChip(
+                colors,
+                typography,
+                Icons.face_retouching_natural_rounded,
+                'Liveness',
+                cfg.faceRecognition,
+              ),
+            ],
           ),
-          SizedBox(height: AppSpacing.s8.h),
-          _RequirementRow(
-            colors: colors,
-            typography: typography,
-            icon: Icons.face_retouching_natural_rounded,
-            title: 'Verifikasi Wajah (Liveness)',
-            isMet: cfg.faceRecognition,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactChip(
+    AppColors colors,
+    AppTypography typography,
+    IconData icon,
+    String label,
+    bool isRequired,
+  ) {
+    if (!isRequired) return const SizedBox.shrink();
+    
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.s8.w,
+        vertical: AppSpacing.s4.h,
+      ),
+      decoration: BoxDecoration(
+        color: colors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.r8),
+        border: Border.all(
+          color: colors.primary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: colors.primary,
+            size: 16.w,
+          ),
+          SizedBox(width: 4.w),
+          Text(
+            label,
+            style: typography.bodySmall.copyWith(
+              color: colors.primary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -149,7 +312,7 @@ class _PresencePageState extends State<PresencePage> {
     final isChecking = ctrl.step.value == PresensiStep.geofenceCheck;
 
     if (!cfg.needsGeofenceCheck) {
-      return Container();
+      return const SizedBox.shrink();
     }
 
     final isInside = ctrl.isInsideGeofence.value;
@@ -169,118 +332,97 @@ class _PresencePageState extends State<PresencePage> {
         : (isInside ? 'Di dalam area presensi' : 'Di luar area presensi');
 
     return Container(
-      padding: EdgeInsets.all(AppSpacing.s16.w),
+      padding: EdgeInsets.all(AppSpacing.s12.w),
       decoration: BoxDecoration(
         border: Border.all(color: statusColor.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(AppRadius.r16),
         color: statusColor.withValues(alpha: 0.05),
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(statusIcon, color: statusColor, size: 28.w),
-              SizedBox(width: AppSpacing.s12.w),
-              Expanded(
-                child: Text(
-                  statusText,
-                  style: typography.titleMedium.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              if (!isChecking)
-                 IconButton(
-                    icon: Icon(Icons.refresh_rounded, color: colors.primary),
-                    onPressed: () => ctrl.checkLocation(),
-                 ),
-            ],
-          ),
-          if (!isChecking) ...[
-            SizedBox(height: AppSpacing.s12.h),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: isChecking
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Jarak:',
-                  style: typography.bodyMedium,
+                Row(
+                  children: [
+                    AppSkeleton.circle(size: 24.w),
+                    SizedBox(width: AppSpacing.s12.w),
+                    Expanded(
+                      child: AppSkeleton(height: 20.h),
+                    ),
+                  ],
                 ),
-                Text(
-                  '${dist.toStringAsFixed(0)} meter',
-                  style: typography.bodyMedium
-                      .copyWith(fontWeight: FontWeight.bold),
+                SizedBox(height: AppSpacing.s12.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    AppSkeleton(height: 16.h, width: 60.w),
+                    AppSkeleton(height: 16.h, width: 80.w),
+                  ],
+                ),
+                SizedBox(height: AppSpacing.s8.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    AppSkeleton(height: 16.h, width: 100.w),
+                    AppSkeleton(height: 16.h, width: 120.w),
+                  ],
                 ),
               ],
-            ),
-            if (locName != null) ...[
-              SizedBox(height: AppSpacing.s4.h),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Titik Terdekat:',
-                    style: typography.bodyMedium,
-                  ),
-                  Expanded(
-                    child: Text(
-                      locName,
-                      style: typography.bodyMedium
-                          .copyWith(fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.right,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+            )
+          : Column(
+              children: [
+                Row(
+                  children: [
+                    Icon(statusIcon, color: statusColor, size: 24.w),
+                    SizedBox(width: AppSpacing.s12.w),
+                    Expanded(
+                      child: Text(
+                        statusText,
+                        style: typography.titleMedium.copyWith(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
+                    IconButton(
+                      icon: Icon(Icons.refresh_rounded, color: colors.primary),
+                      onPressed: () => ctrl.checkLocation(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                SizedBox(height: AppSpacing.s8.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Jarak:', style: typography.bodyMedium),
+                    Text(
+                      '${dist.toStringAsFixed(0)} meter',
+                      style: typography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                if (locName != null) ...[
+                  SizedBox(height: AppSpacing.s4.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Titik Terdekat:', style: typography.bodyMedium),
+                      Expanded(
+                        child: Text(
+                          locName,
+                          style: typography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.right,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-              ),
-            ],
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _RequirementRow extends StatelessWidget {
-  final AppColors colors;
-  final AppTypography typography;
-  final IconData icon;
-  final String title;
-  final bool isMet;
-
-  const _RequirementRow({
-    required this.colors,
-    required this.typography,
-    required this.icon,
-    required this.title,
-    required this.isMet,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          isMet
-              ? Icons.check_circle_rounded
-              : Icons.radio_button_unchecked_rounded,
-          color: isMet ? colors.success : colors.onSurface.withValues(alpha: 0.3),
-          size: 20.w,
-        ),
-        SizedBox(width: AppSpacing.s12.w),
-        Icon(icon, color: colors.onSurface, size: 20.w),
-        SizedBox(width: AppSpacing.s8.w),
-        Expanded(
-          child: Text(
-            title,
-            style: typography.bodyMedium.copyWith(
-              color: isMet ? colors.onSurface : colors.onSurface.withValues(alpha: 0.5),
-              decoration: isMet ? null : TextDecoration.lineThrough,
+              ],
             ),
-          ),
-        ),
-      ],
     );
   }
 }

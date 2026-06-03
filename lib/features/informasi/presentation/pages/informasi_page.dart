@@ -75,16 +75,20 @@ class _InformasiPageState extends State<InformasiPage> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async => _ctrl.isLoading.value = false,
+        onRefresh: _ctrl.loadData,
         child: Obx(() {
           final pinned = _ctrl.pinnedItems;
           final list = _ctrl.filteredItems;
 
           if (pinned.isEmpty && list.isEmpty) {
-            return const AppEmptyState(
+            if (_ctrl.isLoading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return AppEmptyState(
               icon: Icons.newspaper_rounded,
               title: 'Tidak ada informasi',
-              subtitle: 'Coba ubah filter atau periksa kembali nanti.',
+              subtitle: _ctrl.errorMessage.value ??
+                  'Coba ubah filter atau periksa kembali nanti.',
             );
           }
 

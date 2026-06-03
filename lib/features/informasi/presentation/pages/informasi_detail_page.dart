@@ -28,6 +28,7 @@ class _InformasiDetailPageState extends State<InformasiDetailPage> {
   void initState() {
     super.initState();
     _ctrl = Get.find<InformasiController>();
+    _ctrl.loadComments(widget.item.slug, widget.item.id);
   }
 
   @override

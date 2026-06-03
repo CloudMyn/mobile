@@ -17,6 +17,22 @@ class CommentItem {
     this.replies = const [],
   });
 
+  factory CommentItem.fromJson(Map<String, dynamic> json) {
+    final author = json['author'] as Map<String, dynamic>?;
+    return CommentItem(
+      id: '${json['id']}',
+      authorName: author?['name']?.toString() ?? 'User',
+      content: json['content']?.toString() ?? '',
+      parentId: json['parent_id']?.toString(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+          DateTime.now(),
+      depth: json['depth'] as int? ?? 1,
+      replies: (json['replies'] as List<dynamic>? ?? [])
+          .map((reply) => CommentItem.fromJson(reply as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
   CommentItem copyWith({List<CommentItem>? replies}) {
     return CommentItem(
       id: id,

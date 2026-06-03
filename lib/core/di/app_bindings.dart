@@ -11,6 +11,7 @@ import '../../features/home/data/services/dashboard_service.dart';
 import '../../features/home/data/services/statistik_service.dart';
 import '../../features/home/presentation/controllers/home_controller.dart';
 import '../../features/home/presentation/controllers/statistik_controller.dart';
+import '../../features/informasi/data/services/informasi_service.dart';
 import '../../features/informasi/presentation/controllers/informasi_controller.dart';
 import '../../features/kinerja/data/services/kinerja_service.dart';
 import '../../features/kinerja/presentation/controllers/kinerja_controller.dart';
@@ -124,6 +125,10 @@ class AppBindings extends Bindings {
     Get.put<ThemeController>(ThemeController(), permanent: true);
 
     // ── Informasi ─────────────────────────────────────────────────────────────
-    Get.put<InformasiController>(InformasiController(), permanent: true);
+    Get.put<InformasiService>(InformasiService(dio), permanent: true);
+    Get.put<InformasiController>(
+      InformasiController(service: Get.find<InformasiService>()),
+      permanent: true,
+    );
   }
 }

@@ -49,9 +49,17 @@ class ProfileTab extends StatelessWidget {
     AppColors colors,
     AppTypography typography,
   ) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.s16.w),
-      child: Column(
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.wait([
+          ctrl.loadProfile(),
+          ctrl.loadShifts(),
+        ]);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.s16.w),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _ProfileHeader(ctrl: ctrl, colors: colors, typography: typography),
@@ -158,8 +166,9 @@ class ProfileTab extends StatelessWidget {
           SizedBox(height: AppSpacing.s32.h),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Future<void> _openFaq() async {
     final uri = Uri.parse(AppConstants.faqUrl);
