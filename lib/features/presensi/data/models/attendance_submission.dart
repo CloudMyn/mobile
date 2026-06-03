@@ -8,6 +8,7 @@ class AttendanceSubmissionRequest {
     this.latitude,
     this.longitude,
     this.accuracyMeters,
+    this.distanceMeters,
     required this.deviceUuid,
     this.faceScore,
     this.photoBytes,
@@ -21,6 +22,7 @@ class AttendanceSubmissionRequest {
   final double? latitude;
   final double? longitude;
   final double? accuracyMeters;
+  final double? distanceMeters;
 
   /// UUID perangkat dari [TokenStorage.getOrCreateDeviceUuid()]
   final String deviceUuid;

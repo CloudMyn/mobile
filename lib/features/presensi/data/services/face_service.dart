@@ -11,7 +11,7 @@ class FaceService {
   /// Return null jika gambar tidak valid.
   Future<Uint8List?> cropAndCompress(
     Uint8List originalBytes, {
-    int maxBytes = 50000,
+    int maxBytes = 100000,
   }) async {
     final decoded = img.decodeImage(originalBytes);
     if (decoded == null) return null;

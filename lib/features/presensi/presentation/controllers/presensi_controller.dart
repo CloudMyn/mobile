@@ -234,6 +234,7 @@ class PresensiController extends GetxController {
       latitude: pos?.latitude,
       longitude: pos?.longitude,
       accuracyMeters: pos?.accuracy,
+      distanceMeters: distanceToFence.value,
       faceScore: faceScore.value,
       photoBytes: faceImageBytes.value,
     );

@@ -22,6 +22,8 @@ class PresensiRepositoryImpl implements PresensiRepository {
         if (request.longitude != null) 'longitude': request.longitude,
         if (request.accuracyMeters != null)
           'accuracy_meters': request.accuracyMeters,
+        if (request.distanceMeters != null)
+          'distance_meters': request.distanceMeters,
         'device_uuid': request.deviceUuid,
         if (request.faceScore != null) 'face_score': request.faceScore,
         if (request.photoBytes != null)
