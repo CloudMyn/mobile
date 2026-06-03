@@ -33,23 +33,62 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenUtilInit(
-      designSize: const Size(375, 812),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      builder: (context, child) {
-        return GetMaterialApp(
-          title: AppConstants.appName,
-          debugShowCheckedModeBanner: false,
-          initialBinding: AppBindings(
-            prefs: prefs,
-            secureStorage: secureStorage,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const maxMobileWidth = 430.0;
+        final isWide = constraints.maxWidth > maxMobileWidth;
+        
+        // Agar flutter_screenutil (.w, .h, .sp) tetap menghitung skala secara proporsional 
+        // terhadap maxMobileWidth (430) dan bukan terhadap lebar asli tablet (misal 1000px), 
+        // kita menyesuaikan designWidth dengan rumus matematika:
+        final realWidth = constraints.maxWidth;
+        final designWidth = isWide 
+            ? (realWidth * 375.0 / maxMobileWidth) 
+            : 375.0;
+
+        return ScreenUtilInit(
+          designSize: Size(designWidth, 812),
+          minTextAdapt: true,
+          splitScreenMode: true,
+          builder: (context, _) => GetMaterialApp(
+            title: AppConstants.appName,
+            debugShowCheckedModeBanner: false,
+            initialBinding: AppBindings(
+              prefs: prefs,
+              secureStorage: secureStorage,
+            ),
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: ThemeMode.light,
+            home: const SplashPage(),
+            defaultTransition: Transition.cupertino,
+            builder: (context, child) {
+              final mediaQuery = MediaQuery.of(context);
+              
+              if (!isWide) {
+                return child ?? const SizedBox();
+              }
+
+              // Timpa MediaQuery agar widget child membaca ukuran maxMobileWidth (430)
+              final constrainedMediaQueryData = mediaQuery.copyWith(
+                size: Size(maxMobileWidth, mediaQuery.size.height),
+              );
+
+              return Container(
+                color: Colors.black12,
+                child: Center(
+                  child: SizedBox(
+                    width: maxMobileWidth,
+                    height: mediaQuery.size.height,
+                    child: MediaQuery(
+                      data: constrainedMediaQueryData,
+                      child: child ?? const SizedBox(),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          themeMode: ThemeMode.light,
-          home: const SplashPage(),
-          defaultTransition: Transition.cupertino,
         );
       },
     );
