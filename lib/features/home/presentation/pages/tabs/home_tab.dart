@@ -16,41 +16,32 @@ class HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<HomeController>();
-
-    return RefreshIndicator(
-      onRefresh: () => controller.refreshData(),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.symmetric(
-          horizontal: AppSpacing.s12.w,
-          vertical: AppSpacing.s12.h,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const NotificationBell(),
-                const DateTimeWidget(),
-              ],
-            ),
-
-            SizedBox(height: AppSpacing.s8.h),
-            const AttendanceCard(),
-            SizedBox(height: AppSpacing.s16.h),
-
-            const QuickActionGrid(),
-            SizedBox(height: AppSpacing.s24.h),
-
-            // ── Ads Placeholder ────────────────────────────────
-            _AdsPlaceholder(),
-
-            SizedBox(height: AppSpacing.s32.h),
-          ],
-        ),
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.s12.w,
+        vertical: AppSpacing.s12.h,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const NotificationBell(),
+              const DateTimeWidget(),
+            ],
+          ),
+          SizedBox(height: AppSpacing.s8.h),
+          const AttendanceCard(),
+          SizedBox(height: AppSpacing.s16.h),
+          const QuickActionGrid(),
+          SizedBox(height: AppSpacing.s24.h),
+          // ── Ads Placeholder ────────────────────────────────
+          const _AdsPlaceholder(),
+          SizedBox(height: AppSpacing.s32.h),
+        ],
       ),
     );
   }

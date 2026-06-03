@@ -86,7 +86,7 @@ class TodaySchedule {
 
   bool get isWorkday {
     final status = dayStatus.toLowerCase();
-    return status == 'workday' || status == 'partial';
+    return status == 'workday' || status == 'partial' || status == 'present';
   }
 
   String get dayStatusLabel {
@@ -94,6 +94,7 @@ class TodaySchedule {
     return switch (status) {
       'workday' => 'Hari Kerja',
       'partial' => 'Hari Kerja Sebagian',
+      'present' => 'Hadir',
       'holiday' => 'Hari Libur',
       'weekend' => 'Akhir Pekan',
       _ => dayStatus,
@@ -197,7 +198,7 @@ class TodayRecord {
   final String? photoUrl;
   final RequiredLocation? requiredLocation;
 
-  bool get isPending => status == 'Pending';
+  bool get isPending => status.toLowerCase() == 'pending';
   bool get isCompleted => attendedAt != null;
 
   DateTime? get windowOpenDateTime =>
@@ -251,6 +252,7 @@ class AttendanceTypeConfig {
     required this.requiresDeviceLock,
     required this.isSkippable,
     required this.isActive,
+    required this.lateToleranceMinutes,
   });
 
   final int id;
@@ -263,6 +265,7 @@ class AttendanceTypeConfig {
   final bool requiresDeviceLock;
   final bool isSkippable;
   final bool isActive;
+  final int lateToleranceMinutes;
 
   factory AttendanceTypeConfig.fromJson(Map<String, dynamic> json) {
     return AttendanceTypeConfig(
@@ -277,6 +280,7 @@ class AttendanceTypeConfig {
       requiresDeviceLock: json['requires_device_lock'] as bool? ?? false,
       isSkippable: json['is_skippable'] as bool? ?? true,
       isActive: json['is_active'] as bool? ?? true,
+      lateToleranceMinutes: int.tryParse(json['late_tolerance_minutes']?.toString() ?? '') ?? 0,
     );
   }
 }
@@ -287,22 +291,22 @@ class RequiredLocation {
     required this.name,
     required this.latitude,
     required this.longitude,
-    required this.radiusMeters,
+    this.radiusMeters,
   });
 
   final int id;
   final String name;
   final double latitude;
   final double longitude;
-  final int radiusMeters;
+  final int? radiusMeters;
 
   factory RequiredLocation.fromJson(Map<String, dynamic> json) {
     return RequiredLocation(
       id: json['id'] as int,
       name: json['name'] as String? ?? '',
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
-      radiusMeters: json['radius_meters'] as int? ?? 100,
+      latitude: double.tryParse(json['latitude']?.toString() ?? '') ?? 0.0,
+      longitude: double.tryParse(json['longitude']?.toString() ?? '') ?? 0.0,
+      radiusMeters: int.tryParse(json['radius_meters']?.toString() ?? ''),
     );
   }
 }
@@ -335,12 +339,15 @@ class DashboardTpp {
       id: json['id'] as int,
       periodDate: json['period_date'] as String? ?? '',
       amountBeforeDeduction:
-          (json['amount_before_deduction'] as num?)?.toDouble() ?? 0,
+          double.tryParse(json['amount_before_deduction']?.toString() ?? '') ?? 0.0,
       amountAfterDeduction:
-          (json['amount_after_deduction'] as num?)?.toDouble() ?? 0,
-      deductionAmount: (json['deduction_amount'] as num?)?.toDouble() ?? 0,
-      disciplineScore: (json['discipline_score'] as num?)?.toDouble() ?? 0,
-      activityScore: (json['activity_score'] as num?)?.toDouble() ?? 0,
+          double.tryParse(json['amount_after_deduction']?.toString() ?? '') ?? 0.0,
+      deductionAmount:
+          double.tryParse(json['deduction_amount']?.toString() ?? '') ?? 0.0,
+      disciplineScore:
+          double.tryParse(json['discipline_score']?.toString() ?? '') ?? 0.0,
+      activityScore:
+          double.tryParse(json['activity_score']?.toString() ?? '') ?? 0.0,
     );
   }
 }

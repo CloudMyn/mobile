@@ -5,24 +5,21 @@ class AttendanceConfig {
   final bool faceCapture;
   final bool geofenceEnabled;
   final bool requiredLocation;
-  final double? geofenceLat;
-  final double? geofenceLng;
-  final double? geofenceRadius;
+  final List<RequiredLocation> validLocations;
+  final int defaultRadius;
 
   const AttendanceConfig({
     required this.faceRecognition,
     required this.faceCapture,
     required this.geofenceEnabled,
     required this.requiredLocation,
-    this.geofenceLat,
-    this.geofenceLng,
-    this.geofenceRadius,
+    required this.validLocations,
+    required this.defaultRadius,
   });
 
   bool get needsGeofenceCheck => geofenceEnabled && requiredLocation;
   bool get needsFaceWork => faceRecognition || faceCapture;
-  bool get hasValidGeofence =>
-      geofenceLat != null && geofenceLng != null && geofenceRadius != null;
+  bool get hasValidGeofence => validLocations.isNotEmpty;
 
   factory AttendanceConfig.fromJson(Map<String, dynamic> json) {
     return AttendanceConfig(
@@ -30,23 +27,24 @@ class AttendanceConfig {
       faceCapture: json['face_capture'] as bool? ?? true,
       geofenceEnabled: json['geofence'] as bool? ?? true,
       requiredLocation: json['required_location'] as bool? ?? true,
-      geofenceLat: (json['geofence_lat'] as num?)?.toDouble(),
-      geofenceLng: (json['geofence_lng'] as num?)?.toDouble(),
-      geofenceRadius: (json['geofence_radius'] as num?)?.toDouble(),
+      validLocations: [],
+      defaultRadius: 100,
     );
   }
 
   /// Buat config dari data [TodayRecord] yang berasal dari dashboard response.
-  factory AttendanceConfig.fromRecord(TodayRecord record) {
-    final loc = record.requiredLocation;
+  factory AttendanceConfig.fromRecord(
+    TodayRecord record,
+    List<RequiredLocation> locations,
+    int defaultRadius,
+  ) {
     return AttendanceConfig(
       faceRecognition: record.attendanceType.requiresFaceVerification,
       faceCapture: record.attendanceType.requiresPhoto,
       geofenceEnabled: record.attendanceType.requiresLocation,
       requiredLocation: record.attendanceType.requiresLocation,
-      geofenceLat: loc?.latitude,
-      geofenceLng: loc?.longitude,
-      geofenceRadius: loc?.radiusMeters.toDouble(),
+      validLocations: locations,
+      defaultRadius: defaultRadius,
     );
   }
 
@@ -55,18 +53,16 @@ class AttendanceConfig {
     bool? faceCapture,
     bool? geofenceEnabled,
     bool? requiredLocation,
-    double? geofenceLat,
-    double? geofenceLng,
-    double? geofenceRadius,
+    List<RequiredLocation>? validLocations,
+    int? defaultRadius,
   }) {
     return AttendanceConfig(
       faceRecognition: faceRecognition ?? this.faceRecognition,
       faceCapture: faceCapture ?? this.faceCapture,
       geofenceEnabled: geofenceEnabled ?? this.geofenceEnabled,
       requiredLocation: requiredLocation ?? this.requiredLocation,
-      geofenceLat: geofenceLat ?? this.geofenceLat,
-      geofenceLng: geofenceLng ?? this.geofenceLng,
-      geofenceRadius: geofenceRadius ?? this.geofenceRadius,
+      validLocations: validLocations ?? this.validLocations,
+      defaultRadius: defaultRadius ?? this.defaultRadius,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/components/app_bottom_nav_bar.dart';
+import '../controllers/home_controller.dart';
 import '../controllers/navigation_controller.dart';
 import '../../../informasi/presentation/pages/informasi_page.dart';
 import 'tabs/activity_tab.dart';
@@ -27,13 +28,17 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final navController = Get.put(NavigationController());
+    final homeController = Get.find<HomeController>();
 
     return Scaffold(
-      body: SafeArea(
-        child: Obx(
-          () => IndexedStack(
-            index: navController.currentIndex.value,
-            children: _tabs,
+      body: RefreshIndicator(
+        onRefresh: () => homeController.refreshData(),
+        child: SafeArea(
+          child: Obx(
+            () => IndexedStack(
+              index: navController.currentIndex.value,
+              children: _tabs,
+            ),
           ),
         ),
       ),

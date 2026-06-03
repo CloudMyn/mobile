@@ -2,12 +2,16 @@ import 'dart:async';
 import 'package:get/get.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/session_manager.dart';
+import '../../../../design_system/components/app_feedback.dart';
 import '../../../../design_system/components/feedback/app_dialog.dart';
 import '../../data/models/dashboard_model.dart';
 import '../../data/models/tpp_statistic.dart';
 import '../../data/models/monthly_attendance.dart';
 import '../../data/models/leave_quota.dart';
 import '../../data/services/dashboard_service.dart';
+import '../../../presensi/data/models/attendance_config.dart';
+import '../../../presensi/presentation/controllers/presensi_controller.dart';
+import '../../../presensi/presentation/pages/presence_page.dart';
 
 class HomeController extends GetxController {
   HomeController({required DashboardService dashboardService})
@@ -82,19 +86,67 @@ class HomeController extends GetxController {
 
       // Update session user dengan data terkini dari dashboard
       Get.find<SessionManager>().setUser(data.user);
-    } on NetworkException {
+    } on NetworkException catch (e, st) {
+      print('loadDashboard NetworkException: $e\n$st');
       errorMessage.value = 'Tidak ada koneksi internet.';
-    } on ApiException catch (e) {
+    } on ApiException catch (e, st) {
+      print('loadDashboard ApiException: $e\n$st');
       errorMessage.value = e.message;
-    } catch (e) {
+    } catch (e, st) {
+      print('loadDashboard Exception: $e\n$st');
       errorMessage.value = 'Gagal memuat data.';
     } finally {
       isLoading.value = false;
+      if (errorMessage.value != null) {
+        AppFeedback.showSnackbar(
+          title: 'Gagal Memuat Dashboard',
+          message: errorMessage.value!,
+          isError: true,
+        );
+      }
     }
   }
 
   Future<void> refreshData() async {
     await loadDashboard();
+  }
+
+  // =========================================================================
+  //  Presensi Validation & Trigger
+  // =========================================================================
+
+  Future<void> validateAndStartPresensi(TodayRecord record) async {
+    if (!record.isWindowOpen) return;
+
+    final schedule = todaySchedule.value;
+    if (schedule == null) return;
+
+    if (!record.attendanceType.isSkippable) {
+      final records = schedule.records;
+      final currentIndex = records.indexWhere((r) => r.id == record.id);
+      
+      if (currentIndex > 0) {
+        final hasUncompletedPrevious = records
+            .take(currentIndex)
+            .any((r) => !r.isCompleted);
+            
+        if (hasUncompletedPrevious) {
+          AppDialog.info(
+            title: 'Urutan Presensi',
+            message: 'Anda harus menyelesaikan presensi sebelumnya terlebih dahulu.',
+          );
+          return;
+        }
+      }
+    }
+
+    final locations = dashboardData.value?.institutionInfo?.locations ?? [];
+    final settings = dashboardData.value?.settings;
+    final defaultRadius = (settings?['attendance']?['default_radius_meters'] as num?)?.toInt() ?? 100;
+
+    final config = AttendanceConfig.fromRecord(record, locations, defaultRadius);
+    Get.find<PresensiController>().setConfig(record.attendanceType.code, config);
+    Get.to(() => const PresencePage());
   }
 
   // =========================================================================

@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Aplikasi ini membutuhkan akses lokasi Anda untuk melakukan presensi berbasis geofence.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Aplikasi ini membutuhkan akses lokasi Anda untuk memverifikasi geofence presensi.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Aplikasi ini memerlukan akses kamera untuk verifikasi wajah / liveness.</string>
 </dict>
 </plist>

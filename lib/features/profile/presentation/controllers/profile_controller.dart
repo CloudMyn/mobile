@@ -9,6 +9,7 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
+import '../../../auth/data/models/user_model.dart';
 import '../../../auth/data/services/auth_service.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../data/models/employee_model.dart';
@@ -47,30 +48,75 @@ class ProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    
+    // Bind employee value to SessionManager's currentUser reactive state
+    ever(Get.find<SessionManager>().currentUser, (user) {
+      if (user != null) {
+        _updateFromUser(user);
+      }
+    });
+
+    // Populate initially from SessionManager if user is already loaded
+    final initialUser = Get.find<SessionManager>().currentUser.value;
+    if (initialUser != null) {
+      _updateFromUser(initialUser);
+    }
+
     loadProfile();
     loadShifts();
   }
 
-  // ── Data loading ─────────────────────────────────────────────────────────────
-  Future<void> loadProfile() async {
-    isLoadingProfile.value = true;
-    await Future.delayed(const Duration(milliseconds: 600));
-    employee.value = const EmployeeModel(
-      id: '001',
-      nip: '19850412 200903 1 012',
-      name: 'Budi Santoso, S.Kom.',
-      position: 'Pranata Komputer Muda',
-      unit: 'Dinas Komunikasi dan Informatika',
-      email: 'budi.santoso@barrukab.go.id',
-      phone: '08123456789',
-      address: 'Jl. Soppeng No. 1, Barru',
-      photoUrl: null,
+  void _updateFromUser(UserModel user) {
+    employee.value = EmployeeModel(
+      id: user.id.toString(),
+      nip: user.nip,
+      name: user.fullName.isNotEmpty ? user.fullName : user.name,
+      position: user.jobTitle?.name ?? '-',
+      unit: user.institution?.name ?? user.department?.name ?? '-',
+      email: user.email,
+      phone: user.phone ?? '-',
+      address: '-', // Backend response doesn't provide address in UserModel
+      photoUrl: user.profilePictureUrl,
     );
     namaCtrl.text = employee.value!.name;
     emailCtrl.text = employee.value!.email;
     phoneCtrl.text = employee.value!.phone;
     alamatCtrl.text = employee.value!.address;
-    isLoadingProfile.value = false;
+  }
+
+  // ── Data loading ─────────────────────────────────────────────────────────────
+  Future<void> loadProfile() async {
+    final sessionUser = Get.find<SessionManager>().currentUser.value;
+    if (sessionUser != null) {
+      _updateFromUser(sessionUser);
+      return;
+    }
+
+    isLoadingProfile.value = true;
+    try {
+      final user = await Get.find<AuthService>().getMe();
+      Get.find<SessionManager>().setUser(user);
+      _updateFromUser(user);
+    } catch (_) {
+      // Fallback only if API fails and no session user exists
+      employee.value = const EmployeeModel(
+        id: '001',
+        nip: '19850412 200903 1 012',
+        name: 'Budi Santoso, S.Kom.',
+        position: 'Pranata Komputer Muda',
+        unit: 'Dinas Komunikasi dan Informatika',
+        email: 'budi.santoso@barrukab.go.id',
+        phone: '08123456789',
+        address: 'Jl. Soppeng No. 1, Barru',
+        photoUrl: null,
+      );
+      namaCtrl.text = employee.value!.name;
+      emailCtrl.text = employee.value!.email;
+      phoneCtrl.text = employee.value!.phone;
+      alamatCtrl.text = employee.value!.address;
+    } finally {
+      isLoadingProfile.value = false;
+    }
   }
 
   Future<void> loadShifts() async {

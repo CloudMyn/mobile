@@ -76,88 +76,34 @@ class PresensiController extends GetxController {
   /// Jarak ke pusat geofence (meter)
   final distanceToFence = 0.0.obs;
 
+  final closestLocationName = Rx<String?>(null);
+
   // =========================================================================
-  //  Entry Point — dipanggil dari AttendanceCard
+  //  Entry Point — dipanggil dari HomeController
   // =========================================================================
 
-  /// Mulai flow presensi. Config sudah diketahui dari dashboard, tidak perlu fetch.
-  Future<void> startPresensi(String code, AttendanceConfig cfg) async {
-    if (step.value != PresensiStep.idle &&
-        step.value != PresensiStep.success &&
-        step.value != PresensiStep.error) {
-      return; // guard double-tap
-    }
-
+  void setConfig(String code, AttendanceConfig cfg) {
     _reset();
     activeCode.value = code;
     config.value = cfg;
-
-    await _proceedFromConfig(cfg);
   }
 
   // =========================================================================
-  //  Routing berdasarkan Config
+  //  Location Checking — dipanggil saat PresencePage dibuka
   // =========================================================================
 
-  Future<void> _proceedFromConfig(AttendanceConfig cfg) async {
-    if (cfg.faceRecognition) {
-      step.value = PresensiStep.liveness;
-      final result = await Get.to<bool?>(() => const LivenessPage());
-      if (result != true) {
-        _setError(
-          PresensiErrorType.livenessFailed,
-          'Liveness detection tidak berhasil. Silakan coba lagi.',
-        );
-        return;
-      }
-      // Liveness passed — set default score; face capture berikutnya jika diperlukan
-      faceScore.value = 0.92;
+  Future<void> checkLocation() async {
+    final cfg = config.value;
+    if (cfg == null) return;
 
-      if (cfg.faceCapture) {
-        await _handleFaceCapture();
-      } else {
-        await _proceedAfterFace();
-      }
-    } else if (cfg.faceCapture) {
-      step.value = PresensiStep.faceCapture;
-      await _handleFaceCapture();
-    } else {
-      await _proceedAfterFace();
-    }
-  }
-
-  // =========================================================================
-  //  Face Capture
-  // =========================================================================
-
-  Future<void> _handleFaceCapture() async {
-    step.value = PresensiStep.faceCapture;
-    final imageBytes = await Get.to<Uint8List?>(() => const FaceCapturePage());
-    if (imageBytes == null) {
-      step.value = PresensiStep.idle;
+    if (!cfg.needsGeofenceCheck) {
+      isInsideGeofence.value = true;
       return;
     }
-    final compressed = await _faceService.cropAndCompress(imageBytes);
-    faceImageBytes.value = compressed ?? imageBytes;
-    await _proceedAfterFace();
-  }
 
-  // =========================================================================
-  //  Geofence check → Submit
-  // =========================================================================
-
-  Future<void> _proceedAfterFace() async {
-    final cfg = config.value!;
-    if (cfg.needsGeofenceCheck) {
-      await _handleGeofenceCheck();
-    } else {
-      await _submitPresensi();
-    }
-  }
-
-  Future<void> _handleGeofenceCheck() async {
-    final cfg = config.value!;
     step.value = PresensiStep.geofenceCheck;
+    errorType.value = null;
+    errorMessage.value = null;
 
     final result = await _locationService.getCurrentPosition();
     if (!result.isSuccess) {
@@ -179,33 +125,96 @@ class PresensiController extends GetxController {
     currentPosition.value = pos;
 
     if (cfg.hasValidGeofence) {
-      final dist = _locationService.distanceToFence(
-        userLat: pos.latitude,
-        userLng: pos.longitude,
-        fenceLat: cfg.geofenceLat!,
-        fenceLng: cfg.geofenceLng!,
-      );
-      distanceToFence.value = dist;
+      double minDistance = double.infinity;
+      bool anyInside = false;
+      String? closestName;
 
-      final inside = _locationService.isInsideGeofence(
-        userLat: pos.latitude,
-        userLng: pos.longitude,
-        fenceLat: cfg.geofenceLat!,
-        fenceLng: cfg.geofenceLng!,
-        radiusMeters: cfg.geofenceRadius!,
-      );
-      isInsideGeofence.value = inside;
+      for (final loc in cfg.validLocations) {
+        final r = loc.radiusMeters ?? cfg.defaultRadius;
+        final dist = _locationService.distanceToFence(
+          userLat: pos.latitude,
+          userLng: pos.longitude,
+          fenceLat: loc.latitude,
+          fenceLng: loc.longitude,
+        );
 
-      if (!inside) {
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestName = loc.name;
+        }
+
+        if (_locationService.isInsideGeofence(
+          userLat: pos.latitude,
+          userLng: pos.longitude,
+          fenceLat: loc.latitude,
+          fenceLng: loc.longitude,
+          radiusMeters: r.toDouble(),
+        )) {
+          anyInside = true;
+        }
+      }
+
+      distanceToFence.value = minDistance;
+      isInsideGeofence.value = anyInside;
+      closestLocationName.value = closestName;
+    } else {
+      isInsideGeofence.value = true;
+    }
+
+    step.value = PresensiStep.idle;
+  }
+
+  // =========================================================================
+  //  Lanjutkan Presensi — dipanggil dari tombol di PresencePage
+  // =========================================================================
+
+  Future<void> proceedPresensi() async {
+    final cfg = config.value;
+    if (cfg == null) return;
+
+    if (cfg.needsGeofenceCheck && !isInsideGeofence.value) {
+      return; // Tombol seharusnya disabled
+    }
+
+    if (cfg.faceRecognition) {
+      step.value = PresensiStep.liveness;
+      final result = await Get.to<bool?>(() => const LivenessPage());
+      if (result != true) {
         _setError(
-          PresensiErrorType.outsideGeofence,
-          'Anda berada ${dist.toStringAsFixed(0)} m dari lokasi kantor. '
-          'Radius yang diizinkan: ${cfg.geofenceRadius!.toStringAsFixed(0)} m.',
+          PresensiErrorType.livenessFailed,
+          'Liveness detection tidak berhasil. Silakan coba lagi.',
         );
         return;
       }
-    }
+      // Liveness passed — set default score; face capture berikutnya jika diperlukan
+      faceScore.value = 0.92;
 
+      if (cfg.faceCapture) {
+        await _handleFaceCapture();
+      } else {
+        await _submitPresensi();
+      }
+    } else if (cfg.faceCapture) {
+      step.value = PresensiStep.faceCapture;
+      await _handleFaceCapture();
+    } else {
+      await _submitPresensi();
+    }
+  }
+
+  // =========================================================================
+  //  Face Capture
+  // =========================================================================
+
+  Future<void> _handleFaceCapture() async {
+    step.value = PresensiStep.faceCapture;
+    final imageBytes = await Get.to<Uint8List?>(() => const FaceCapturePage());
+    if (imageBytes == null) {
+      step.value = PresensiStep.idle;
+      return;
+    }
+    final compressed = await _faceService.cropAndCompress(imageBytes);
+    faceImageBytes.value = compressed ?? imageBytes;
     await _submitPresensi();
   }
 
@@ -263,20 +272,20 @@ class PresensiController extends GetxController {
     if (err == null || config.value == null || activeCode.value == null) return;
     errorType.value = null;
     errorMessage.value = null;
+    step.value = PresensiStep.idle;
 
     switch (err) {
-      case PresensiErrorType.livenessFailed:
-        await _proceedFromConfig(config.value!);
       case PresensiErrorType.locationPermissionDenied:
       case PresensiErrorType.locationPermissionPermanentlyDenied:
       case PresensiErrorType.locationServiceDisabled:
       case PresensiErrorType.locationTimeout:
       case PresensiErrorType.outsideGeofence:
-        await _handleGeofenceCheck();
+        await checkLocation();
+      case PresensiErrorType.livenessFailed:
+      case PresensiErrorType.cameraPermissionDenied:
+        await proceedPresensi();
       case PresensiErrorType.submitFailed:
         await _submitPresensi();
-      case PresensiErrorType.cameraPermissionDenied:
-        await _handleFaceCapture();
     }
   }
 
@@ -296,6 +305,7 @@ class PresensiController extends GetxController {
     currentPosition.value = null;
     isInsideGeofence.value = false;
     distanceToFence.value = 0.0;
+    closestLocationName.value = null;
   }
 
   void _setError(PresensiErrorType type, String message) {

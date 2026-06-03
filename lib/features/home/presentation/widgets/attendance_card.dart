@@ -10,9 +10,8 @@ import '../../../../design_system/tokens/app_icon_size.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
-import '../../../presensi/data/models/attendance_config.dart';
 import '../../../presensi/presentation/controllers/presensi_controller.dart';
-import '../../../presensi/presentation/widgets/geofence_bottom_sheet.dart';
+
 import '../../../presensi/presentation/widgets/presensi_step_indicator.dart';
 import '../../../profile/presentation/controllers/profile_controller.dart';
 import '../../data/models/dashboard_model.dart';
@@ -49,30 +48,11 @@ class _AttendanceCardState extends State<AttendanceCard> {
       if (loadingSteps.contains(step)) {
         AppLoadingOverlay.show(_presCtrl.stepLabel);
       } else {
-        if (Get.isDialogOpen == true) Get.back();
+        AppLoadingOverlay.hide();
       }
     }));
 
-    // Geofence bottom sheet
-    _workers.add(ever(_presCtrl.step, (PresensiStep step) {
-      final isGeofenceStep = step == PresensiStep.geofenceCheck;
-      final isLocationError = step == PresensiStep.error &&
-          (_presCtrl.errorType.value == PresensiErrorType.outsideGeofence ||
-              _presCtrl.errorType.value ==
-                  PresensiErrorType.locationPermissionDenied ||
-              _presCtrl.errorType.value ==
-                  PresensiErrorType.locationPermissionPermanentlyDenied ||
-              _presCtrl.errorType.value ==
-                  PresensiErrorType.locationServiceDisabled ||
-              _presCtrl.errorType.value ==
-                  PresensiErrorType.locationTimeout);
 
-      if (isGeofenceStep || isLocationError) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (Get.isBottomSheetOpen != true) GeofenceBottomSheet.show();
-        });
-      }
-    }));
 
     // Success → refresh dashboard
     _workers.add(ever(_presCtrl.step, (PresensiStep step) {
@@ -92,6 +72,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
         );
         _homeCtrl.onPresensiSuccess();
         _presCtrl.cancel();
+        Get.until((route) => route.isFirst);
       });
     }));
 
@@ -329,6 +310,32 @@ class _AttendanceCardState extends State<AttendanceCard> {
       padding: EdgeInsets.all(AppSpacing.s12.w),
       child: Column(
         children: [
+          if (schedule.allCompleted) ...[
+             Container(
+               padding: EdgeInsets.all(AppSpacing.s12.w),
+               decoration: BoxDecoration(
+                 color: colors.success.withValues(alpha: 0.1),
+                 borderRadius: BorderRadius.circular(AppRadius.r8),
+                 border: Border.all(color: colors.success.withValues(alpha: 0.3)),
+               ),
+               child: Row(
+                 children: [
+                   Icon(Icons.verified_rounded, color: colors.success),
+                   SizedBox(width: AppSpacing.s12.w),
+                   Expanded(
+                     child: Text(
+                       'Semua Presensi Hari Ini Selesai',
+                       style: typography.bodyMedium.copyWith(
+                         color: colors.success,
+                         fontWeight: FontWeight.bold,
+                       ),
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+             SizedBox(height: AppSpacing.s12.h),
+          ],
           for (var i = 0; i < records.length; i++) ...[
             if (i > 0) SizedBox(height: AppSpacing.s8.h),
             _buildRecordRow(records[i], isBusy, colors, typography),
@@ -379,11 +386,9 @@ class _AttendanceCardState extends State<AttendanceCard> {
       windowOpenTime: record.windowOpenDateTime,
       windowCloseTime: record.windowCloseDateTime,
       onTap: canTap
-          ? () => _presCtrl.startPresensi(
-                record.attendanceType.code,
-                AttendanceConfig.fromRecord(record),
-              )
+          ? () => _homeCtrl.validateAndStartPresensi(record)
           : null,
+      lateToleranceMinutes: record.attendanceType.lateToleranceMinutes,
       colors: colors,
       typography: typography,
     );
@@ -415,6 +420,7 @@ class _CompactRow extends StatelessWidget {
     this.windowOpenTime,
     this.windowCloseTime,
     this.onTap,
+    this.lateToleranceMinutes,
     required this.colors,
     required this.typography,
   });
@@ -431,6 +437,7 @@ class _CompactRow extends StatelessWidget {
   final DateTime? windowOpenTime;
   final DateTime? windowCloseTime;
   final VoidCallback? onTap;
+  final int? lateToleranceMinutes;
   final AppColors colors;
   final AppTypography typography;
 
@@ -488,40 +495,57 @@ class _CompactRow extends StatelessWidget {
             ),
             SizedBox(width: AppSpacing.s8.w),
             if (isActive && enabled)
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s8.w,
-                  vertical: AppSpacing.s4.h,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [iconColor, iconColor.withValues(alpha: 0.75)],
-                  ),
-                  borderRadius: BorderRadius.circular(AppRadius.r20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: iconColor.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s8.w,
+                      vertical: AppSpacing.s4.h,
                     ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.touch_app_rounded,
-                        size: 12.sp, color: Colors.white),
-                    SizedBox(width: 4.w),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [iconColor, iconColor.withValues(alpha: 0.75)],
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.r20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: iconColor.withValues(alpha: 0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.touch_app_rounded,
+                            size: 12.sp, color: Colors.white),
+                        SizedBox(width: 4.w),
+                        Text(
+                          'Sekarang',
+                          style: typography.caption.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (lateToleranceMinutes != null && lateToleranceMinutes! > 0) ...[
+                    SizedBox(height: 4.h),
                     Text(
-                      'Sekarang',
+                      'Toleransi: $lateToleranceMinutes menit',
                       style: typography.caption.copyWith(
-                        color: Colors.white,
+                        color: colors.warning,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10.sp,
+                        fontSize: 9.sp,
                       ),
                     ),
                   ],
-                ),
+                ],
               )
             else if (time != null)
               Row(
@@ -616,12 +640,13 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (status) {
-      'OnTime' => ('Tepat Waktu', colors.success),
-      'Late' => ('Terlambat', colors.warning),
-      'EarlyLeave' => ('Pulang Cepat', colors.warning),
-      'InvalidLocation' => ('Diluar Lokasi', colors.error),
-      'Absent' => ('Absen', colors.error),
+    final normalizedStatus = status.toLowerCase().replaceAll('_', '');
+    final (label, color) = switch (normalizedStatus) {
+      'ontime' => ('Tepat Waktu', colors.success),
+      'late' => ('Terlambat', colors.warning),
+      'earlyleave' => ('Pulang Cepat', colors.warning),
+      'invalidlocation' => ('Diluar Lokasi', colors.error),
+      'absent' => ('Absen', colors.error),
       _ => ('Tercatat', colors.success),
     };
 
