@@ -7,7 +7,6 @@ import '../../../../design_system/tokens/app_icon_size.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
-import '../../../presensi/data/models/attendance_config.dart';
 import '../../../presensi/presentation/controllers/presensi_controller.dart';
 import '../../data/models/dashboard_model.dart';
 import '../controllers/home_controller.dart';
@@ -44,7 +43,7 @@ class AttendanceButton extends StatelessWidget {
                 isBusy,
                 colors,
                 typography,
-                presCtrl,
+                homeCtrl,
               ),
             ],
           ],
@@ -58,7 +57,7 @@ class AttendanceButton extends StatelessWidget {
     bool isBusy,
     AppColors colors,
     AppTypography typography,
-    PresensiController presCtrl,
+    HomeController homeCtrl,
   ) {
     final isCompleted = record.isCompleted;
     final canTap = record.isPending && record.isWindowOpen && !isBusy;
@@ -73,12 +72,7 @@ class AttendanceButton extends StatelessWidget {
     final nowAfterClose = record.windowCloseDateTime != null && DateTime.now().toUtc().isAfter(record.windowCloseDateTime!);
 
     return InkWell(
-      onTap: canTap
-          ? () => presCtrl.startPresensi(
-                record.attendanceType.code,
-                AttendanceConfig.fromRecord(record),
-              )
-          : null,
+      onTap: canTap ? () => homeCtrl.validateAndStartPresensi(record) : null,
       borderRadius: BorderRadius.circular(AppRadius.r12),
       child: Padding(
         padding: EdgeInsets.symmetric(
