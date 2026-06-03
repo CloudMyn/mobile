@@ -67,7 +67,7 @@ class ScheduleCard extends StatelessWidget {
                     ),
                   ] else ...[
                     Text(
-                      _dayStatusLabel(schedule.dayStatus),
+                      schedule.dayStatusLabel,
                       style: typography.titleSmall.copyWith(
                         color: iconColor,
                         fontWeight: FontWeight.bold,
@@ -92,13 +92,5 @@ class ScheduleCard extends StatelessWidget {
       return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
     }
     return '${_t(schedule.scheduledStartAt)} – ${_t(schedule.scheduledEndAt)}';
-  }
-
-  String _dayStatusLabel(String dayStatus) {
-    return switch (dayStatus) {
-      'Holiday' => 'Hari Libur',
-      'Weekend' => 'Hari Libur',
-      _ => dayStatus,
-    };
   }
 }

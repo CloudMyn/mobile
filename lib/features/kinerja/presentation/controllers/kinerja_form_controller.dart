@@ -113,6 +113,7 @@ class KinerjaFormController extends GetxController {
       return;
     }
 
+    FocusManager.instance.primaryFocus?.unfocus();
     isLoading.value = true;
     try {
       if (isEditMode.value && editingItem.value != null) {
@@ -163,11 +164,5 @@ class KinerjaFormController extends GetxController {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  @override
-  void onClose() {
-    descriptionCtrl.dispose();
-    super.onClose();
   }
 }

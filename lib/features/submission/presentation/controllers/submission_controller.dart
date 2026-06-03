@@ -9,7 +9,7 @@ class SubmissionController extends GetxController {
   SubmissionController({required SubmissionService service}) : _service = service;
 
   final types = <SubmissionType>[].obs;
-  final submissionsMap = <String, List<SubmissionItem>>{}.obs;
+  final submissionsMap = <int, List<SubmissionItem>>{}.obs;
   final isLoadingTypes = true.obs;
   final isLoadingList = false.obs;
   final currentTypeIndex = 0.obs;
@@ -37,7 +37,7 @@ class SubmissionController extends GetxController {
     }
   }
 
-  Future<void> loadSubmissions(String typeId) async {
+  Future<void> loadSubmissions(int typeId) async {
     if (submissionsMap.containsKey(typeId)) return;
     isLoadingList.value = true;
     try {
@@ -57,7 +57,7 @@ class SubmissionController extends GetxController {
     }
   }
 
-  Future<void> deleteSubmission(String id, String typeId) async {
+  Future<void> deleteSubmission(int id, int typeId) async {
     try {
       await _service.deleteSubmission(id);
       final list = List<SubmissionItem>.from(submissionsMap[typeId] ?? []);
@@ -82,6 +82,6 @@ class SubmissionController extends GetxController {
     return types[currentTypeIndex.value];
   }
 
-  List<SubmissionItem> submissionsFor(String typeId) =>
+  List<SubmissionItem> submissionsFor(int typeId) =>
       submissionsMap[typeId] ?? [];
 }

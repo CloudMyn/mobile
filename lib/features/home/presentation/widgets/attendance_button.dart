@@ -62,11 +62,15 @@ class AttendanceButton extends StatelessWidget {
   ) {
     final isCompleted = record.isCompleted;
     final canTap = record.isPending && record.isWindowOpen && !isBusy;
-    final iconColor = record.attendanceType.direction == 'In'
+    final direction = record.attendanceType.direction.toLowerCase();
+    final iconColor = direction == 'in'
         ? colors.success
-        : record.attendanceType.direction == 'Out'
+        : direction == 'out'
             ? colors.error
             : colors.primary;
+
+    final nowBeforeOpen = record.windowOpenDateTime != null && DateTime.now().toUtc().isBefore(record.windowOpenDateTime!);
+    final nowAfterClose = record.windowCloseDateTime != null && DateTime.now().toUtc().isAfter(record.windowCloseDateTime!);
 
     return InkWell(
       onTap: canTap
@@ -95,9 +99,11 @@ class AttendanceButton extends StatelessWidget {
               child: Icon(
                 isCompleted
                     ? Icons.check_circle_rounded
-                    : record.attendanceType.direction == 'In'
+                    : direction == 'in'
                         ? Icons.login_rounded
-                        : Icons.logout_rounded,
+                        : direction == 'out'
+                            ? Icons.logout_rounded
+                            : Icons.swap_horiz_rounded,
                 color: (isCompleted || canTap) ? iconColor : colors.outline,
                 size: AppIconSize.lg,
               ),
@@ -134,7 +140,43 @@ class AttendanceButton extends StatelessWidget {
               )
             else if (isCompleted)
               Icon(Icons.check_circle_rounded,
-                  color: iconColor, size: AppIconSize.md),
+                  color: iconColor, size: AppIconSize.md)
+            else if (record.isPending && nowBeforeOpen)
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s8.w,
+                  vertical: AppSpacing.s4.h,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.outline.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppRadius.r20),
+                ),
+                child: Text(
+                  'Belum Buka',
+                  style: typography.caption.copyWith(
+                    color: colors.onSurface.withValues(alpha: 0.4),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              )
+            else if (record.isPending && nowAfterClose)
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s8.w,
+                  vertical: AppSpacing.s4.h,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.error.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppRadius.r20),
+                ),
+                child: Text(
+                  'Terlewat',
+                  style: typography.caption.copyWith(
+                    color: colors.error.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

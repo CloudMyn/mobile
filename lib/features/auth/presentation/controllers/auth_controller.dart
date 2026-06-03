@@ -14,13 +14,6 @@ class AuthController extends GetxController {
   final isLoading = false.obs;
   final isPasswordVisible = false.obs;
 
-  @override
-  void onClose() {
-    nipController.dispose();
-    passwordController.dispose();
-    super.onClose();
-  }
-
   void togglePasswordVisibility() => isPasswordVisible.toggle();
 
   String? validateNip(String? value) {
@@ -55,6 +48,7 @@ class AuthController extends GetxController {
       await tokenStorage.saveToken(result.accessToken);
       sessionManager.setUser(result.user);
 
+      FocusManager.instance.primaryFocus?.unfocus();
       Get.offAll(() => const HomePage());
     } on ApiException catch (e) {
       _showError(_mapApiErrorMessage(e));

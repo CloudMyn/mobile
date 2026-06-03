@@ -114,6 +114,10 @@ class _StatusBadge extends StatelessWidget {
     final typography = Theme.of(context).extension<AppTypography>()!;
 
     final (bgColor, textColor) = switch (status) {
+      SubmissionStatus.draft => (
+          colors.primary.withValues(alpha: 0.15),
+          colors.primary,
+        ),
       SubmissionStatus.pending => (
           colors.warning.withValues(alpha: 0.15),
           colors.warning,
@@ -125,6 +129,10 @@ class _StatusBadge extends StatelessWidget {
       SubmissionStatus.rejected => (
           colors.error.withValues(alpha: 0.15),
           colors.error,
+        ),
+      SubmissionStatus.cancelled => (
+          colors.onSurface.withValues(alpha: 0.15),
+          colors.onSurface.withValues(alpha: 0.7),
         ),
     };
 

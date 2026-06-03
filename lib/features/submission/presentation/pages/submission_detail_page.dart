@@ -138,13 +138,10 @@ class SubmissionDetailPage extends StatelessWidget {
 
   String _formatTimeRange(SubmissionItem item) {
     if (item.startTime == null) return '-';
-    final start = _fmtTime(item.startTime!);
+    final start = item.startTime!;
     if (item.endTime == null) return start;
-    return '$start – ${_fmtTime(item.endTime!)}';
+    return '$start – ${item.endTime!}';
   }
-
-  static String _fmtTime(TimeOfDay t) =>
-      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
   static String _formatDateTime(DateTime d) {
     final date =
@@ -170,6 +167,12 @@ class _StatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bgColor, textColor, icon, label) = switch (item.status) {
+      SubmissionStatus.draft => (
+          colors.primary.withValues(alpha: 0.12),
+          colors.primary,
+          Icons.edit_note_rounded,
+          'Draft Pengajuan',
+        ),
       SubmissionStatus.pending => (
           colors.warning.withValues(alpha: 0.12),
           colors.warning,
@@ -187,6 +190,12 @@ class _StatusBanner extends StatelessWidget {
           colors.error,
           Icons.cancel_rounded,
           'Pengajuan Ditolak',
+        ),
+      SubmissionStatus.cancelled => (
+          colors.onSurface.withValues(alpha: 0.12),
+          colors.onSurface.withValues(alpha: 0.7),
+          Icons.block_rounded,
+          'Pengajuan Dibatalkan',
         ),
     };
 

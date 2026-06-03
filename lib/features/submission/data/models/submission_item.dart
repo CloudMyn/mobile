@@ -27,6 +27,8 @@ class SubmissionItem {
   final int typeId;
   final String typeName;
   final String typeCode;
+  final String title;
+  final String description;
   final String? reason;
   final DateTime startDate;
   final DateTime? endDate;
@@ -40,6 +42,7 @@ class SubmissionItem {
   final DateTime? approvedAt;
   final DateTime? rejectedAt;
   final DateTime? cancelledAt;
+  final String? approvalNote;
   final List<SubmissionAttachment> attachments;
 
   const SubmissionItem({
@@ -47,6 +50,8 @@ class SubmissionItem {
     required this.typeId,
     required this.typeName,
     required this.typeCode,
+    this.title = '',
+    this.description = '',
     this.reason,
     required this.startDate,
     this.endDate,
@@ -60,6 +65,7 @@ class SubmissionItem {
     this.approvedAt,
     this.rejectedAt,
     this.cancelledAt,
+    this.approvalNote,
     this.attachments = const [],
   });
 
@@ -75,6 +81,8 @@ class SubmissionItem {
       typeId: subType['id'] as int? ?? 0,
       typeName: subType['name'] as String? ?? '',
       typeCode: subType['code'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
       reason: json['reason'] as String?,
       startDate: DateTime.parse(
           dateRange['start_date'] as String? ??
@@ -102,12 +110,15 @@ class SubmissionItem {
       cancelledAt: tracking['cancelled_at'] != null
           ? DateTime.tryParse(tracking['cancelled_at'] as String)
           : null,
+      approvalNote: json['approval_note'] as String?,
       attachments: rawAttachments
           .map((e) =>
               SubmissionAttachment.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
+
+  List<String> get attachmentNames => attachments.map((e) => e.fileName).toList();
 
   String get formattedDate {
     final start = _formatDate(startDate);

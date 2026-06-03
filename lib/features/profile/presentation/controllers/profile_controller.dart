@@ -51,18 +51,6 @@ class ProfileController extends GetxController {
     loadShifts();
   }
 
-  @override
-  void onClose() {
-    currentPassCtrl.dispose();
-    newPassCtrl.dispose();
-    confirmPassCtrl.dispose();
-    namaCtrl.dispose();
-    emailCtrl.dispose();
-    phoneCtrl.dispose();
-    alamatCtrl.dispose();
-    super.onClose();
-  }
-
   // ── Data loading ─────────────────────────────────────────────────────────────
   Future<void> loadProfile() async {
     isLoadingProfile.value = true;
@@ -276,6 +264,7 @@ class ProfileController extends GetxController {
       // Lanjutkan logout lokal meski request ke server gagal
     }
     Get.find<SessionManager>().clear();
+    FocusManager.instance.primaryFocus?.unfocus();
     Get.offAll(() => const LoginPage());
   }
 

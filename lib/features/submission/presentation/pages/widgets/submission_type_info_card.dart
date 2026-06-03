@@ -52,7 +52,7 @@ class SubmissionTypeInfoCard extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.s8.h),
           Text(
-            type.description,
+            type.description ?? '',
             style: typography.bodySmall.copyWith(
               color: colors.onSurface.withValues(alpha: 0.7),
             ),
@@ -86,7 +86,7 @@ class SubmissionTypeInfoCard extends StatelessWidget {
           Row(
             children: [
               AppAvatar(
-                initials: _initials(type.approverName),
+                initials: _initials(type.approverName ?? '-'),
                 size: 36,
               ),
               SizedBox(width: AppSpacing.s8.w),
@@ -95,14 +95,14 @@ class SubmissionTypeInfoCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      type.approverName,
+                      type.approverName ?? '-',
                       style: typography.bodySmall.copyWith(
                         fontWeight: FontWeight.w600,
                         color: colors.onSurface,
                       ),
                     ),
                     Text(
-                      type.approverPosition,
+                      type.approverPosition ?? '-',
                       style: typography.labelSmall.copyWith(
                         color: colors.onSurface.withValues(alpha: 0.6),
                       ),

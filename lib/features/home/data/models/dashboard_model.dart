@@ -84,7 +84,22 @@ class TodaySchedule {
   final ScheduleLocation? scheduledLocation;
   final List<TodayRecord> records;
 
-  bool get isWorkday => dayStatus == 'Workday';
+  bool get isWorkday {
+    final status = dayStatus.toLowerCase();
+    return status == 'workday' || status == 'partial';
+  }
+
+  String get dayStatusLabel {
+    final status = dayStatus.toLowerCase();
+    return switch (status) {
+      'workday' => 'Hari Kerja',
+      'partial' => 'Hari Kerja Sebagian',
+      'holiday' => 'Hari Libur',
+      'weekend' => 'Akhir Pekan',
+      _ => dayStatus,
+    };
+  }
+
   bool get allCompleted => totalCompletedTypes >= totalRequiredTypes;
 
   factory TodaySchedule.fromJson(Map<String, dynamic> json) {

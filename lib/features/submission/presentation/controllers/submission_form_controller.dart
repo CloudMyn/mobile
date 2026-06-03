@@ -140,8 +140,8 @@ class SubmissionFormController extends GetxController {
         description: descCtrl.text.trim(),
         startDate: startDate.value!,
         endDate: useDateRange.value ? endDate.value : null,
-        startTime: useTimeRange.value ? startTime.value : null,
-        endTime: useTimeRange.value ? endTime.value : null,
+        startTime: useTimeRange.value && startTime.value != null ? _formatTime(startTime.value!) : null,
+        endTime: useTimeRange.value && endTime.value != null ? _formatTime(endTime.value!) : null,
         attachments: Map.from(attachments),
       );
 
@@ -149,6 +149,7 @@ class SubmissionFormController extends GetxController {
         Get.find<SubmissionController>().addSubmission(item);
       }
 
+      FocusManager.instance.primaryFocus?.unfocus();
       Get.back();
       Get.snackbar('Berhasil', 'Pengajuan berhasil dikirim',
           snackPosition: SnackPosition.BOTTOM);
@@ -165,15 +166,4 @@ class SubmissionFormController extends GetxController {
 
   static String _formatTime(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
-
-  @override
-  void onClose() {
-    titleCtrl.dispose();
-    descCtrl.dispose();
-    startDateDisplayCtrl.dispose();
-    endDateDisplayCtrl.dispose();
-    startTimeDisplayCtrl.dispose();
-    endTimeDisplayCtrl.dispose();
-    super.onClose();
-  }
 }

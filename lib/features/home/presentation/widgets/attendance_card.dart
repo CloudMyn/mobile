@@ -250,7 +250,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
     final label = isWorkday
         ? '${schedule.schedule?.name ?? 'Shift'}  •  '
             '${_fmtTime(schedule.scheduledStartAt)} – ${_fmtTime(schedule.scheduledEndAt)}'
-        : schedule.dayStatus == 'Holiday' ? 'Hari Libur' : 'Hari Libur';
+        : schedule.dayStatusLabel;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -351,13 +351,14 @@ class _AttendanceCardState extends State<AttendanceCard> {
     final IconData icon;
     final Color iconColor;
 
+    final direction = record.attendanceType.direction.toLowerCase();
     if (isCompleted) {
       icon = Icons.check_circle_rounded;
       iconColor = colors.success;
-    } else if (record.attendanceType.direction == 'In') {
+    } else if (direction == 'in') {
       icon = Icons.login_rounded;
       iconColor = canTap ? colors.success : colors.outline;
-    } else if (record.attendanceType.direction == 'Out') {
+    } else if (direction == 'out') {
       icon = Icons.logout_rounded;
       iconColor = canTap ? colors.error : colors.outline;
     } else {
@@ -374,6 +375,9 @@ class _AttendanceCardState extends State<AttendanceCard> {
       isActive: canTap,
       isCompleted: isCompleted,
       status: record.status,
+      isPending: isPending,
+      windowOpenTime: record.windowOpenDateTime,
+      windowCloseTime: record.windowCloseDateTime,
       onTap: canTap
           ? () => _presCtrl.startPresensi(
                 record.attendanceType.code,
@@ -407,6 +411,9 @@ class _CompactRow extends StatelessWidget {
     required this.isActive,
     required this.isCompleted,
     required this.status,
+    required this.isPending,
+    this.windowOpenTime,
+    this.windowCloseTime,
     this.onTap,
     required this.colors,
     required this.typography,
@@ -420,6 +427,9 @@ class _CompactRow extends StatelessWidget {
   final bool isActive;
   final bool isCompleted;
   final String status;
+  final bool isPending;
+  final DateTime? windowOpenTime;
+  final DateTime? windowCloseTime;
   final VoidCallback? onTap;
   final AppColors colors;
   final AppTypography typography;
@@ -427,6 +437,8 @@ class _CompactRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool enabled = onTap != null;
+    final bool nowBeforeOpen = windowOpenTime != null && DateTime.now().toUtc().isBefore(windowOpenTime!);
+    final bool nowAfterClose = windowCloseTime != null && DateTime.now().toUtc().isAfter(windowCloseTime!);
 
     return InkWell(
       onTap: onTap,
@@ -453,9 +465,7 @@ class _CompactRow extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isCompleted
                     ? iconColor.withValues(alpha: 0.12)
-                    : isActive && enabled
-                        ? iconColor.withValues(alpha: 0.15)
-                        : colors.outline.withValues(alpha: 0.08),
+                    : colors.outline.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppRadius.r8),
               ),
               child: Icon(
@@ -539,6 +549,46 @@ class _CompactRow extends StatelessWidget {
               )
             else if (isCompleted)
               _StatusChip(status: status, colors: colors, typography: typography)
+            else if (isPending && nowBeforeOpen)
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s8.w,
+                  vertical: AppSpacing.s4.h,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.outline.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppRadius.r20),
+                  border: Border.all(color: colors.outline.withValues(alpha: 0.15)),
+                ),
+                child: Text(
+                  'Belum Buka (${scheduledTime ?? '--:--'})',
+                  style: typography.caption.copyWith(
+                    color: colors.onSurface.withValues(alpha: 0.45),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10.sp,
+                  ),
+                ),
+              )
+            else if (isPending && nowAfterClose)
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s8.w,
+                  vertical: AppSpacing.s4.h,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.error.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppRadius.r20),
+                  border: Border.all(color: colors.error.withValues(alpha: 0.15)),
+                ),
+                child: Text(
+                  'Terlewat',
+                  style: typography.caption.copyWith(
+                    color: colors.error.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10.sp,
+                  ),
+                ),
+              )
             else
               Text(
                 scheduledTime ?? '--:--',
