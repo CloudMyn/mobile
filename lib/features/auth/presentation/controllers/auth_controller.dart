@@ -5,6 +5,7 @@ import '../../../../core/network/session_manager.dart';
 import '../../../../core/network/token_storage.dart';
 import '../../data/services/auth_service.dart';
 import '../../../home/presentation/pages/home_page.dart';
+import '../../../home/presentation/controllers/home_controller.dart';
 
 class AuthController extends GetxController {
   final nipController = TextEditingController();
@@ -47,6 +48,10 @@ class AuthController extends GetxController {
 
       await tokenStorage.saveToken(result.accessToken);
       sessionManager.setUser(result.user);
+
+      if (Get.isRegistered<HomeController>()) {
+        Get.find<HomeController>().refreshData();
+      }
 
       FocusManager.instance.primaryFocus?.unfocus();
       Get.offAll(() => const HomePage());

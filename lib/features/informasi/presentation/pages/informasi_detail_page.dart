@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:get/get.dart';
@@ -74,6 +73,7 @@ class _InformasiDetailPageState extends State<InformasiDetailPage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
+    final colorScheme = Theme.of(context).colorScheme;
     final typography = Theme.of(context).extension<AppTypography>()!;
     final category = _ctrl.categories
         .firstWhereOrNull((c) => c.id == widget.item.categoryId);
@@ -109,7 +109,7 @@ class _InformasiDetailPageState extends State<InformasiDetailPage> {
                           child: Image.network(
                             widget.item.imageUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
+                            errorBuilder: (_, _, _) =>
                                 _GradientCover(colors: colors),
                           ),
                         )
@@ -287,10 +287,10 @@ class _InformasiDetailPageState extends State<InformasiDetailPage> {
                       code: typography.bodySmall.copyWith(
                         fontFamily: 'monospace',
                         color: colors.onSurface,
-                        backgroundColor: colors.surfaceContainerHighest,
+                        backgroundColor: colorScheme.surfaceContainerHighest,
                       ),
                       codeblockDecoration: BoxDecoration(
-                        color: colors.surfaceContainerHighest,
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(AppRadius.r8),
                       ),
                     ),

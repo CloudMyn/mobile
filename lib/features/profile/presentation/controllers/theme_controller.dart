@@ -19,7 +19,7 @@ class ThemeController extends GetxController {
 
   Future<void> _loadThemeMode() async {
     final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getString(AppConstants.prefThemeMode) ?? 'system';
+    final value = prefs.getString(AppConstants.prefThemeMode) ?? 'light';
 
     ThemeMode mode;
     switch (value) {

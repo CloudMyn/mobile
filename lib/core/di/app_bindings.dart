@@ -4,6 +4,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
+import '../logging/request_log_db.dart';
+import '../logging/request_log_interceptor.dart';
 import '../network/auth_interceptor.dart';
 import '../network/session_manager.dart';
 import '../network/token_storage.dart';
@@ -23,6 +25,7 @@ import '../../features/presensi/data/services/location_service.dart';
 import '../../features/presensi/presentation/controllers/presensi_controller.dart';
 import '../../features/profile/data/repositories/profile_repository.dart';
 import '../../features/profile/presentation/controllers/profile_controller.dart';
+import '../../features/profile/presentation/controllers/request_log_controller.dart';
 import '../../features/profile/presentation/controllers/theme_controller.dart';
 import '../../features/submission/data/services/submission_service.dart';
 import '../../features/submission/presentation/controllers/submission_controller.dart';
@@ -62,6 +65,7 @@ class AppBindings extends Bindings {
       ),
     );
     dio.interceptors.add(AuthInterceptor(tokenStorage));
+    dio.interceptors.add(RequestLogInterceptor(RequestLogDb.instance));
     dio.interceptors.add(LogInterceptor(
       request: true,
       requestHeader: true,
@@ -135,6 +139,12 @@ class AppBindings extends Bindings {
 
     // ── Theme ─────────────────────────────────────────────────────────────────
     Get.put<ThemeController>(ThemeController(), permanent: true);
+
+    // ── Request Log ──────────────────────────────────────────────────────────
+    Get.lazyPut<RequestLogController>(
+      () => RequestLogController(),
+      fenix: true,
+    );
 
     // ── Informasi ─────────────────────────────────────────────────────────────
     Get.put<InformasiService>(InformasiService(dio), permanent: true);

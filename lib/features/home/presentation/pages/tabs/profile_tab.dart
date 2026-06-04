@@ -19,6 +19,7 @@ import '../../../../profile/presentation/pages/shift_schedule_page.dart';
 import '../../../../profile/presentation/pages/update_employee_page.dart';
 import '../../../../profile/presentation/pages/update_password_page.dart';
 import '../../../../profile/presentation/pages/update_photo_page.dart';
+import '../../../../profile/presentation/pages/request_log_page.dart';
 import '../../../../../core/network/session_manager.dart';
 
 class ProfileTab extends StatelessWidget {
@@ -174,6 +175,23 @@ class ProfileTab extends StatelessWidget {
                 onTap: () => themeCtrl.toggleDarkMode(!themeCtrl.isDarkMode),
               );
             }),
+          ),
+          SizedBox(height: AppSpacing.s16.h),
+          _SectionLabel(
+            label: 'Developer',
+            colors: colors,
+            typography: typography,
+          ),
+          SizedBox(height: AppSpacing.s8.h),
+          AppCard(
+            outlined: true,
+            padding: EdgeInsets.zero,
+            child: AppListItem(
+              title: 'Request Log',
+              subtitle: 'Lihat log request & response API',
+              leading: const Icon(Icons.bug_report_rounded),
+              onTap: () => Get.to(() => const RequestLogPage()),
+            ),
           ),
           SizedBox(height: AppSpacing.s32.h),
           _LogoutButton(ctrl: ctrl, colors: colors, typography: typography),
