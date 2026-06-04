@@ -55,7 +55,7 @@ class _LivenessPageState extends State<LivenessPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _camCtrl?.stopImageStream();
+    _safeStopImageStream();
     _camCtrl?.dispose();
     _camCtrl = null;
     _detector?.close();
@@ -65,7 +65,7 @@ class _LivenessPageState extends State<LivenessPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive) {
-      _camCtrl?.stopImageStream();
+      _safeStopImageStream();
       _camCtrl?.dispose();
       _camCtrl = null;
       _isInitialized = false;
@@ -78,9 +78,22 @@ class _LivenessPageState extends State<LivenessPage>
   //  Init
   // =========================================================================
 
+  Future<void> _safeStopImageStream() async {
+    final controller = _camCtrl;
+    if (controller != null &&
+        controller.value.isInitialized &&
+        controller.value.isStreamingImages) {
+      try {
+        await controller.stopImageStream();
+      } catch (e) {
+        debugPrint('Error stopping image stream: $e');
+      }
+    }
+  }
+
   Future<void> _initAll() async {
     // Dispose controller lama jika masih ada (misal dari lifecycle inactive)
-    _camCtrl?.stopImageStream();
+    await _safeStopImageStream();
     _camCtrl?.dispose();
     _camCtrl = null;
 
@@ -350,7 +363,7 @@ class _LivenessPageState extends State<LivenessPage>
     // Fallback to takePicture if conversion is null
     if (capturedBytes == null) {
       try {
-        await _camCtrl?.stopImageStream();
+        await _safeStopImageStream();
         await Future.delayed(const Duration(milliseconds: 200));
         if (_camCtrl != null && _camCtrl!.value.isInitialized) {
           final xFile = await _camCtrl!.takePicture();
@@ -360,11 +373,7 @@ class _LivenessPageState extends State<LivenessPage>
         debugPrint('Error taking picture after liveness: $e');
       }
     } else {
-      try {
-        await _camCtrl?.stopImageStream();
-      } catch (e) {
-        debugPrint('Error stopping image stream: $e');
-      }
+      await _safeStopImageStream();
     }
 
     await Future.delayed(const Duration(milliseconds: 400));
