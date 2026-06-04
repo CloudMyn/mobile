@@ -99,7 +99,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
           if (retry == true) {
             _presCtrl.retry();
           } else {
-            _presCtrl.cancel();
+            _presCtrl.step.value = PresensiStep.idle;
           }
         });
       }
