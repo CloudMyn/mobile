@@ -255,7 +255,7 @@ class _PresencePageState extends State<PresencePage> {
                 colors,
                 typography,
                 Icons.face_retouching_natural_rounded,
-                'Liveness',
+                'Verifikasi Wajah',
                 cfg.faceRecognition,
               ),
             ],
