@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 
-import 'request_log_db.dart';
-import 'request_log_entry.dart';
+import 'package:presensi/core/logging/request_log_db.dart';
+import 'package:presensi/core/logging/request_log_entry.dart';
 
 /// Dio interceptor yang mencatat setiap request/response ke SQLite.
 ///

@@ -4,7 +4,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import 'request_log_entry.dart';
+import 'package:presensi/core/logging/request_log_entry.dart';
 
 /// SQLite database helper untuk menyimpan request/response logs.
 ///
