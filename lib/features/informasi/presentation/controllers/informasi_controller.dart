@@ -130,7 +130,37 @@ class InformasiController extends GetxController {
     try {
       final result = await _service.fetchFeed();
       categories.assignAll(result.categories);
-      items.assignAll([...result.pinned, ...result.items]);
+      
+      final seen = <String>{};
+      final uniqueList = <InformasiItem>[];
+      for (final item in result.pinned) {
+        if (seen.add(item.id)) {
+          if (item.isPinned) {
+            uniqueList.add(item);
+          } else {
+            uniqueList.add(InformasiItem(
+              id: item.id,
+              slug: item.slug,
+              title: item.title,
+              content: item.content,
+              categoryId: item.categoryId,
+              author: item.author,
+              imageUrl: item.imageUrl,
+              isPinned: true,
+              publishedAt: item.publishedAt,
+              tags: item.tags,
+              commentCount: item.commentCount,
+              viewCount: item.viewCount,
+            ));
+          }
+        }
+      }
+      for (final item in result.items) {
+        if (seen.add(item.id)) {
+          uniqueList.add(item);
+        }
+      }
+      items.assignAll(uniqueList);
     } on ApiException catch (e) {
       errorMessage.value = e.message;
     } finally {
