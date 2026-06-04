@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../../design_system/components/app_card.dart';
+import '../../../../../design_system/components/app_skeleton.dart';
 import '../../../../../design_system/components/feedback/app_dialog.dart';
 import '../../../../../design_system/tokens/app_colors.dart';
 import '../../../../../design_system/tokens/app_spacing.dart';
@@ -150,6 +151,47 @@ class _StatusBadge extends StatelessWidget {
         style: typography.labelSmall.copyWith(
           color: textColor,
           fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class SubmissionCardSkeleton extends StatelessWidget {
+  const SubmissionCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: AppSpacing.s8.h),
+      child: AppCard(
+        outlined: true,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppSkeleton(width: 150.w, height: 16.h, borderRadius: 4),
+                  SizedBox(height: AppSpacing.s4.h),
+                  AppSkeleton(width: double.infinity, height: 12.h, borderRadius: 4),
+                  SizedBox(height: 4.h),
+                  AppSkeleton(width: 200.w, height: 12.h, borderRadius: 4),
+                  SizedBox(height: AppSpacing.s8.h),
+                  Row(
+                    children: [
+                      AppSkeleton(width: 80.w, height: 12.h, borderRadius: 4),
+                      SizedBox(width: AppSpacing.s8.w),
+                      AppSkeleton(width: 60.w, height: 20.h, borderRadius: 99),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: AppSpacing.s8.w),
+            AppSkeleton(width: 24.w, height: 24.w, borderRadius: 4),
+          ],
         ),
       ),
     );

@@ -150,10 +150,7 @@ class _SubmissionPageState extends State<SubmissionPage>
           SizedBox(height: AppSpacing.s16.h),
           ...List.generate(
             4,
-            (_) => Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.s12.h),
-              child: AppSkeleton(width: double.infinity, height: 90.h),
-            ),
+            (_) => const SubmissionCardSkeleton(),
           ),
         ],
       ),
@@ -177,10 +174,7 @@ class _SubmissionList extends StatelessWidget {
           child: Column(
             children: List.generate(
               3,
-              (_) => Padding(
-                padding: EdgeInsets.only(bottom: AppSpacing.s12.h),
-                child: AppSkeleton(width: double.infinity, height: 90.h),
-              ),
+              (_) => const SubmissionCardSkeleton(),
             ),
           ),
         );

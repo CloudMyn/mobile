@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
@@ -61,6 +62,15 @@ class AppBindings extends Bindings {
       ),
     );
     dio.interceptors.add(AuthInterceptor(tokenStorage));
+    dio.interceptors.add(LogInterceptor(
+      request: true,
+      requestHeader: true,
+      requestBody: true,
+      responseHeader: false,
+      responseBody: true,
+      error: true,
+      logPrint: (object) => debugPrint('[Dio] $object'),
+    ));
     Get.put<Dio>(dio, permanent: true);
 
     // ── Auth ─────────────────────────────────────────────────────────────────

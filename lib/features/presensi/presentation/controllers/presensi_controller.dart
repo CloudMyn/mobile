@@ -94,9 +94,15 @@ class PresensiController extends GetxController {
 
   Future<void> checkLocation() async {
     final cfg = config.value;
-    if (cfg == null) return;
+    if (cfg == null) {
+      debugPrint('[PresensiController] checkLocation: config is null');
+      return;
+    }
+
+    debugPrint('[PresensiController] checkLocation: Starting location check. Needs geofence: ${cfg.needsGeofenceCheck}');
 
     if (!cfg.needsGeofenceCheck) {
+      debugPrint('[PresensiController] checkLocation: Geofence check not required. Setting isInsideGeofence = true');
       isInsideGeofence.value = true;
       return;
     }
@@ -105,8 +111,10 @@ class PresensiController extends GetxController {
     errorType.value = null;
     errorMessage.value = null;
 
+    debugPrint('[PresensiController] checkLocation: Fetching current position...');
     final result = await _locationService.getCurrentPosition();
     if (!result.isSuccess) {
+      debugPrint('[PresensiController] checkLocation: Failed to get position. Error: ${result.error}');
       final errType = switch (result.error!) {
         LocationError.permissionDenied =>
           PresensiErrorType.locationPermissionDenied,
@@ -123,8 +131,10 @@ class PresensiController extends GetxController {
 
     final pos = result.position!;
     currentPosition.value = pos;
+    debugPrint('[PresensiController] checkLocation: Current position: Lat: ${pos.latitude}, Lng: ${pos.longitude}, Accuracy: ${pos.accuracy}m');
 
     if (cfg.hasValidGeofence) {
+      debugPrint('[PresensiController] checkLocation: Config has valid geofence. Locations count: ${cfg.validLocations.length}');
       double minDistance = double.infinity;
       bool anyInside = false;
       String? closestName;
@@ -137,6 +147,8 @@ class PresensiController extends GetxController {
           fenceLat: loc.latitude,
           fenceLng: loc.longitude,
         );
+
+        debugPrint('[PresensiController] checkLocation: Location "${loc.name}" (Lat: ${loc.latitude}, Lng: ${loc.longitude}), Radius: $r, Calculated Distance: ${dist.toStringAsFixed(2)}m');
 
         if (dist < minDistance) {
           minDistance = dist;
@@ -151,14 +163,17 @@ class PresensiController extends GetxController {
           radiusMeters: r.toDouble(),
         )) {
           anyInside = true;
+          debugPrint('[PresensiController] checkLocation: User IS inside geofence for location "${loc.name}"');
         }
       }
 
       distanceToFence.value = minDistance;
       isInsideGeofence.value = anyInside;
       closestLocationName.value = closestName;
+      debugPrint('[PresensiController] checkLocation: Min distance to closest fence: ${minDistance.toStringAsFixed(2)}m, isInsideGeofence: $anyInside, closestLocationName: $closestName');
     } else {
       isInsideGeofence.value = true;
+      debugPrint('[PresensiController] checkLocation: No valid geofence configurations found. Setting isInsideGeofence = true');
     }
 
     step.value = PresensiStep.idle;
@@ -170,14 +185,22 @@ class PresensiController extends GetxController {
 
   Future<void> proceedPresensi() async {
     final cfg = config.value;
-    if (cfg == null) return;
+    if (cfg == null) {
+      debugPrint('[PresensiController] proceedPresensi: config is null');
+      return;
+    }
+
+    debugPrint('[PresensiController] proceedPresensi: Proceeding. Active Code: ${activeCode.value}, FaceRecognition: ${cfg.faceRecognition}, FaceCapture: ${cfg.faceCapture}');
 
     if (cfg.needsGeofenceCheck && !isInsideGeofence.value) {
+      debugPrint('[PresensiController] proceedPresensi: Blocked. User is outside geofence');
       return; // Tombol seharusnya disabled
     }
 
     if (cfg.faceRecognition) {
+      debugPrint('[PresensiController] proceedPresensi: Starting liveness detection step...');
       if (cfg.storedFaceData == null || cfg.storedFaceData!.isEmpty) {
+        debugPrint('[PresensiController] proceedPresensi: Error. Stored face data is empty/null');
         _setError(
           PresensiErrorType.livenessFailed,
           'Wajah Anda belum terdaftar. Silakan daftarkan wajah terlebih dahulu melalui halaman Profil.',
@@ -188,6 +211,7 @@ class PresensiController extends GetxController {
       step.value = PresensiStep.liveness;
       final resultBytes = await Get.to<Uint8List?>(() => const LivenessPage());
       if (resultBytes == null) {
+        debugPrint('[PresensiController] proceedPresensi: Liveness cancelled or returned null bytes');
         _setError(
           PresensiErrorType.livenessFailed,
           'Liveness detection tidak berhasil atau dibatalkan. Silakan coba lagi.',
@@ -196,16 +220,20 @@ class PresensiController extends GetxController {
       }
       
       step.value = PresensiStep.submitting;
+      debugPrint('[PresensiController] proceedPresensi: Liveness success, result bytes length: ${resultBytes.length}. Extracting embedding...');
       
       try {
         final liveResult = await _faceService.extractEmbeddingFromBytes(resultBytes);
         if (liveResult == null) {
+          debugPrint('[PresensiController] proceedPresensi: Failed to extract embedding (face not detected)');
           _setError(PresensiErrorType.livenessFailed, 'Wajah tidak terdeteksi pada foto.');
           return;
         }
 
+        debugPrint('[PresensiController] proceedPresensi: Embedding extracted. Comparing with stored embedding...');
         final storedEmb = _faceService.base64ToEmbedding(cfg.storedFaceData!);
         final verifyResult = _faceService.verify(liveResult.embedding, storedEmb);
+        debugPrint('[PresensiController] proceedPresensi: Verification result - Match: ${verifyResult.isMatch}, Cosine Similarity: ${verifyResult.cosineSimilarity}, Euclidean Distance: ${verifyResult.euclideanDistance}');
 
         if (!verifyResult.isMatch) {
           _setError(PresensiErrorType.livenessFailed, 'Wajah tidak dikenali. Pastikan Anda menghadap kamera dengan jelas.');
@@ -215,16 +243,20 @@ class PresensiController extends GetxController {
         faceScore.value = verifyResult.cosineSimilarity;
         faceImageBytes.value = liveResult.processedImageBytes ?? resultBytes;
 
+        debugPrint('[PresensiController] proceedPresensi: Face matched. Proceeding to submit...');
         await _submitPresensi();
       } catch (e) {
+        debugPrint('[PresensiController] proceedPresensi: Exception during face matching: $e');
         _setError(PresensiErrorType.livenessFailed, 'Gagal memproses pengenalan wajah.');
         return;
       }
 
     } else if (cfg.faceCapture) {
+      debugPrint('[PresensiController] proceedPresensi: Starting face capture...');
       step.value = PresensiStep.faceCapture;
       await _handleFaceCapture();
     } else {
+      debugPrint('[PresensiController] proceedPresensi: Direct submit (no face verification/capture required)...');
       await _submitPresensi();
     }
   }
@@ -235,13 +267,17 @@ class PresensiController extends GetxController {
 
   Future<void> _handleFaceCapture() async {
     step.value = PresensiStep.faceCapture;
+    debugPrint('[PresensiController] _handleFaceCapture: Opening FaceCapturePage...');
     final imageBytes = await Get.to<Uint8List?>(() => const FaceCapturePage());
     if (imageBytes == null) {
+      debugPrint('[PresensiController] _handleFaceCapture: FaceCapture cancelled or returned null');
       step.value = PresensiStep.idle;
       return;
     }
+    debugPrint('[PresensiController] _handleFaceCapture: Captured image bytes length: ${imageBytes.length}. Cropping and compressing...');
     final compressed = await _faceService.cropAndCompress(imageBytes);
     faceImageBytes.value = compressed ?? imageBytes;
+    debugPrint('[PresensiController] _handleFaceCapture: Final compressed image bytes length: ${faceImageBytes.value?.length}. Submitting presence...');
     await _submitPresensi();
   }
 
@@ -253,7 +289,18 @@ class PresensiController extends GetxController {
     step.value = PresensiStep.submitting;
     final pos = currentPosition.value;
 
+    debugPrint('[PresensiController] _submitPresensi: Generating/fetching device UUID...');
     final deviceUuid = await _tokenStorage.getOrCreateDeviceUuid();
+
+    debugPrint('[PresensiController] _submitPresensi: Preparing submission request. '
+        'Code: ${activeCode.value}, '
+        'Device UUID: $deviceUuid, '
+        'Latitude: ${pos?.latitude}, '
+        'Longitude: ${pos?.longitude}, '
+        'Accuracy: ${pos?.accuracy}m, '
+        'Distance: ${distanceToFence.value}m, '
+        'Face Score: ${faceScore.value}, '
+        'Photo length: ${faceImageBytes.value?.length ?? 0} bytes');
 
     final request = AttendanceSubmissionRequest(
       code: activeCode.value!,
@@ -267,9 +314,12 @@ class PresensiController extends GetxController {
     );
 
     try {
-      await _repository.submit(request);
+      debugPrint('[PresensiController] _submitPresensi: Submitting via repository...');
+      final response = await _repository.submit(request);
+      debugPrint('[PresensiController] _submitPresensi: Submission SUCCESS! ID: ${response.id}, Status: ${response.status}, AttendedAt: ${response.attendedAt}');
       step.value = PresensiStep.success;
     } on ApiException catch (e) {
+      debugPrint('[PresensiController] _submitPresensi: ApiException: ${e.statusCode} - ${e.errorCode} - ${e.message}');
       final msg = switch (e.errorCode) {
         'ATTENDANCE_ALREADY_SUBMITTED' => 'Presensi hari ini sudah tercatat.',
         'ATTENDANCE_WINDOW_NOT_OPEN' =>
@@ -283,10 +333,12 @@ class PresensiController extends GetxController {
         _ => e.message.isNotEmpty ? e.message : 'Gagal menyimpan presensi.',
       };
       _setError(PresensiErrorType.submitFailed, msg);
-    } on NetworkException {
+    } on NetworkException catch (e) {
+      debugPrint('[PresensiController] _submitPresensi: NetworkException: $e');
       _setError(PresensiErrorType.submitFailed,
           'Tidak ada koneksi internet. Periksa jaringan Anda.');
     } catch (e) {
+      debugPrint('[PresensiController] _submitPresensi: Unknown exception: $e');
       _setError(PresensiErrorType.submitFailed, 'Gagal submit presensi: $e');
     }
   }
