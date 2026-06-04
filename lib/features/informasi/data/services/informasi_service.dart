@@ -73,38 +73,62 @@ class InformasiService {
 
       return InformasiDetailResult(
         article: InformasiItem.fromJson(articleJson),
-        comments: commentsJson
-            .map((item) => CommentItem.fromJson(item as Map<String, dynamic>))
-            .toList(),
+        comments: [],
       );
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal memuat detail informasi');
     }
   }
 
-  Future<List<CommentItem>> addComment({
+  Future<CommentItem> addComment({
     required String articleId,
     required String articleSlug,
     required String content,
     String? parentId,
   }) async {
     try {
+      Response<Map<String, dynamic>> response;
       if (parentId == null) {
-        await _dio.post<Map<String, dynamic>>(
+        response = await _dio.post<Map<String, dynamic>>(
           '/mobile/information/$articleId/comments',
           data: {'content': content},
         );
       } else {
-        await _dio.post<Map<String, dynamic>>(
+        response = await _dio.post<Map<String, dynamic>>(
           '/mobile/information/$articleId/comments/$parentId/replies',
           data: {'content': content},
         );
       }
 
-      final detail = await fetchDetail(articleSlug);
-      return detail.comments;
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => data as Map<String, dynamic>,
+      );
+      final payload = envelope.data ?? <String, dynamic>{};
+      final commentJson = payload['comment'] as Map<String, dynamic>? ?? {};
+      return CommentItem.fromJson(commentJson);
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal mengirim komentar');
+    }
+  }
+
+  Future<List<CommentItem>> fetchComments(String slug, {int page = 1}) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/mobile/information/$slug/comments',
+        queryParameters: {'page': page},
+      );
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => data as Map<String, dynamic>,
+      );
+      final payload = envelope.data ?? <String, dynamic>{};
+      final itemsJson = payload['items'] as List<dynamic>? ?? [];
+      return itemsJson
+          .map((item) => CommentItem.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memuat komentar');
     }
   }
 

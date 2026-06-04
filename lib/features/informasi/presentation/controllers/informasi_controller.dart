@@ -17,6 +17,9 @@ class InformasiController extends GetxController {
   final dateRange = Rx<DateTimeRange?>(null);
   final isLoading = false.obs;
   final errorMessage = Rx<String?>(null);
+  final commentsCurrentPage = <String, int>{}.obs;
+  final commentsHasMore = <String, bool>{}.obs;
+  final isCommentsLoadingMap = <String, bool>{}.obs;
 
   @override
   void onInit() {
@@ -63,15 +66,7 @@ class InformasiController extends GetxController {
       commentsMap[articleId] ?? [];
 
   int totalComments(String articleId) {
-    int count = 0;
-    void countRecursive(List<CommentItem> list) {
-      count += list.length;
-      for (final c in list) {
-        countRecursive(c.replies);
-      }
-    }
-    countRecursive(commentsFor(articleId));
-    return count;
+    return (commentsMap[articleId] ?? []).length;
   }
 
   Future<void> addComment(
@@ -86,13 +81,26 @@ class InformasiController extends GetxController {
               .firstWhereOrNull((item) => item.id == articleId)
               ?.slug ??
           '';
-      final comments = await _service.addComment(
+      final newComment = await _service.addComment(
         articleId: articleId,
         articleSlug: articleSlug,
         content: content,
         parentId: parentId,
       );
-      commentsMap[articleId] = comments;
+      
+      final currentComments = commentsMap[articleId] ?? [];
+      int insertIdx = currentComments.length;
+      if (parentId != null) {
+         // Find the last comment that belongs to the same parent chain to append after it,
+         // but a simple insert after parent works as a quick optimistic UI update.
+         final parentIdx = currentComments.indexWhere((c) => c.id == parentId);
+         if (parentIdx != -1) {
+            insertIdx = parentIdx + 1;
+         }
+      }
+      currentComments.insert(insertIdx, newComment);
+      commentsMap[articleId] = [...currentComments];
+
       final index = items.indexWhere((item) => item.id == articleId);
       if (index >= 0) {
         final old = items[index];
@@ -107,7 +115,7 @@ class InformasiController extends GetxController {
           isPinned: old.isPinned,
           publishedAt: old.publishedAt,
           tags: old.tags,
-          commentCount: totalComments(articleId),
+          commentCount: old.commentCount + 1, // increment count
           viewCount: old.viewCount,
         );
       }
@@ -131,12 +139,37 @@ class InformasiController extends GetxController {
   }
 
   Future<void> loadComments(String articleSlug, String articleId) async {
+    isCommentsLoadingMap[articleId] = true;
     try {
-      final result = await _service.fetchDetail(articleSlug);
-      commentsMap[articleId] = result.comments;
+      final comments = await _service.fetchComments(articleSlug, page: 1);
+      commentsMap[articleId] = comments;
+      commentsCurrentPage[articleId] = 1;
+      commentsHasMore[articleId] = comments.length >= 15;
     } on ApiException catch (e) {
       Get.snackbar('Gagal memuat komentar', e.message,
           snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      isCommentsLoadingMap[articleId] = false;
+    }
+  }
+
+  Future<void> loadMoreComments(String articleSlug, String articleId) async {
+    if (isCommentsLoadingMap[articleId] == true || commentsHasMore[articleId] == false) return;
+    
+    isCommentsLoadingMap[articleId] = true;
+    try {
+      final nextPage = (commentsCurrentPage[articleId] ?? 1) + 1;
+      final newComments = await _service.fetchComments(articleSlug, page: nextPage);
+      
+      final currentList = commentsMap[articleId] ?? [];
+      commentsMap[articleId] = [...currentList, ...newComments];
+      commentsCurrentPage[articleId] = nextPage;
+      commentsHasMore[articleId] = newComments.length >= 15;
+    } on ApiException catch (e) {
+      Get.snackbar('Gagal memuat komentar tambahan', e.message,
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      isCommentsLoadingMap[articleId] = false;
     }
   }
 }

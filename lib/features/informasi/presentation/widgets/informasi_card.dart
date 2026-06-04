@@ -35,18 +35,21 @@ class InformasiCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (item.imageUrl != null)
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.r12),
-                ),
-                child: Image.network(
-                  item.imageUrl!,
-                  height: 140.h,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _PlaceholderImage(
-                    colors: colors,
+              Hero(
+                tag: 'article_image_${item.id}',
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.r12),
+                  ),
+                  child: Image.network(
+                    item.imageUrl!,
                     height: 140.h,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _PlaceholderImage(
+                      colors: colors,
+                      height: 140.h,
+                    ),
                   ),
                 ),
               ),

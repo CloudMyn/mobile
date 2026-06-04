@@ -127,26 +127,28 @@ class _InformasiPageState extends State<InformasiPage> {
                         SizedBox(height: AppSpacing.s12.h),
                         SizedBox(
                           height: 180.h,
-                          child: PageView.builder(
-                            controller: _pinnedPageCtrl,
-                            itemCount: pinned.length,
-                            onPageChanged: (i) =>
-                                setState(() => _pinnedPage = i),
-                            itemBuilder: (_, i) => Padding(
-                              padding: EdgeInsets.only(
-                                right: i < pinned.length - 1
-                                    ? AppSpacing.s12.w
-                                    : 0,
-                              ),
-                              child: InformasiPinnedCard(
-                                item: pinned[i],
-                                category: _ctrl.categories.firstWhereOrNull(
-                                  (c) => c.id == pinned[i].categoryId,
+                          width: double.infinity,
+                          child: pinned.length == 1
+                              ? InformasiPinnedCard(
+                                  item: pinned.first,
+                                  category: _ctrl.categories.firstWhereOrNull(
+                                    (c) => c.id == pinned.first.categoryId,
+                                  ),
+                                  onTap: () => _openDetail(pinned.first),
+                                )
+                              : PageView.builder(
+                                  controller: _pinnedPageCtrl,
+                                  itemCount: pinned.length,
+                                  onPageChanged: (i) =>
+                                      setState(() => _pinnedPage = i),
+                                  itemBuilder: (_, i) => InformasiPinnedCard(
+                                    item: pinned[i],
+                                    category: _ctrl.categories.firstWhereOrNull(
+                                      (c) => c.id == pinned[i].categoryId,
+                                    ),
+                                    onTap: () => _openDetail(pinned[i]),
+                                  ),
                                 ),
-                                onTap: () => _openDetail(pinned[i]),
-                              ),
-                            ),
-                          ),
                         ),
                         if (pinned.length > 1) ...[
                           SizedBox(height: AppSpacing.s12.h),

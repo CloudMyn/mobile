@@ -54,15 +54,46 @@ class InformasiPinnedCard extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                // Background pattern overlay
-                Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.05,
-                    child: Icon(
-                      Icons.article_rounded,
-                      size: 160,
-                      color: Colors.white,
+                // Cover image with Hero
+                if (item.imageUrl != null)
+                  Positioned.fill(
+                    child: Hero(
+                      tag: 'article_image_${item.id}',
+                      child: Image.network(
+                        item.imageUrl!,
+                        fit: BoxFit.cover,
+                      ),
                     ),
+                  ),
+
+                // Background pattern or gradient overlay
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: item.imageUrl != null
+                            ? [
+                                Colors.black.withValues(alpha: 0.4),
+                                Colors.black.withValues(alpha: 0.7),
+                              ]
+                            : [
+                                colors.primary,
+                                colors.primaryContainer.withValues(alpha: 0.8),
+                              ],
+                      ),
+                    ),
+                    child: item.imageUrl == null
+                        ? Opacity(
+                            opacity: 0.05,
+                            child: Icon(
+                              Icons.article_rounded,
+                              size: 160,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
                   ),
                 ),
 
