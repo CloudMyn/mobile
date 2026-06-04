@@ -11,8 +11,10 @@ import '../network/session_manager.dart';
 import '../network/token_storage.dart';
 import '../../features/auth/data/services/auth_service.dart';
 import '../../features/home/data/services/dashboard_service.dart';
+import '../../features/home/data/services/notification_service.dart';
 import '../../features/home/data/services/statistik_service.dart';
 import '../../features/home/presentation/controllers/home_controller.dart';
+import '../../features/home/presentation/controllers/notification_controller.dart';
 import '../../features/home/presentation/controllers/statistik_controller.dart';
 import '../../features/informasi/data/services/informasi_service.dart';
 import '../../features/informasi/presentation/controllers/informasi_controller.dart';
@@ -27,6 +29,7 @@ import '../../features/profile/data/repositories/profile_repository.dart';
 import '../../features/profile/presentation/controllers/profile_controller.dart';
 import '../../features/profile/presentation/controllers/request_log_controller.dart';
 import '../../features/profile/presentation/controllers/theme_controller.dart';
+import '../../features/submission/data/services/submission_lookup_service.dart';
 import '../../features/submission/data/services/submission_service.dart';
 import '../../features/submission/presentation/controllers/submission_controller.dart';
 
@@ -35,10 +38,7 @@ import '../../features/submission/presentation/controllers/submission_controller
 /// di main() sebelum runApp() — bukan di sini — agar dependencies() tetap
 /// synchronous dan GetX tidak melewatkan registrasi.
 class AppBindings extends Bindings {
-  AppBindings({
-    required this.prefs,
-    required this.secureStorage,
-  });
+  AppBindings({required this.prefs, required this.secureStorage});
 
   final SharedPreferences prefs;
   final FlutterSecureStorage secureStorage;
@@ -66,15 +66,17 @@ class AppBindings extends Bindings {
     );
     dio.interceptors.add(AuthInterceptor(tokenStorage));
     dio.interceptors.add(RequestLogInterceptor(RequestLogDb.instance));
-    dio.interceptors.add(LogInterceptor(
-      request: true,
-      requestHeader: true,
-      requestBody: true,
-      responseHeader: false,
-      responseBody: true,
-      error: true,
-      logPrint: (object) => debugPrint('[Dio] $object'),
-    ));
+    dio.interceptors.add(
+      LogInterceptor(
+        request: true,
+        requestHeader: true,
+        requestBody: true,
+        responseHeader: false,
+        responseBody: true,
+        error: true,
+        logPrint: (object) => debugPrint('[Dio] $object'),
+      ),
+    );
     Get.put<Dio>(dio, permanent: true);
 
     // ── Auth ─────────────────────────────────────────────────────────────────
@@ -82,16 +84,14 @@ class AppBindings extends Bindings {
 
     // ── Dashboard & Statistik ────────────────────────────────────────────────
     Get.put<DashboardService>(DashboardService(dio), permanent: true);
+    Get.put<NotificationService>(NotificationService(dio), permanent: true);
     Get.put<StatistikService>(StatistikService(dio), permanent: true);
 
     // ── Presensi ─────────────────────────────────────────────────────────────
     Get.put<FaceService>(FaceService(), permanent: true);
     Get.put<LocationService>(LocationService(), permanent: true);
 
-    Get.put<PresensiRepository>(
-      PresensiRepositoryImpl(dio),
-      permanent: true,
-    );
+    Get.put<PresensiRepository>(PresensiRepositoryImpl(dio), permanent: true);
     Get.put<AttendanceHistoryRepository>(
       MockAttendanceHistoryRepository(),
       permanent: true,
@@ -109,6 +109,10 @@ class AppBindings extends Bindings {
 
     // ── Submission ────────────────────────────────────────────────────────────
     Get.put<SubmissionService>(MockSubmissionService(), permanent: true);
+    Get.put<SubmissionLookupService>(
+      SubmissionLookupService(dio),
+      permanent: true,
+    );
     Get.put<SubmissionController>(
       SubmissionController(service: Get.find<SubmissionService>()),
       permanent: true,
@@ -130,6 +134,13 @@ class AppBindings extends Bindings {
     // StatistikController — lazy: dibuat saat StatistikPage pertama kali dibuka
     Get.lazyPut<StatistikController>(
       () => StatistikController(service: Get.find<StatistikService>()),
+      fenix: true,
+    );
+    Get.lazyPut<NotificationController>(
+      () => NotificationController(
+        service: Get.find<NotificationService>(),
+        submissionLookupService: Get.find<SubmissionLookupService>(),
+      ),
       fenix: true,
     );
 

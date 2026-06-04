@@ -4,12 +4,12 @@ enum SubmissionStatus { draft, pending, approved, rejected, cancelled }
 
 extension SubmissionStatusExt on SubmissionStatus {
   String get label => switch (this) {
-        SubmissionStatus.draft => 'Draft',
-        SubmissionStatus.pending => 'Menunggu',
-        SubmissionStatus.approved => 'Disetujui',
-        SubmissionStatus.rejected => 'Ditolak',
-        SubmissionStatus.cancelled => 'Dibatalkan',
-      };
+    SubmissionStatus.draft => 'Draft',
+    SubmissionStatus.pending => 'Menunggu',
+    SubmissionStatus.approved => 'Disetujui',
+    SubmissionStatus.rejected => 'Ditolak',
+    SubmissionStatus.cancelled => 'Dibatalkan',
+  };
 }
 
 SubmissionStatus submissionStatusFromString(String s) =>
@@ -75,29 +75,33 @@ class SubmissionItem {
     final timeRange = json['time_range'] as Map<String, dynamic>? ?? {};
     final tracking = json['tracking'] as Map<String, dynamic>? ?? {};
     final rawAttachments = json['attachments'] as List? ?? [];
+    final typeName = subType['name'] as String? ?? '';
+    final reason = json['reason'] as String?;
 
     return SubmissionItem(
       id: json['id'] as int,
       typeId: subType['id'] as int? ?? 0,
-      typeName: subType['name'] as String? ?? '',
+      typeName: typeName,
       typeCode: subType['code'] as String? ?? '',
-      title: json['title'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      reason: json['reason'] as String?,
+      title: json['title'] as String? ?? typeName,
+      description: json['description'] as String? ?? reason ?? '',
+      reason: reason,
       startDate: DateTime.parse(
-          dateRange['start_date'] as String? ??
-              DateTime.now().toIso8601String()),
+        dateRange['start_date'] as String? ?? DateTime.now().toIso8601String(),
+      ),
       endDate: dateRange['end_date'] != null
           ? DateTime.parse(dateRange['end_date'] as String)
           : null,
-      totalDays: dateRange['total_days'] as int?,
+      totalDays: int.tryParse(dateRange['total_days']?.toString() ?? ''),
       startTime: timeRange['start_time'] as String?,
       endTime: timeRange['end_time'] as String?,
-      totalHours: timeRange['total_hours'] as int?,
+      totalHours: int.tryParse(timeRange['total_hours']?.toString() ?? ''),
       status: submissionStatusFromString(
-          json['status'] as String? ?? 'pending'),
+        json['status'] as String? ?? 'pending',
+      ),
       createdAt: DateTime.parse(
-          json['created_at'] as String? ?? DateTime.now().toIso8601String()),
+        json['created_at'] as String? ?? DateTime.now().toIso8601String(),
+      ),
       submittedAt: tracking['submitted_at'] != null
           ? DateTime.tryParse(tracking['submitted_at'] as String)
           : null,
@@ -112,13 +116,13 @@ class SubmissionItem {
           : null,
       approvalNote: json['approval_note'] as String?,
       attachments: rawAttachments
-          .map((e) =>
-              SubmissionAttachment.fromJson(e as Map<String, dynamic>))
+          .map((e) => SubmissionAttachment.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
 
-  List<String> get attachmentNames => attachments.map((e) => e.fileName).toList();
+  List<String> get attachmentNames =>
+      attachments.map((e) => e.fileName).toList();
 
   String get formattedDate {
     final start = _formatDate(startDate);

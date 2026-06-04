@@ -1,34 +1,36 @@
 import 'package:get/get.dart';
+
+import '../../../../core/error/app_exception.dart';
+import '../../../../design_system/components/app_feedback.dart';
+import '../../../submission/data/models/submission_item.dart';
+import '../../../submission/data/models/submission_type.dart';
+import '../../../submission/data/services/submission_lookup_service.dart';
+import '../../../submission/presentation/controllers/submission_controller.dart';
+import '../../../submission/presentation/pages/submission_detail_page.dart';
 import '../../data/models/notification_item.dart';
+import '../../data/services/notification_service.dart';
 import 'home_controller.dart';
 
-/// Controller untuk halaman notifikasi.
-///
-/// Mengelola daftar notifikasi, mark all as read, dan delete all.
-/// Juga menyinkronkan [HomeController.unreadNotifications] agar badge
-/// di icon bell tetap terupdate.
 class NotificationController extends GetxController {
-  // =========================================================================
-  //  Reactive State
-  // =========================================================================
+  NotificationController({
+    required NotificationService service,
+    required SubmissionLookupService submissionLookupService,
+  }) : _service = service,
+       _submissionLookupService = submissionLookupService;
 
-  /// Daftar notifikasi.
+  final NotificationService _service;
+  final SubmissionLookupService _submissionLookupService;
+
   final notifications = <NotificationItem>[].obs;
-
-  /// Loading state saat memuat data.
   final isLoading = false.obs;
+  final isMarkingAllRead = false.obs;
+  final isDeletingAll = false.obs;
+  final processingNotificationIds = <String>{}.obs;
+  final errorMessage = Rx<String?>(null);
 
-  // =========================================================================
-  //  Computed
-  // =========================================================================
+  int get unreadCount => notifications.where((n) => !n.isRead).length;
 
-  /// Jumlah notifikasi yang belum dibaca.
-  int get unreadCount =>
-      notifications.where((n) => !n.isRead).length;
-
-  // =========================================================================
-  //  Lifecycle
-  // =========================================================================
+  bool isProcessing(String id) => processingNotificationIds.contains(id);
 
   @override
   void onInit() {
@@ -36,96 +38,197 @@ class NotificationController extends GetxController {
     loadNotifications();
   }
 
-  // =========================================================================
-  //  Actions
-  // =========================================================================
-
-  /// Memuat data notifikasi (mock).
   Future<void> loadNotifications() async {
     isLoading.value = true;
+    errorMessage.value = null;
 
-    // Simulasi delay network
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    final now = DateTime.now();
-
-    notifications.value = [
-      NotificationItem(
-        id: '1',
-        title: 'Presensi Masuk',
-        body: 'Anda telah check-in pukul 07:30',
-        createdAt: now.subtract(const Duration(hours: 2)),
-        isRead: false,
-        type: 'attendance',
-      ),
-      NotificationItem(
-        id: '2',
-        title: 'Pengajuan Cuti Disetujui',
-        body: 'Pengajuan cuti Anda pada 10-12 Mei telah disetujui',
-        createdAt: now.subtract(const Duration(hours: 5)),
-        isRead: true,
-        type: 'submission',
-      ),
-      NotificationItem(
-        id: '3',
-        title: 'Jadwal Presensi Besok',
-        body: 'Shift: Pagi (07:30 - 16:00)',
-        createdAt: now.subtract(const Duration(days: 1)),
-        isRead: true,
-        type: 'system',
-      ),
-      NotificationItem(
-        id: '4',
-        title: 'TPP Bulan April Dirilis',
-        body: 'TPP bulan April 2026 telah dirilis. Cek detailnya sekarang.',
-        createdAt: now.subtract(const Duration(days: 3)),
-        isRead: false,
-        type: 'system',
-      ),
-      NotificationItem(
-        id: '5',
-        title: 'Rapat Koordinasi',
-        body: 'Rapat koordinasi besok pukul 09:00 di Aula Kantor.',
-        createdAt: now.subtract(const Duration(days: 4)),
-        isRead: true,
-        type: 'system',
-      ),
-      NotificationItem(
-        id: '6',
-        title: 'Pengumuman Libur Nasional',
-        body: 'Tanggal 1 Juni 2026 libur nasional (Hari Lahir Pancasila).',
-        createdAt: now.subtract(const Duration(days: 7)),
-        isRead: false,
-        type: 'system',
-      ),
-    ];
-
-    _syncUnreadToHomeController();
-
-    isLoading.value = false;
+    try {
+      final result = await _service.fetchNotifications();
+      notifications.assignAll(result);
+      _syncUnreadToHomeController();
+    } on NetworkException catch (e) {
+      errorMessage.value = e.message;
+    } on ApiException catch (e) {
+      errorMessage.value = e.message;
+    } catch (_) {
+      errorMessage.value = 'Gagal memuat notifikasi.';
+    } finally {
+      isLoading.value = false;
+    }
   }
 
-  /// Menandai semua notifikasi sebagai sudah dibaca.
-  void markAllAsRead() {
-    notifications.value = notifications
-        .map((n) => n.copyWith(isRead: true))
-        .toList();
-    _syncUnreadToHomeController();
+  Future<void> markAllAsRead() async {
+    if (notifications.isEmpty || unreadCount == 0 || isMarkingAllRead.value) {
+      return;
+    }
+
+    isMarkingAllRead.value = true;
+    try {
+      await _service.markAllAsRead();
+      notifications.value = notifications
+          .map((item) => item.copyWith(isRead: true))
+          .toList();
+      _syncUnreadToHomeController();
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Semua notifikasi telah ditandai dibaca.',
+      );
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } finally {
+      isMarkingAllRead.value = false;
+    }
   }
 
-  /// Menghapus semua notifikasi.
-  void deleteAllNotifications() {
-    notifications.clear();
-    _syncUnreadToHomeController();
+  Future<void> deleteAllNotifications() async {
+    if (notifications.isEmpty || isDeletingAll.value) return;
+
+    isDeletingAll.value = true;
+    try {
+      await _service.deleteAll();
+      notifications.clear();
+      _syncUnreadToHomeController();
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Semua notifikasi berhasil dihapus.',
+      );
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } finally {
+      isDeletingAll.value = false;
+    }
   }
 
-  // =========================================================================
-  //  Internal
-  // =========================================================================
+  Future<void> openNotification(NotificationItem notification) async {
+    if (isProcessing(notification.id)) return;
 
-  /// Sinkronisasi jumlah notifikasi belum dibaca ke [HomeController].
+    processingNotificationIds.add(notification.id);
+    try {
+      NotificationItem activeNotification = notification;
+
+      if (!notification.isRead) {
+        activeNotification = await _service.markAsRead(notification.id);
+        _replaceNotification(activeNotification);
+        _syncUnreadToHomeController();
+      }
+
+      await _handleNavigation(activeNotification);
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } finally {
+      processingNotificationIds.remove(notification.id);
+    }
+  }
+
+  Future<void> _handleNavigation(NotificationItem notification) async {
+    if (notification.action == 'download') {
+      AppFeedback.showSnackbar(
+        title: 'Belum Didukung',
+        message:
+            'Aksi unduh dari notifikasi belum tersedia di aplikasi mobile.',
+        isError: true,
+      );
+      return;
+    }
+
+    final href = notification.href.trim();
+    if (href.isEmpty || href == '/notifications') {
+      return;
+    }
+
+    final submissionId = _extractSubmissionId(href);
+    if (submissionId != null) {
+      final submission = await _submissionLookupService.fetchSubmissionDetail(
+        submissionId,
+      );
+      final type = _resolveSubmissionType(submission.typeId, submission);
+
+      await Get.to(
+        () => SubmissionDetailPage(item: submission, type: type),
+        transition: Transition.rightToLeft,
+      );
+      return;
+    }
+
+    AppFeedback.showSnackbar(
+      title: 'Belum Didukung',
+      message: 'Tujuan notifikasi ini belum tersedia di aplikasi mobile.',
+      isError: true,
+    );
+  }
+
+  SubmissionType _resolveSubmissionType(int typeId, SubmissionItem submission) {
+    final submissionController = Get.find<SubmissionController>();
+    final knownType = submissionController.types.firstWhereOrNull(
+      (item) => item.id == typeId || item.code == submission.typeCode,
+    );
+
+    if (knownType != null) {
+      return knownType;
+    }
+
+    return SubmissionType(
+      id: typeId,
+      code: submission.typeCode,
+      name: submission.typeName,
+      description: submission.reason ?? submission.description,
+      deductsLeaveBalance: false,
+      approverName: '-',
+      approverPosition: '-',
+      maxDays: submission.totalDays,
+      allowDateRange: submission.endDate != null,
+      allowTimeRange:
+          submission.startTime != null || submission.endTime != null,
+      defaultYearlyQuota: 0,
+      allowCarryForward: false,
+      isActive: true,
+    );
+  }
+
+  int? _extractSubmissionId(String href) {
+    final match = RegExp(r'^/?submissions/(\d+)$').firstMatch(href);
+    if (match == null) return null;
+    return int.tryParse(match.group(1) ?? '');
+  }
+
+  void _replaceNotification(NotificationItem updated) {
+    final index = notifications.indexWhere((item) => item.id == updated.id);
+    if (index == -1) return;
+    notifications[index] = updated;
+  }
+
   void _syncUnreadToHomeController() {
-    final homeController = Get.find<HomeController>();
-    homeController.unreadNotifications.value = unreadCount;
+    if (!Get.isRegistered<HomeController>()) return;
+    Get.find<HomeController>().unreadNotifications.value = unreadCount;
   }
 }

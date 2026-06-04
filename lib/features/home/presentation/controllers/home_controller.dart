@@ -15,7 +15,7 @@ import '../../../presensi/presentation/pages/presence_page.dart';
 
 class HomeController extends GetxController {
   HomeController({required DashboardService dashboardService})
-      : _dashboardService = dashboardService;
+    : _dashboardService = dashboardService;
 
   final DashboardService _dashboardService;
 
@@ -79,6 +79,7 @@ class HomeController extends GetxController {
       todaySchedule.value = data.todaySchedule;
       attendanceTypes.assignAll(data.attendanceTypes);
       pendingSubmission.value = data.pendingSubmission;
+      unreadNotifications.value = data.unreadNotificationsCount;
 
       if (data.currentTpp != null) {
         tppStatistic.value = TppStatistic.fromDashboard(data.currentTpp!);
@@ -124,16 +125,17 @@ class HomeController extends GetxController {
     if (!record.attendanceType.isSkippable) {
       final records = schedule.records;
       final currentIndex = records.indexWhere((r) => r.id == record.id);
-      
+
       if (currentIndex > 0) {
         final hasUncompletedPrevious = records
             .take(currentIndex)
             .any((r) => !r.isCompleted);
-            
+
         if (hasUncompletedPrevious) {
           AppDialog.info(
             title: 'Urutan Presensi',
-            message: 'Anda harus menyelesaikan presensi sebelumnya terlebih dahulu.',
+            message:
+                'Anda harus menyelesaikan presensi sebelumnya terlebih dahulu.',
           );
           return;
         }
@@ -148,12 +150,15 @@ class HomeController extends GetxController {
         : 100;
 
     final config = AttendanceConfig.fromRecord(
-      record, 
-      locations, 
+      record,
+      locations,
       defaultRadius,
       storedFaceData: dashboardData.value?.user.faceData,
     );
-    Get.find<PresensiController>().setConfig(record.attendanceType.code, config);
+    Get.find<PresensiController>().setConfig(
+      record.attendanceType.code,
+      config,
+    );
     Get.to(() => const PresencePage());
   }
 

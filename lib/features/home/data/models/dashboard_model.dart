@@ -7,6 +7,7 @@ class DashboardModel {
     this.todaySchedule,
     this.pendingSubmission,
     this.currentTpp,
+    required this.unreadNotificationsCount,
     this.institutionInfo,
     required this.attendanceTypes,
     this.settings,
@@ -16,6 +17,7 @@ class DashboardModel {
   final TodaySchedule? todaySchedule;
   final DashboardPendingSubmission? pendingSubmission;
   final DashboardTpp? currentTpp;
+  final int unreadNotificationsCount;
   final DashboardInstitutionInfo? institutionInfo;
   final List<AttendanceTypeConfig> attendanceTypes;
   final Map<String, dynamic>? settings;
@@ -25,22 +27,27 @@ class DashboardModel {
       user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
       todaySchedule: json['today_schedule'] != null
           ? TodaySchedule.fromJson(
-              json['today_schedule'] as Map<String, dynamic>)
+              json['today_schedule'] as Map<String, dynamic>,
+            )
           : null,
       pendingSubmission: json['pending_submission'] != null
           ? DashboardPendingSubmission.fromJson(
-              json['pending_submission'] as Map<String, dynamic>)
+              json['pending_submission'] as Map<String, dynamic>,
+            )
           : null,
       currentTpp: json['current_tpp'] != null
           ? DashboardTpp.fromJson(json['current_tpp'] as Map<String, dynamic>)
           : null,
+      unreadNotificationsCount:
+          int.tryParse(json['unread_notifications_count']?.toString() ?? '') ??
+          0,
       institutionInfo: json['institution_info'] != null
           ? DashboardInstitutionInfo.fromJson(
-              json['institution_info'] as Map<String, dynamic>)
+              json['institution_info'] as Map<String, dynamic>,
+            )
           : null,
       attendanceTypes: (json['attendance_types'] as List<dynamic>? ?? [])
-          .map((e) =>
-              AttendanceTypeConfig.fromJson(e as Map<String, dynamic>))
+          .map((e) => AttendanceTypeConfig.fromJson(e as Map<String, dynamic>))
           .toList(),
       settings: json['settings'] as Map<String, dynamic>?,
     );
@@ -121,7 +128,8 @@ class TodaySchedule {
           : null,
       scheduledLocation: json['scheduled_location'] != null
           ? ScheduleLocation.fromJson(
-              json['scheduled_location'] as Map<String, dynamic>)
+              json['scheduled_location'] as Map<String, dynamic>,
+            )
           : null,
       records: (json['records'] as List<dynamic>? ?? [])
           .map((e) => TodayRecord.fromJson(e as Map<String, dynamic>))
@@ -219,7 +227,8 @@ class TodayRecord {
       id: json['id'] as int,
       sequenceNo: json['sequence_no'] as int,
       attendanceType: AttendanceTypeConfig.fromJson(
-          json['attendance_type'] as Map<String, dynamic>),
+        json['attendance_type'] as Map<String, dynamic>,
+      ),
       status: json['status'] as String? ?? 'Pending',
       expectedAt: json['expected_at'] as String?,
       windowOpenAt: json['window_open_at'] as String?,
@@ -228,7 +237,8 @@ class TodayRecord {
       photoUrl: json['photo_url'] as String?,
       requiredLocation: json['required_location'] != null
           ? RequiredLocation.fromJson(
-              json['required_location'] as Map<String, dynamic>)
+              json['required_location'] as Map<String, dynamic>,
+            )
           : null,
     );
   }
@@ -280,7 +290,8 @@ class AttendanceTypeConfig {
       requiresDeviceLock: json['requires_device_lock'] as bool? ?? false,
       isSkippable: json['is_skippable'] as bool? ?? true,
       isActive: json['is_active'] as bool? ?? true,
-      lateToleranceMinutes: int.tryParse(json['late_tolerance_minutes']?.toString() ?? '') ?? 0,
+      lateToleranceMinutes:
+          int.tryParse(json['late_tolerance_minutes']?.toString() ?? '') ?? 0,
     );
   }
 }
@@ -339,9 +350,11 @@ class DashboardTpp {
       id: json['id'] as int,
       periodDate: json['period_date'] as String? ?? '',
       amountBeforeDeduction:
-          double.tryParse(json['amount_before_deduction']?.toString() ?? '') ?? 0.0,
+          double.tryParse(json['amount_before_deduction']?.toString() ?? '') ??
+          0.0,
       amountAfterDeduction:
-          double.tryParse(json['amount_after_deduction']?.toString() ?? '') ?? 0.0,
+          double.tryParse(json['amount_after_deduction']?.toString() ?? '') ??
+          0.0,
       deductionAmount:
           double.tryParse(json['deduction_amount']?.toString() ?? '') ?? 0.0,
       disciplineScore:
@@ -368,8 +381,7 @@ class DashboardPendingSubmission {
   final String endDate;
 
   factory DashboardPendingSubmission.fromJson(Map<String, dynamic> json) {
-    final typeMap =
-        json['submission_type'] as Map<String, dynamic>? ?? {};
+    final typeMap = json['submission_type'] as Map<String, dynamic>? ?? {};
     final dateRange = json['date_range'] as Map<String, dynamic>? ?? {};
     return DashboardPendingSubmission(
       id: json['id'] as int,

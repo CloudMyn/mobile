@@ -18,7 +18,7 @@ class SubmissionAttachment {
       id: json['id'] as int,
       fileName: json['file_name'] as String? ?? '',
       fileUrl: json['file_url'] as String?,
-      fileSizeKb: json['file_size_kb'] as int?,
+      fileSizeKb: int.tryParse(json['file_size_kb']?.toString() ?? ''),
       mimeType: json['mime_type'] as String?,
     );
   }
