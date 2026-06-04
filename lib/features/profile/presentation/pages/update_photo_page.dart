@@ -7,6 +7,7 @@ import '../../../../design_system/components/app_avatar_badge.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
+import '../../../../design_system/tokens/app_typography.dart';
 import '../controllers/profile_controller.dart';
 
 class UpdatePhotoPage extends StatelessWidget {
@@ -16,6 +17,7 @@ class UpdatePhotoPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = Get.find<ProfileController>();
     final colors = Theme.of(context).extension<AppColors>()!;
+    final typography = Theme.of(context).extension<AppTypography>()!;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -36,6 +38,7 @@ class UpdatePhotoPage extends StatelessWidget {
                   );
                 }
                 return AppAvatar(
+                  imageUrl: ctrl.employee.value?.photoUrl,
                   initials: ctrl.initials,
                   size: 160.r,
                 );
@@ -65,15 +68,25 @@ class UpdatePhotoPage extends StatelessWidget {
                   onPressed: () => ctrl.pickPhoto(ImageSource.gallery),
                 ),
                 SizedBox(height: AppSpacing.s24.h),
-                Obx(() => AppButton(
-                      label: 'Simpan Foto',
-                      fullWidth: true,
-                      icon: Icons.check_circle_outline_rounded,
-                      isLoading: ctrl.isUpdatingPhoto.value,
-                      onPressed: ctrl.photoFile.value != null
-                          ? ctrl.uploadPhoto
-                          : null,
-                    )),
+                Text(
+                  'Foto harus berupa gambar dengan ukuran maksimal 2 MB.',
+                  style: typography.bodySmall.copyWith(
+                    color: colors.onSurface.withValues(alpha: 0.6),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: AppSpacing.s12.h),
+                Obx(
+                  () => AppButton(
+                    label: 'Simpan Foto',
+                    fullWidth: true,
+                    icon: Icons.check_circle_outline_rounded,
+                    isLoading: ctrl.isUpdatingPhoto.value,
+                    onPressed: ctrl.photoFile.value != null
+                        ? ctrl.uploadPhoto
+                        : null,
+                  ),
+                ),
               ],
             ),
           ),

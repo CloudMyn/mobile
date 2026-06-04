@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/session_manager.dart';
+import '../../../../core/network/token_storage.dart';
 import '../../../../design_system/components/app_button.dart';
 import '../../../../design_system/components/app_feedback.dart';
 import '../../../../design_system/tokens/app_colors.dart';
@@ -14,9 +16,9 @@ import '../../../auth/data/services/auth_service.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../data/models/employee_model.dart';
 import '../../data/models/shift_model.dart';
+import '../../data/repositories/profile_repository.dart';
 
 class ProfileController extends GetxController {
-  // ── Reactive state ──────────────────────────────────────────────────────────
   final employee = Rx<EmployeeModel?>(null);
   final shifts = <ShiftModel>[].obs;
   final selectedShiftId = Rx<String?>(null);
@@ -28,7 +30,6 @@ class ProfileController extends GetxController {
   final isUpdatingEmployee = false.obs;
   final isUpdatingShift = false.obs;
 
-  // Password form
   final formKeyPassword = GlobalKey<FormState>();
   final currentPassCtrl = TextEditingController();
   final newPassCtrl = TextEditingController();
@@ -37,26 +38,22 @@ class ProfileController extends GetxController {
   final isNewPassVisible = false.obs;
   final isConfirmPassVisible = false.obs;
 
-  // Employee form (editable fields)
   final formKeyEmployee = GlobalKey<FormState>();
   final namaCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
   final alamatCtrl = TextEditingController();
 
-  // ── Lifecycle ────────────────────────────────────────────────────────────────
   @override
   void onInit() {
     super.onInit();
-    
-    // Bind employee value to SessionManager's currentUser reactive state
+
     ever(Get.find<SessionManager>().currentUser, (user) {
       if (user != null) {
         _updateFromUser(user);
       }
     });
 
-    // Populate initially from SessionManager if user is already loaded
     final initialUser = Get.find<SessionManager>().currentUser.value;
     if (initialUser != null) {
       _updateFromUser(initialUser);
@@ -75,7 +72,7 @@ class ProfileController extends GetxController {
       unit: user.institution?.name ?? user.department?.name ?? '-',
       email: user.email,
       phone: user.phone ?? '-',
-      address: '-', // Backend response doesn't provide address in UserModel
+      address: '-',
       photoUrl: user.profilePictureUrl,
     );
     namaCtrl.text = employee.value!.name;
@@ -84,7 +81,6 @@ class ProfileController extends GetxController {
     alamatCtrl.text = employee.value!.address;
   }
 
-  // ── Data loading ─────────────────────────────────────────────────────────────
   Future<void> loadProfile() async {
     final sessionUser = Get.find<SessionManager>().currentUser.value;
     if (sessionUser != null) {
@@ -98,7 +94,6 @@ class ProfileController extends GetxController {
       Get.find<SessionManager>().setUser(user);
       _updateFromUser(user);
     } catch (_) {
-      // Fallback only if API fails and no session user exists
       employee.value = const EmployeeModel(
         id: '001',
         nip: '19850412 200903 1 012',
@@ -144,11 +139,9 @@ class ProfileController extends GetxController {
         isActive: false,
       ),
     ]);
-    selectedShiftId.value =
-        shifts.firstWhereOrNull((s) => s.isActive)?.id;
+    selectedShiftId.value = shifts.firstWhereOrNull((s) => s.isActive)?.id;
   }
 
-  // ── Photo update ─────────────────────────────────────────────────────────────
   Future<void> pickPhoto(ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
@@ -162,50 +155,123 @@ class ProfileController extends GetxController {
   }
 
   Future<void> uploadPhoto() async {
-    if (photoFile.value == null) return;
+    final file = photoFile.value;
+    if (file == null || isUpdatingPhoto.value) return;
+
     isUpdatingPhoto.value = true;
-    await Future.delayed(const Duration(seconds: 1));
-    isUpdatingPhoto.value = false;
-    AppFeedback.showSnackbar(
-      title: 'Berhasil',
-      message: 'Foto profil berhasil diperbarui',
-    );
-    Get.back();
+    try {
+      final updatedProfile = await Get.find<ProfileRepository>()
+          .updateProfilePhoto(file);
+      final session = Get.find<SessionManager>();
+      final currentUser = session.currentUser.value;
+
+      if (currentUser != null) {
+        session.setUser(_mergeProfileUpdate(currentUser, updatedProfile));
+      } else {
+        session.setUser(updatedProfile);
+      }
+
+      photoFile.value = null;
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Foto profil berhasil diperbarui',
+      );
+      Get.back();
+    } on ValidationException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.fieldError('profile_picture') ?? e.message,
+        isError: true,
+      );
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } finally {
+      isUpdatingPhoto.value = false;
+    }
   }
 
-  // ── Password validators ───────────────────────────────────────────────────────
   String? validateCurrentPassword(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Kata sandi lama tidak boleh kosong';
+    if (v == null || v.trim().isEmpty) {
+      return 'Kata sandi lama tidak boleh kosong';
+    }
     return null;
   }
 
   String? validateNewPassword(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Kata sandi baru tidak boleh kosong';
+    if (v == null || v.trim().isEmpty) {
+      return 'Kata sandi baru tidak boleh kosong';
+    }
     if (v.length < 8) return 'Kata sandi minimal 8 karakter';
     return null;
   }
 
   String? validateConfirmPassword(String? v) {
+    if (v == null || v.isEmpty) {
+      return 'Konfirmasi kata sandi tidak boleh kosong';
+    }
     if (v != newPassCtrl.text) return 'Konfirmasi kata sandi tidak cocok';
     return null;
   }
 
   Future<void> updatePassword() async {
-    if (!formKeyPassword.currentState!.validate()) return;
+    final formState = formKeyPassword.currentState;
+    if (formState == null ||
+        !formState.validate() ||
+        isUpdatingPassword.value) {
+      return;
+    }
+
     isUpdatingPassword.value = true;
-    await Future.delayed(const Duration(seconds: 1));
-    isUpdatingPassword.value = false;
-    currentPassCtrl.clear();
-    newPassCtrl.clear();
-    confirmPassCtrl.clear();
-    AppFeedback.showSnackbar(
-      title: 'Berhasil',
-      message: 'Kata sandi berhasil diperbarui',
-    );
-    Get.back();
+    try {
+      await Get.find<ProfileRepository>().updatePassword(
+        currentPassword: currentPassCtrl.text.trim(),
+        newPassword: newPassCtrl.text,
+        newPasswordConfirmation: confirmPassCtrl.text,
+      );
+      currentPassCtrl.clear();
+      newPassCtrl.clear();
+      confirmPassCtrl.clear();
+      FocusManager.instance.primaryFocus?.unfocus();
+      await Get.find<TokenStorage>().clearAll();
+      Get.find<SessionManager>().clear();
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Password berhasil diperbarui. Silakan login kembali.',
+      );
+      Get.offAll(() => const LoginPage());
+    } on ValidationException catch (e) {
+      final message =
+          e.fieldError('current_password') ??
+          e.fieldError('new_password') ??
+          e.fieldError('new_password_confirmation') ??
+          e.message;
+      AppFeedback.showSnackbar(title: 'Gagal', message: message, isError: true);
+    } on ApiException catch (e) {
+      final message = e.errorCode == 'WRONG_CURRENT_PASSWORD'
+          ? 'Password saat ini tidak sesuai'
+          : e.message;
+      AppFeedback.showSnackbar(title: 'Gagal', message: message, isError: true);
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } finally {
+      isUpdatingPassword.value = false;
+    }
   }
 
-  // ── Employee update ───────────────────────────────────────────────────────────
   Future<void> updateEmployeeData() async {
     if (!formKeyEmployee.currentState!.validate()) return;
     isUpdatingEmployee.value = true;
@@ -218,7 +284,6 @@ class ProfileController extends GetxController {
     Get.back();
   }
 
-  // ── Shift ─────────────────────────────────────────────────────────────────────
   void selectShift(String shiftId) {
     selectedShiftId.value = shiftId;
   }
@@ -235,7 +300,6 @@ class ProfileController extends GetxController {
     Get.back();
   }
 
-  // ── Logout ────────────────────────────────────────────────────────────────────
   Future<void> logout() async {
     final colors = Get.theme.extension<AppColors>()!;
     final textTheme = Get.textTheme;
@@ -255,7 +319,9 @@ class ProfileController extends GetxController {
               const SizedBox(height: AppSpacing.s16),
               Text(
                 'Keluar dari Aplikasi',
-                style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: AppSpacing.s8),
               Text(
@@ -314,12 +380,33 @@ class ProfileController extends GetxController {
     Get.offAll(() => const LoginPage());
   }
 
-  // ── Visibility toggles ────────────────────────────────────────────────────────
   void toggleCurrentPassVisibility() => isCurrentPassVisible.toggle();
   void toggleNewPassVisibility() => isNewPassVisible.toggle();
   void toggleConfirmPassVisibility() => isConfirmPassVisible.toggle();
 
-  // ── Helpers ───────────────────────────────────────────────────────────────────
+  UserModel _mergeProfileUpdate(UserModel current, UserModel updated) {
+    return current.copyWith(
+      name: updated.name.isNotEmpty ? updated.name : current.name,
+      fullName: updated.fullName.isNotEmpty
+          ? updated.fullName
+          : current.fullName,
+      phone: updated.phone ?? current.phone,
+      profilePictureUrl: updated.profilePictureUrl ?? current.profilePictureUrl,
+    );
+  }
+
+  @override
+  void onClose() {
+    currentPassCtrl.dispose();
+    newPassCtrl.dispose();
+    confirmPassCtrl.dispose();
+    namaCtrl.dispose();
+    emailCtrl.dispose();
+    phoneCtrl.dispose();
+    alamatCtrl.dispose();
+    super.onClose();
+  }
+
   String get initials {
     final name = employee.value?.name ?? '';
     final parts = name.trim().split(' ');

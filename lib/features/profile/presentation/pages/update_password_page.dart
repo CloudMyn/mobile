@@ -49,68 +49,78 @@ class UpdatePasswordPage extends StatelessWidget {
                 ),
               ),
               SizedBox(height: AppSpacing.s24.h),
-              Obx(() => AppTextField(
-                    label: 'Kata Sandi Lama',
-                    hint: 'Masukkan kata sandi saat ini',
-                    controller: ctrl.currentPassCtrl,
-                    obscureText: !ctrl.isCurrentPassVisible.value,
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        ctrl.isCurrentPassVisible.value
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                      ),
-                      onPressed: ctrl.toggleCurrentPassVisibility,
+              Obx(
+                () => AppTextField(
+                  label: 'Kata Sandi Lama',
+                  hint: 'Masukkan kata sandi saat ini',
+                  controller: ctrl.currentPassCtrl,
+                  obscureText: !ctrl.isCurrentPassVisible.value,
+                  prefixIcon: const Icon(Icons.lock_outline_rounded),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      ctrl.isCurrentPassVisible.value
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                     ),
-                    validator: ctrl.validateCurrentPassword,
-                    textInputAction: TextInputAction.next,
-                  )),
+                    onPressed: ctrl.toggleCurrentPassVisibility,
+                  ),
+                  validator: ctrl.validateCurrentPassword,
+                  textInputAction: TextInputAction.next,
+                ),
+              ),
               SizedBox(height: AppSpacing.s16.h),
-              Obx(() => AppTextField(
-                    label: 'Kata Sandi Baru',
-                    hint: 'Minimal 8 karakter',
-                    controller: ctrl.newPassCtrl,
-                    obscureText: !ctrl.isNewPassVisible.value,
-                    prefixIcon: const Icon(Icons.lock_reset_rounded),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        ctrl.isNewPassVisible.value
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                      ),
-                      onPressed: ctrl.toggleNewPassVisibility,
+              Obx(
+                () => AppTextField(
+                  label: 'Kata Sandi Baru',
+                  hint: 'Minimal 8 karakter',
+                  controller: ctrl.newPassCtrl,
+                  obscureText: !ctrl.isNewPassVisible.value,
+                  prefixIcon: const Icon(Icons.lock_reset_rounded),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      ctrl.isNewPassVisible.value
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                     ),
-                    validator: ctrl.validateNewPassword,
-                    textInputAction: TextInputAction.next,
-                  )),
+                    onPressed: ctrl.toggleNewPassVisibility,
+                  ),
+                  validator: ctrl.validateNewPassword,
+                  textInputAction: TextInputAction.next,
+                ),
+              ),
               SizedBox(height: AppSpacing.s16.h),
-              Obx(() => AppTextField(
-                    label: 'Konfirmasi Kata Sandi Baru',
-                    hint: 'Ulangi kata sandi baru',
-                    controller: ctrl.confirmPassCtrl,
-                    obscureText: !ctrl.isConfirmPassVisible.value,
-                    prefixIcon: const Icon(Icons.lock_person_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        ctrl.isConfirmPassVisible.value
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                      ),
-                      onPressed: ctrl.toggleConfirmPassVisibility,
+              Obx(
+                () => AppTextField(
+                  label: 'Konfirmasi Kata Sandi Baru',
+                  hint: 'Ulangi kata sandi baru',
+                  controller: ctrl.confirmPassCtrl,
+                  obscureText: !ctrl.isConfirmPassVisible.value,
+                  prefixIcon: const Icon(Icons.lock_person_outlined),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      ctrl.isConfirmPassVisible.value
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                     ),
-                    validator: ctrl.validateConfirmPassword,
-                    textInputAction: TextInputAction.done,
-                    onEditingComplete: ctrl.updatePassword,
-                  )),
+                    onPressed: ctrl.toggleConfirmPassVisibility,
+                  ),
+                  validator: ctrl.validateConfirmPassword,
+                  textInputAction: TextInputAction.done,
+                  onEditingComplete: ctrl.updatePassword,
+                ),
+              ),
               SizedBox(height: AppSpacing.s32.h),
-              Obx(() => AppButton(
-                    label: 'Perbarui Kata Sandi',
-                    fullWidth: true,
-                    icon: Icons.check_circle_outline_rounded,
-                    isLoading: ctrl.isUpdatingPassword.value,
-                    onPressed: ctrl.updatePassword,
-                  )),
+              Obx(
+                () => AppButton(
+                  label: 'Perbarui Kata Sandi',
+                  fullWidth: true,
+                  icon: Icons.check_circle_outline_rounded,
+                  isLoading: ctrl.isUpdatingPassword.value,
+                  onPressed: ctrl.isUpdatingPassword.value
+                      ? null
+                      : ctrl.updatePassword,
+                ),
+              ),
             ],
           ),
         ),

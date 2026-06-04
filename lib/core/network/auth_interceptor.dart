@@ -83,7 +83,7 @@ class AuthInterceptor extends Interceptor {
       }
     }
 
-    final exception = statusCode == 422
+    final exception = statusCode == 422 && validationErrors.isNotEmpty
         ? ValidationException(message: message, errors: validationErrors)
         : ApiException(
             statusCode: statusCode,

@@ -159,9 +159,9 @@ class AppBindings extends Bindings {
 
     // ── Informasi ─────────────────────────────────────────────────────────────
     Get.put<InformasiService>(InformasiService(dio), permanent: true);
-    Get.put<InformasiController>(
-      InformasiController(service: Get.find<InformasiService>()),
-      permanent: true,
+    Get.lazyPut<InformasiController>(
+      () => InformasiController(service: Get.find<InformasiService>()),
+      fenix: true,
     );
   }
 }

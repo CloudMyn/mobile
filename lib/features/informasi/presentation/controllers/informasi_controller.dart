@@ -125,6 +125,7 @@ class InformasiController extends GetxController {
   }
   
   Future<void> loadData() async {
+    if (isLoading.value) return;
     isLoading.value = true;
     errorMessage.value = null;
     try {

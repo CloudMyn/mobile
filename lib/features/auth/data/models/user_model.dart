@@ -52,11 +52,13 @@ class UserModel {
       jobTitle: json['job_title'] != null
           ? UserOrgUnit.fromJson(json['job_title'] as Map<String, dynamic>)
           : null,
-      roles: (json['roles'] as List<dynamic>?)
+      roles:
+          (json['roles'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      permissions: (json['permissions'] as List<dynamic>?)
+      permissions:
+          (json['permissions'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
@@ -65,6 +67,40 @@ class UserModel {
 
   bool hasRole(String role) => roles.contains(role);
   bool hasPermission(String permission) => permissions.contains(permission);
+
+  UserModel copyWith({
+    int? id,
+    String? uuid,
+    String? nip,
+    String? name,
+    String? fullName,
+    String? email,
+    String? phone,
+    String? profilePictureUrl,
+    String? faceData,
+    UserOrgUnit? institution,
+    UserOrgUnit? department,
+    UserOrgUnit? jobTitle,
+    List<String>? roles,
+    List<String>? permissions,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      uuid: uuid ?? this.uuid,
+      nip: nip ?? this.nip,
+      name: name ?? this.name,
+      fullName: fullName ?? this.fullName,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
+      faceData: faceData ?? this.faceData,
+      institution: institution ?? this.institution,
+      department: department ?? this.department,
+      jobTitle: jobTitle ?? this.jobTitle,
+      roles: roles ?? this.roles,
+      permissions: permissions ?? this.permissions,
+    );
+  }
 
   String get initials {
     final parts = name.trim().split(' ');

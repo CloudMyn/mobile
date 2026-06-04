@@ -31,6 +31,9 @@ class _InformasiPageState extends State<InformasiPage> {
   void initState() {
     super.initState();
     _ctrl = Get.find<InformasiController>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ctrl.loadData();
+    });
   }
 
   @override
@@ -195,13 +198,18 @@ class _InformasiPageState extends State<InformasiPage> {
 
               // List
               if (list.isEmpty)
-                SliverFillRemaining(
-                  child: AppEmptyState(
-                    icon: Icons.search_off_rounded,
-                    title: 'Tidak ada hasil',
-                    subtitle: 'Tidak ada informasi yang sesuai filter.',
-                  ),
-                )
+                if (_ctrl.selectedCategoryId.value != null ||
+                    _ctrl.dateRange.value != null)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: AppEmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'Tidak ada hasil',
+                      subtitle: 'Tidak ada informasi yang sesuai filter.',
+                    ),
+                  )
+                else
+                  const SliverToBoxAdapter(child: SizedBox.shrink())
               else
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(
