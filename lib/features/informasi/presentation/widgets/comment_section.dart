@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import '../../../../design_system/components/app_skeleton.dart';
 import '../../../../design_system/components/molecules/app_empty_state.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
@@ -59,7 +60,12 @@ class CommentSection extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.s16.h),
           if (isInitialLoading)
-            const Center(child: CircularProgressIndicator())
+            Column(
+              children: List.generate(
+                3,
+                (index) => const _CommentSkeleton(),
+              ),
+            )
           else if (error != null && comments.isEmpty)
             Column(
               children: [
@@ -91,10 +97,7 @@ class CommentSection extends StatelessWidget {
               ),
             ),
             if (isLoadingMore)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.s16.h),
-                child: const Center(child: CircularProgressIndicator()),
-              ),
+              const _CommentSkeleton(),
           ],
         ],
       );
@@ -284,3 +287,44 @@ class _CommentTile extends StatelessWidget {
     );
   }
 }
+
+class _CommentSkeleton extends StatelessWidget {
+  const _CommentSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: AppSpacing.s12.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSkeleton.circle(size: 34.w),
+          SizedBox(width: AppSpacing.s8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    AppSkeleton(width: 100.w, height: 14.h),
+                    SizedBox(width: AppSpacing.s8.w),
+                    AppSkeleton(width: 50.w, height: 10.h),
+                  ],
+                ),
+                SizedBox(height: 4.h),
+                AppSkeleton(
+                  width: double.infinity,
+                  height: 60.h,
+                  borderRadius: AppRadius.r12,
+                ),
+                SizedBox(height: 4.h),
+                AppSkeleton(width: 40.w, height: 12.h),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

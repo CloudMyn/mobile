@@ -31,6 +31,12 @@ class RequestLogController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Debounce search query to prevent lag on rapid typing
+    debounce(
+      searchQuery,
+      (_) => loadLogs(),
+      time: const Duration(milliseconds: 300),
+    );
     loadLogs();
   }
 
@@ -108,7 +114,7 @@ class RequestLogController extends GetxController {
 
   void setSearch(String query) {
     searchQuery.value = query;
-    loadLogs();
+    // loadLogs() will be triggered automatically by the debounce worker
   }
 
   void setDateRange(DateTime? start, DateTime? end) {
@@ -120,10 +126,13 @@ class RequestLogController extends GetxController {
   void clearFilters() {
     selectedMethod.value = null;
     selectedStatus.value = null;
-    searchQuery.value = '';
     startDate.value = null;
     endDate.value = null;
-    loadLogs();
+    if (searchQuery.value.isNotEmpty) {
+      searchQuery.value = ''; // Triggers debounce -> loadLogs()
+    } else {
+      loadLogs();
+    }
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────

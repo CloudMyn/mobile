@@ -45,10 +45,10 @@ class RequestLogPage extends StatelessWidget {
           _FilterSection(ctrl: ctrl, colors: colors, typography: typography),
           Expanded(
             child: Obx(() {
-              if (ctrl.isLoading.value && ctrl.logs.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
-              }
               if (ctrl.logs.isEmpty) {
+                if (ctrl.isLoading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
                 return _EmptyState(
                   colors: colors,
                   typography: typography,
@@ -413,12 +413,14 @@ class _LogList extends StatelessWidget {
                   ),
                 );
               }
-              return _LogListItem(
-                entry: ctrl.logs[index],
-                colors: colors,
-                typography: typography,
-                onTap: () => Get.to(
-                  () => RequestLogDetailPage(entry: ctrl.logs[index]),
+              return RepaintBoundary(
+                child: _LogListItem(
+                  entry: ctrl.logs[index],
+                  colors: colors,
+                  typography: typography,
+                  onTap: () => Get.to(
+                    () => RequestLogDetailPage(entry: ctrl.logs[index]),
+                  ),
                 ),
               );
             },

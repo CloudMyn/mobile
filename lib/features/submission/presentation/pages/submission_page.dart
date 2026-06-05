@@ -13,6 +13,7 @@ import '../../data/models/submission_type.dart';
 import '../controllers/submission_controller.dart';
 import 'submission_create_page.dart';
 import 'submission_detail_page.dart';
+import 'subordinate_submission_list_page.dart';
 import 'widgets/submission_card.dart';
 
 /// Halaman Pengajuan mandiri dengan AppBar — ditampilkan dari QuickActionGrid.
@@ -69,6 +70,16 @@ class _SubmissionPageState extends State<SubmissionPage>
         title: 'Pengajuan',
         variant: AppTopAppBarVariant.withBack,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.supervisor_account_rounded,
+              color: colors.onSurface,
+            ),
+            tooltip: 'Persetujuan Bawahan',
+            onPressed: () => Get.to(() => const SubordinateSubmissionListPage()),
+          ),
+        ],
       ),
       body: Obx(() {
         if (_ctrl.isLoadingTypes.value) return _buildSkeleton(colors);

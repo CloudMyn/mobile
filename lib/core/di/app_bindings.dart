@@ -34,7 +34,9 @@ import '../../features/profile/presentation/controllers/request_log_controller.d
 import '../../features/profile/presentation/controllers/theme_controller.dart';
 import '../../features/submission/data/services/submission_lookup_service.dart';
 import '../../features/submission/data/services/submission_service.dart';
+import '../../features/submission/data/services/subordinate_submission_service.dart';
 import '../../features/submission/presentation/controllers/submission_controller.dart';
+import '../../features/submission/presentation/controllers/subordinate_submission_controller.dart';
 
 /// Mendaftarkan semua dependency global.
 /// Async deps (SharedPreferences, FlutterSecureStorage) di-inisialisasi
@@ -112,12 +114,17 @@ class AppBindings extends Bindings {
 
     // ── Submission ────────────────────────────────────────────────────────────
     Get.put<SubmissionService>(MockSubmissionService(), permanent: true);
+    Get.put<SubordinateSubmissionService>(MockSubordinateSubmissionService(), permanent: true);
     Get.put<SubmissionLookupService>(
       SubmissionLookupService(dio),
       permanent: true,
     );
     Get.put<SubmissionController>(
       SubmissionController(service: Get.find<SubmissionService>()),
+      permanent: true,
+    );
+    Get.put<SubordinateSubmissionController>(
+      SubordinateSubmissionController(service: Get.find<SubordinateSubmissionService>()),
       permanent: true,
     );
 

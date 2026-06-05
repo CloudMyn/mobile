@@ -35,6 +35,7 @@ class AppTabs extends StatelessWidget {
             child: TabBar(
               controller: controller,
               isScrollable: isScrollable,
+              tabAlignment: isScrollable ? TabAlignment.start : TabAlignment.fill,
               tabs: tabs.map((t) {
                 if (t.icon != null) {
                   return Tab(text: t.label, icon: Icon(t.icon));

@@ -9,6 +9,7 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
+import '../../data/models/monthly_activity_stats.dart';
 import '../controllers/kinerja_statistik_controller.dart';
 
 class KinerjaStatistikPage extends StatefulWidget {
@@ -68,6 +69,8 @@ class _KinerjaStatistikPageState extends State<KinerjaStatistikPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildFilterRow(colors, typography),
+              SizedBox(height: AppSpacing.s16.h),
+              _buildTargetBulananCard(stats, colors, typography),
               SizedBox(height: AppSpacing.s24.h),
               if (total == 0)
                 Padding(
@@ -326,6 +329,75 @@ class _KinerjaStatistikPageState extends State<KinerjaStatistikPage> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildTargetBulananCard(
+    MonthlyActivityStats stats,
+    AppColors colors,
+    AppTypography typography,
+  ) {
+    return AppCard(
+      outlined: true,
+      padding: EdgeInsets.all(AppSpacing.s16.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.track_changes_rounded,
+                size: 16,
+                color: colors.warning,
+              ),
+              SizedBox(width: AppSpacing.s8.w),
+              Text(
+                'Target Bulanan',
+                style: typography.labelLarge.copyWith(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.s12.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${stats.totalActivities} / ${stats.target} Kegiatan',
+                style: typography.bodyMedium.copyWith(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '${(stats.progressPercent * 100).round()}%',
+                style: typography.labelLarge.copyWith(
+                  color: stats.progressPercent >= 1.0
+                      ? colors.success
+                      : colors.warning,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.s8.h),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.r4),
+            child: LinearProgressIndicator(
+              value: stats.progressPercent,
+              minHeight: 6.h,
+              backgroundColor: colors.outline.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                stats.progressPercent >= 1.0
+                    ? colors.success
+                    : colors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
