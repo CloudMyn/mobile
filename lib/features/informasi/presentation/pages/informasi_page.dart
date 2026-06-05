@@ -5,11 +5,11 @@ import '../../../../design_system/components/molecules/app_empty_state.dart';
 import '../../../../design_system/components/molecules/app_page_indicator.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
-import '../../../../design_system/tokens/app_radius.dart';
-import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
+import '../../../../design_system/tokens/app_spacing.dart';
 import '../../data/models/informasi_item.dart';
 import '../controllers/informasi_controller.dart';
+import '../widgets/active_filter_row.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/informasi_card.dart';
 import '../widgets/informasi_pinned_card.dart';
@@ -61,16 +61,14 @@ class _InformasiPageState extends State<InformasiPage> {
         variant: AppTopAppBarVariant.withActions,
         actions: [
           Obx(() {
-            final hasFilter = _ctrl.selectedCategoryId.value != null ||
+            final hasFilter =
+                _ctrl.selectedCategoryId.value != null ||
                 _ctrl.dateRange.value != null;
             return IconButton(
               icon: Badge(
                 isLabelVisible: hasFilter,
                 backgroundColor: colors.primary,
-                child: Icon(
-                  Icons.tune_rounded,
-                  color: colors.onSurface,
-                ),
+                child: Icon(Icons.tune_rounded, color: colors.onSurface),
               ),
               onPressed: () => FilterBottomSheet.show(context),
             );
@@ -90,14 +88,14 @@ class _InformasiPageState extends State<InformasiPage> {
             return AppEmptyState(
               icon: Icons.newspaper_rounded,
               title: 'Tidak ada informasi',
-              subtitle: _ctrl.errorMessage.value ??
+              subtitle:
+                  _ctrl.errorMessage.value ??
                   'Coba ubah filter atau periksa kembali nanti.',
             );
           }
 
           return CustomScrollView(
             slivers: [
-              // Pinned section
               if (pinned.isNotEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
@@ -180,8 +178,6 @@ class _InformasiPageState extends State<InformasiPage> {
                     ),
                   ),
                 ),
-
-              // Active filter chip
               if (_ctrl.selectedCategoryId.value != null ||
                   _ctrl.dateRange.value != null)
                 SliverToBoxAdapter(
@@ -192,11 +188,13 @@ class _InformasiPageState extends State<InformasiPage> {
                       AppSpacing.s16.w,
                       AppSpacing.s8.h,
                     ),
-                    child: _ActiveFilterRow(ctrl: _ctrl, colors: colors, typography: typography),
+                    child: ActiveFilterRow(
+                      ctrl: _ctrl,
+                      colors: colors,
+                      typography: typography,
+                    ),
                   ),
                 ),
-
-              // List
               if (list.isEmpty)
                 if (_ctrl.selectedCategoryId.value != null ||
                     _ctrl.dateRange.value != null)
@@ -219,120 +217,21 @@ class _InformasiPageState extends State<InformasiPage> {
                     AppSpacing.s32.h,
                   ),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (_, i) {
-                        final item = list[i];
-                        return InformasiCard(
-                          item: item,
-                          category: _ctrl.categories.firstWhereOrNull(
-                            (c) => c.id == item.categoryId,
-                          ),
-                          onTap: () => _openDetail(item),
-                        );
-                      },
-                      childCount: list.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((_, i) {
+                      final item = list[i];
+                      return InformasiCard(
+                        item: item,
+                        category: _ctrl.categories.firstWhereOrNull(
+                          (c) => c.id == item.categoryId,
+                        ),
+                        onTap: () => _openDetail(item),
+                      );
+                    }, childCount: list.length),
                   ),
                 ),
             ],
           );
         }),
-      ),
-    );
-  }
-}
-
-class _ActiveFilterRow extends StatelessWidget {
-  final InformasiController ctrl;
-  final AppColors colors;
-  final AppTypography typography;
-
-  const _ActiveFilterRow({
-    required this.ctrl,
-    required this.colors,
-    required this.typography,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cat = ctrl.selectedCategoryId.value != null
-        ? ctrl.categories
-            .firstWhereOrNull((c) => c.id == ctrl.selectedCategoryId.value)
-        : null;
-    final range = ctrl.dateRange.value;
-
-    return Wrap(
-      spacing: 8.w,
-      children: [
-        if (cat != null)
-          _FilterChip(
-            label: cat.name,
-            color: cat.color,
-            onRemove: () => ctrl.selectCategory(null),
-            typography: typography,
-          ),
-        if (range != null)
-          _FilterChip(
-            label: '${_fmt(range.start)} – ${_fmt(range.end)}',
-            color: colors.primary,
-            onRemove: () => ctrl.applyDateRange(null),
-            typography: typography,
-          ),
-      ],
-    );
-  }
-
-  String _fmt(DateTime d) {
-    const m = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    return '${d.day} ${m[d.month]}';
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final Color color;
-  final VoidCallback onRemove;
-  final AppTypography typography;
-
-  const _FilterChip({
-    required this.label,
-    required this.color,
-    required this.onRemove,
-    required this.typography,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.s8.w,
-        vertical: AppSpacing.s4.h,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppRadius.r20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: typography.caption.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(width: AppSpacing.s4.w),
-          InkWell(
-            onTap: onRemove,
-            borderRadius: BorderRadius.circular(AppRadius.circular),
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.s2.w),
-              child: Icon(Icons.close_rounded, size: 12.sp, color: color),
-            ),
-          ),
-        ],
       ),
     );
   }

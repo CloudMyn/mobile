@@ -4,6 +4,7 @@ import '../../../../core/network/api_response.dart';
 import '../models/comment_item.dart';
 import '../models/informasi_category.dart';
 import '../models/informasi_item.dart';
+import '../models/paginated_comment_result.dart';
 
 class InformasiFeedResult {
   const InformasiFeedResult({
@@ -20,11 +21,11 @@ class InformasiFeedResult {
 class InformasiDetailResult {
   const InformasiDetailResult({
     required this.article,
-    required this.comments,
+    required this.relatedItems,
   });
 
   final InformasiItem article;
-  final List<CommentItem> comments;
+  final List<InformasiItem> relatedItems;
 }
 
 class InformasiService {
@@ -34,7 +35,9 @@ class InformasiService {
 
   Future<InformasiFeedResult> fetchFeed() async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>('/mobile/information');
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/mobile/information',
+      );
       final envelope = ApiResponse.fromJson(
         response.data!,
         (data) => data as Map<String, dynamic>,
@@ -48,11 +51,15 @@ class InformasiService {
         items: (payload['items'] as List<dynamic>? ?? [])
             .map((item) => InformasiItem.fromJson(item as Map<String, dynamic>))
             .toList(),
-        categories: ((payload['filters'] as Map<String, dynamic>?)?['categories']
-                    as List<dynamic>? ??
-                [])
-            .map((item) => InformasiCategory.fromJson(item as Map<String, dynamic>))
-            .toList(),
+        categories:
+            ((payload['filters'] as Map<String, dynamic>?)?['categories']
+                        as List<dynamic>? ??
+                    [])
+                .map(
+                  (item) =>
+                      InformasiCategory.fromJson(item as Map<String, dynamic>),
+                )
+                .toList(),
       );
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal memuat informasi');
@@ -61,19 +68,22 @@ class InformasiService {
 
   Future<InformasiDetailResult> fetchDetail(String slug) async {
     try {
-      final response =
-          await _dio.get<Map<String, dynamic>>('/mobile/information/$slug');
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/mobile/information/$slug',
+      );
       final envelope = ApiResponse.fromJson(
         response.data!,
         (data) => data as Map<String, dynamic>,
       );
       final payload = envelope.data ?? <String, dynamic>{};
       final articleJson = payload['article'] as Map<String, dynamic>? ?? {};
-      final commentsJson = payload['comments'] as List<dynamic>? ?? [];
+      final relatedJson = payload['related_items'] as List<dynamic>? ?? [];
 
       return InformasiDetailResult(
         article: InformasiItem.fromJson(articleJson),
-        comments: [],
+        relatedItems: relatedJson
+            .map((item) => InformasiItem.fromJson(item as Map<String, dynamic>))
+            .toList(),
       );
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal memuat detail informasi');
@@ -82,7 +92,6 @@ class InformasiService {
 
   Future<CommentItem> addComment({
     required String articleId,
-    required String articleSlug,
     required String content,
     String? parentId,
   }) async {
@@ -112,11 +121,15 @@ class InformasiService {
     }
   }
 
-  Future<List<CommentItem>> fetchComments(String slug, {int page = 1}) async {
+  Future<PaginatedCommentResult> fetchComments(
+    String slug, {
+    int page = 1,
+    int perPage = 15,
+  }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/mobile/information/$slug/comments',
-        queryParameters: {'page': page},
+        queryParameters: {'page': page, 'per_page': perPage},
       );
       final envelope = ApiResponse.fromJson(
         response.data!,
@@ -124,9 +137,15 @@ class InformasiService {
       );
       final payload = envelope.data ?? <String, dynamic>{};
       final itemsJson = payload['items'] as List<dynamic>? ?? [];
-      return itemsJson
-          .map((item) => CommentItem.fromJson(item as Map<String, dynamic>))
-          .toList();
+      return PaginatedCommentResult(
+        items: itemsJson
+            .map((item) => CommentItem.fromJson(item as Map<String, dynamic>))
+            .toList(),
+        currentPage: envelope.meta?.currentPage ?? page,
+        perPage: envelope.meta?.perPage ?? perPage,
+        total: envelope.meta?.total ?? itemsJson.length,
+        lastPage: envelope.meta?.lastPage ?? page,
+      );
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal memuat komentar');
     }

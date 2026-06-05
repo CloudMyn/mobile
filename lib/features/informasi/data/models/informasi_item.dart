@@ -2,7 +2,9 @@ class InformasiItem {
   final String id;
   final String slug;
   final String title;
+  final String excerpt;
   final String content;
+  final String contentFormat;
   final String categoryId;
   final String author;
   final String? imageUrl;
@@ -16,7 +18,9 @@ class InformasiItem {
     required this.id,
     required this.slug,
     required this.title,
+    this.excerpt = '',
     required this.content,
+    this.contentFormat = 'html',
     required this.categoryId,
     required this.author,
     this.imageUrl,
@@ -38,18 +42,56 @@ class InformasiItem {
       id: '${json['id']}',
       slug: json['slug']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
+      excerpt: json['excerpt']?.toString() ?? '',
       content: (json['content'] ?? json['content_preview'] ?? '').toString(),
+      contentFormat: json['content_format']?.toString() ?? 'html',
       categoryId: '${json['category_id'] ?? category?['id'] ?? ''}',
-      author: json['author_name']?.toString() ??
+      author:
+          json['author_name']?.toString() ??
           (json['author'] as Map<String, dynamic>?)?['name']?.toString() ??
           '',
       imageUrl: json['cover_image_url']?.toString(),
       isPinned: json['is_pinned'] as bool? ?? false,
-      publishedAt: DateTime.tryParse(json['published_at']?.toString() ?? '') ??
+      publishedAt:
+          DateTime.tryParse(json['published_at']?.toString() ?? '') ??
           DateTime.now(),
       tags: tags,
       commentCount: json['comment_count'] as int? ?? 0,
       viewCount: json['view_count'] as int? ?? 0,
+    );
+  }
+
+  InformasiItem copyWith({
+    String? id,
+    String? slug,
+    String? title,
+    String? excerpt,
+    String? content,
+    String? contentFormat,
+    String? categoryId,
+    String? author,
+    String? imageUrl,
+    bool? isPinned,
+    DateTime? publishedAt,
+    List<String>? tags,
+    int? commentCount,
+    int? viewCount,
+  }) {
+    return InformasiItem(
+      id: id ?? this.id,
+      slug: slug ?? this.slug,
+      title: title ?? this.title,
+      excerpt: excerpt ?? this.excerpt,
+      content: content ?? this.content,
+      contentFormat: contentFormat ?? this.contentFormat,
+      categoryId: categoryId ?? this.categoryId,
+      author: author ?? this.author,
+      imageUrl: imageUrl ?? this.imageUrl,
+      isPinned: isPinned ?? this.isPinned,
+      publishedAt: publishedAt ?? this.publishedAt,
+      tags: tags ?? this.tags,
+      commentCount: commentCount ?? this.commentCount,
+      viewCount: viewCount ?? this.viewCount,
     );
   }
 }
