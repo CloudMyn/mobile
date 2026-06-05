@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../design_system/components/app_feedback.dart';
 import '../../data/models/subordinate_activity_item.dart';
 import '../../data/services/kinerja_bawahan_service.dart';
 
@@ -72,7 +73,11 @@ class KinerjaBawahanController extends GetxController {
       pendingActivities.addAll(result);
       _pagePending++;
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memuat data pending: $e', snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Gagal memuat data pending: $e',
+        isError: true,
+      );
     } finally {
       isLoadingPending.value = false;
     }
@@ -96,7 +101,11 @@ class KinerjaBawahanController extends GetxController {
       approvedActivities.addAll(result);
       _pageApproved++;
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memuat data disetujui: $e', snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Gagal memuat data disetujui: $e',
+        isError: true,
+      );
     } finally {
       isLoadingApproved.value = false;
     }
@@ -120,7 +129,11 @@ class KinerjaBawahanController extends GetxController {
       rejectedActivities.addAll(result);
       _pageRejected++;
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memuat data ditolak: $e', snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Gagal memuat data ditolak: $e',
+        isError: true,
+      );
     } finally {
       isLoadingRejected.value = false;
     }
@@ -140,13 +153,16 @@ class KinerjaBawahanController extends GetxController {
       
       loadPendingCount();
       
-      Get.snackbar(
-        'Berhasil', 
-        'Kinerja bawahan berhasil disetujui',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Kinerja bawahan berhasil disetujui',
       );
     } catch (e) {
-      Get.snackbar('Error', 'Gagal menyetujui: $e', snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Gagal menyetujui: $e',
+        isError: true,
+      );
     }
   }
 
@@ -164,13 +180,16 @@ class KinerjaBawahanController extends GetxController {
       
       loadPendingCount();
       
-      Get.snackbar(
-        'Berhasil', 
-        'Kinerja bawahan telah ditolak',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Kinerja bawahan telah ditolak',
       );
     } catch (e) {
-      Get.snackbar('Error', 'Gagal menolak: $e', snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Gagal menolak: $e',
+        isError: true,
+      );
     }
   }
 
