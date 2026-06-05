@@ -15,19 +15,23 @@ import '../../../auth/data/models/user_model.dart';
 import '../../../auth/data/services/auth_service.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../data/models/employee_model.dart';
+import '../../data/models/profile_employee_data_model.dart';
 import '../../data/models/shift_model.dart';
 import '../../data/repositories/profile_repository.dart';
 
 class ProfileController extends GetxController {
   final employee = Rx<EmployeeModel?>(null);
+  final employeeData = Rx<ProfileEmployeeDataModel?>(null);
   final shifts = <ShiftModel>[].obs;
   final selectedShiftId = Rx<String?>(null);
   final photoFile = Rx<File?>(null);
 
   final isLoadingProfile = false.obs;
+  final isLoadingEmployeeData = false.obs;
   final isUpdatingPhoto = false.obs;
   final isUpdatingPassword = false.obs;
-  final isUpdatingEmployee = false.obs;
+  final isSavingHistoricalData = false.obs;
+  final isSavingContactData = false.obs;
   final isUpdatingShift = false.obs;
 
   final formKeyPassword = GlobalKey<FormState>();
@@ -38,11 +42,15 @@ class ProfileController extends GetxController {
   final isNewPassVisible = false.obs;
   final isConfirmPassVisible = false.obs;
 
-  final formKeyEmployee = GlobalKey<FormState>();
+  final formKeyHistorical = GlobalKey<FormState>();
+  final formKeyContact = GlobalKey<FormState>();
   final namaCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
   final alamatCtrl = TextEditingController();
+
+  bool get employeeDataExists => employeeData.value != null;
+  bool get canEditHistoricalData => !employeeDataExists;
 
   @override
   void onInit() {
@@ -50,41 +58,53 @@ class ProfileController extends GetxController {
 
     ever(Get.find<SessionManager>().currentUser, (user) {
       if (user != null) {
-        _updateFromUser(user);
+        _syncEmployeeState(user: user);
       }
     });
 
     final initialUser = Get.find<SessionManager>().currentUser.value;
     if (initialUser != null) {
-      _updateFromUser(initialUser);
+      _syncEmployeeState(user: initialUser);
     }
 
     loadProfile();
+    loadEmployeeData();
     loadShifts();
   }
 
-  void _updateFromUser(UserModel user) {
+  void _syncEmployeeState({UserModel? user}) {
+    final resolvedUser = user ?? Get.find<SessionManager>().currentUser.value;
+    if (resolvedUser == null) return;
+
+    final historicalData = employeeData.value;
+    final fullName = historicalData != null && historicalData.fullName.trim().isNotEmpty
+        ? historicalData.fullName
+        : (resolvedUser.fullName.isNotEmpty ? resolvedUser.fullName : resolvedUser.name);
+    final phone = resolvedUser.phone ?? historicalData?.phone ?? '';
+    final address = historicalData?.address ?? '';
+
     employee.value = EmployeeModel(
-      id: user.id.toString(),
-      nip: user.nip,
-      name: user.fullName.isNotEmpty ? user.fullName : user.name,
-      position: user.jobTitle?.name ?? '-',
-      unit: user.institution?.name ?? user.department?.name ?? '-',
-      email: user.email,
-      phone: user.phone ?? '-',
-      address: '-',
-      photoUrl: user.profilePictureUrl,
+      id: resolvedUser.id.toString(),
+      nip: historicalData?.nip.isNotEmpty == true ? historicalData!.nip : resolvedUser.nip,
+      name: fullName,
+      position: resolvedUser.jobTitle?.name ?? '-',
+      unit: resolvedUser.institution?.name ?? resolvedUser.department?.name ?? '-',
+      email: resolvedUser.email,
+      phone: phone,
+      address: address,
+      photoUrl: resolvedUser.profilePictureUrl,
     );
-    namaCtrl.text = employee.value!.name;
-    emailCtrl.text = employee.value!.email;
-    phoneCtrl.text = employee.value!.phone;
-    alamatCtrl.text = employee.value!.address;
+
+    namaCtrl.text = fullName;
+    emailCtrl.text = resolvedUser.email;
+    phoneCtrl.text = phone;
+    alamatCtrl.text = address;
   }
 
   Future<void> loadProfile() async {
     final sessionUser = Get.find<SessionManager>().currentUser.value;
     if (sessionUser != null) {
-      _updateFromUser(sessionUser);
+      _syncEmployeeState(user: sessionUser);
       return;
     }
 
@@ -92,7 +112,7 @@ class ProfileController extends GetxController {
     try {
       final user = await Get.find<AuthService>().getMe();
       Get.find<SessionManager>().setUser(user);
-      _updateFromUser(user);
+      _syncEmployeeState(user: user);
     } catch (_) {
       employee.value = const EmployeeModel(
         id: '001',
@@ -102,7 +122,7 @@ class ProfileController extends GetxController {
         unit: 'Dinas Komunikasi dan Informatika',
         email: 'budi.santoso@barrukab.go.id',
         phone: '08123456789',
-        address: 'Jl. Soppeng No. 1, Barru',
+        address: '',
         photoUrl: null,
       );
       namaCtrl.text = employee.value!.name;
@@ -111,6 +131,21 @@ class ProfileController extends GetxController {
       alamatCtrl.text = employee.value!.address;
     } finally {
       isLoadingProfile.value = false;
+    }
+  }
+
+  Future<void> loadEmployeeData() async {
+    isLoadingEmployeeData.value = true;
+    try {
+      employeeData.value = await Get.find<ProfileRepository>().getEmployeeData();
+      _syncEmployeeState();
+    } on ApiException {
+      employeeData.value = null;
+      _syncEmployeeState();
+    } on NetworkException {
+      // Biarkan UI menggunakan data session saat koneksi gagal.
+    } finally {
+      isLoadingEmployeeData.value = false;
     }
   }
 
@@ -223,6 +258,14 @@ class ProfileController extends GetxController {
     return null;
   }
 
+  String? validateHistoricalFullName(String? value) {
+    if (!canEditHistoricalData) return null;
+    if (value == null || value.trim().isEmpty) {
+      return 'Nama lengkap tidak boleh kosong';
+    }
+    return null;
+  }
+
   Future<void> updatePassword() async {
     final formState = formKeyPassword.currentState;
     if (formState == null ||
@@ -272,16 +315,127 @@ class ProfileController extends GetxController {
     }
   }
 
-  Future<void> updateEmployeeData() async {
-    if (!formKeyEmployee.currentState!.validate()) return;
-    isUpdatingEmployee.value = true;
-    await Future.delayed(const Duration(seconds: 1));
-    isUpdatingEmployee.value = false;
-    AppFeedback.showSnackbar(
-      title: 'Berhasil',
-      message: 'Data pegawai berhasil diperbarui',
-    );
-    Get.back();
+  Future<void> saveHistoricalEmployeeData() async {
+    final formState = formKeyHistorical.currentState;
+    if (!canEditHistoricalData ||
+        formState == null ||
+        !formState.validate() ||
+        isSavingHistoricalData.value) {
+      return;
+    }
+
+    isSavingHistoricalData.value = true;
+    try {
+      employeeData.value = await Get.find<ProfileRepository>().upsertEmployeeData(
+        fullName: namaCtrl.text.trim(),
+      );
+      _syncEmployeeState();
+      FocusManager.instance.primaryFocus?.unfocus();
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Data historis berhasil disimpan',
+      );
+    } on ValidationException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.fieldError('full_name') ?? e.message,
+        isError: true,
+      );
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } finally {
+      isSavingHistoricalData.value = false;
+    }
+  }
+
+  Future<void> saveEditableEmployeeData() async {
+    final formState = formKeyContact.currentState;
+    if (formState == null || !formState.validate() || isSavingContactData.value) {
+      return;
+    }
+
+    final session = Get.find<SessionManager>();
+    final currentUser = session.currentUser.value;
+    final currentPhone = currentUser?.phone ?? '';
+    final currentAddress = employeeData.value?.address ?? '';
+    final nextPhone = phoneCtrl.text.trim();
+    final nextAddress = alamatCtrl.text.trim();
+
+    final phoneChanged = nextPhone != currentPhone;
+    final addressChanged = nextAddress != currentAddress;
+    final shouldBootstrapEmployeeData = !employeeDataExists && nextAddress.isNotEmpty;
+
+    if (!phoneChanged && !addressChanged && !shouldBootstrapEmployeeData) {
+      AppFeedback.showSnackbar(
+        title: 'Info',
+        message: 'Tidak ada perubahan yang perlu disimpan',
+      );
+      return;
+    }
+
+    isSavingContactData.value = true;
+    try {
+      if (phoneChanged) {
+        final updatedProfile = await Get.find<ProfileRepository>().updateProfile(
+          phone: nextPhone.isEmpty ? '' : nextPhone,
+        );
+
+        if (currentUser != null) {
+          session.setUser(_mergeProfileUpdate(currentUser, updatedProfile));
+        } else {
+          session.setUser(updatedProfile);
+        }
+      }
+
+      if (addressChanged || shouldBootstrapEmployeeData) {
+        employeeData.value = await Get.find<ProfileRepository>().upsertEmployeeData(
+          fullName: employeeDataExists ? null : namaCtrl.text.trim(),
+          address: nextAddress,
+        );
+      }
+
+      _syncEmployeeState();
+      FocusManager.instance.primaryFocus?.unfocus();
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Data kontak berhasil diperbarui',
+      );
+    } on ValidationException catch (e) {
+      final message =
+          e.fieldError('phone') ??
+          e.fieldError('address') ??
+          e.fieldError('full_name') ??
+          e.message;
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: message,
+        isError: true,
+      );
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } finally {
+      isSavingContactData.value = false;
+    }
   }
 
   void selectShift(String shiftId) {
@@ -390,8 +544,8 @@ class ProfileController extends GetxController {
       fullName: updated.fullName.isNotEmpty
           ? updated.fullName
           : current.fullName,
-      phone: updated.phone ?? current.phone,
-      profilePictureUrl: updated.profilePictureUrl ?? current.profilePictureUrl,
+      phone: updated.phone,
+      profilePictureUrl: updated.profilePictureUrl,
     );
   }
 

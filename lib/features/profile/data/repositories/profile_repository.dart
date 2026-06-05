@@ -3,11 +3,18 @@ import 'package:dio/dio.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/api_response.dart';
 import '../../../auth/data/models/user_model.dart';
+import '../models/profile_employee_data_model.dart';
 
 abstract class ProfileRepository {
   Future<UserModel> enrollFace(String faceDataBase64);
   Future<UserModel> deleteFace();
   Future<UserModel> updateProfilePhoto(File file);
+  Future<UserModel> updateProfile({String? name, String? fullName, String? phone});
+  Future<ProfileEmployeeDataModel?> getEmployeeData();
+  Future<ProfileEmployeeDataModel> upsertEmployeeData({
+    String? fullName,
+    String? address,
+  });
   Future<void> updatePassword({
     required String currentPassword,
     required String newPassword,
@@ -80,6 +87,76 @@ class ProfileRepositoryImpl implements ProfileRepository {
       ).data!;
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal memperbarui foto profil');
+    }
+  }
+
+  @override
+  Future<UserModel> updateProfile({
+    String? name,
+    String? fullName,
+    String? phone,
+  }) async {
+    try {
+      final payload = <String, dynamic>{};
+      if (name != null) payload['name'] = name;
+      if (fullName != null) payload['full_name'] = fullName;
+      if (phone != null) payload['phone'] = phone;
+
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/mobile/profile',
+        data: FormData.fromMap(payload),
+      );
+
+      return ApiResponse.fromJson(
+        response.data!,
+        (data) => UserModel.fromJson(data as Map<String, dynamic>),
+      ).data!;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memperbarui profil');
+    }
+  }
+
+  @override
+  Future<ProfileEmployeeDataModel?> getEmployeeData() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/mobile/profile/employee-data',
+      );
+
+      return ApiResponse.fromJson(
+        response.data!,
+        (data) => ProfileEmployeeDataModel.fromJson(
+          data as Map<String, dynamic>,
+        ),
+      ).data;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memuat data pegawai');
+    }
+  }
+
+  @override
+  Future<ProfileEmployeeDataModel> upsertEmployeeData({
+    String? fullName,
+    String? address,
+  }) async {
+    try {
+      final payload = <String, dynamic>{};
+      if (fullName != null) payload['full_name'] = fullName;
+      if (address != null) payload['address'] = address;
+
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/mobile/profile/employee-data',
+        data: FormData.fromMap(payload),
+      );
+
+      return ApiResponse.fromJson(
+        response.data!,
+        (data) => ProfileEmployeeDataModel.fromJson(
+          data as Map<String, dynamic>,
+        ),
+      ).data!;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memperbarui data pegawai');
     }
   }
 
