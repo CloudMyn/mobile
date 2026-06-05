@@ -18,8 +18,11 @@ import '../../features/home/presentation/controllers/notification_controller.dar
 import '../../features/home/presentation/controllers/statistik_controller.dart';
 import '../../features/informasi/data/services/informasi_service.dart';
 import '../../features/informasi/presentation/controllers/informasi_controller.dart';
+import '../../features/kinerja/data/services/kinerja_bawahan_service.dart';
 import '../../features/kinerja/data/services/kinerja_service.dart';
+import '../../features/kinerja/presentation/controllers/kinerja_bawahan_controller.dart';
 import '../../features/kinerja/presentation/controllers/kinerja_controller.dart';
+import '../../features/kinerja/presentation/controllers/kinerja_statistik_controller.dart';
 import '../../features/presensi/data/repositories/attendance_history_repository.dart';
 import '../../features/presensi/data/repositories/presensi_repository.dart';
 import '../../features/presensi/data/services/face_service.dart';
@@ -123,6 +126,17 @@ class AppBindings extends Bindings {
     Get.put<KinerjaController>(
       KinerjaController(service: Get.find<KinerjaService>()),
       permanent: true,
+    );
+
+    Get.put<KinerjaBawahanService>(MockKinerjaBawahanService(), permanent: true);
+    Get.put<KinerjaBawahanController>(
+      KinerjaBawahanController(service: Get.find<KinerjaBawahanService>()),
+      permanent: true,
+    );
+
+    Get.lazyPut<KinerjaStatistikController>(
+      () => KinerjaStatistikController(service: Get.find<KinerjaService>()),
+      fenix: true,
     );
 
     // ── Home ──────────────────────────────────────────────────────────────────

@@ -30,22 +30,40 @@ class AppAvatar extends StatelessWidget {
           decoration: BoxDecoration(
             color: colors.primaryContainer,
             shape: BoxShape.circle,
-            image: imageUrl != null
-                ? DecorationImage(image: NetworkImage(imageUrl!), fit: BoxFit.cover)
-                : null,
           ),
-          child: imageUrl == null && initials != null
-              ? Center(
-                  child: Text(
-                    initials!,
-                    style: TextStyle(
-                      color: colors.onPrimaryContainer,
-                      fontWeight: FontWeight.bold,
-                      fontSize: size * 0.4,
-                    ),
-                  ),
-                )
-              : null,
+          child: ClipOval(
+            child: imageUrl != null
+                ? Image.network(
+                    imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return initials != null
+                          ? Center(
+                              child: Text(
+                                initials!,
+                                style: TextStyle(
+                                  color: colors.onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: size * 0.4,
+                                ),
+                              ),
+                            )
+                          : const SizedBox();
+                    },
+                  )
+                : (initials != null
+                    ? Center(
+                        child: Text(
+                          initials!,
+                          style: TextStyle(
+                            color: colors.onPrimaryContainer,
+                            fontWeight: FontWeight.bold,
+                            fontSize: size * 0.4,
+                          ),
+                        ),
+                      )
+                    : const SizedBox()),
+          ),
         ),
         if (status != AppAvatarStatus.none)
           Positioned(

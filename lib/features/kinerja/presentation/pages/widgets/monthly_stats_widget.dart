@@ -5,7 +5,9 @@ import '../../../../../design_system/tokens/app_colors.dart';
 import '../../../../../design_system/tokens/app_radius.dart';
 import '../../../../../design_system/tokens/app_spacing.dart';
 import '../../../../../design_system/tokens/app_typography.dart';
+import 'package:get/get.dart';
 import '../../../data/models/monthly_activity_stats.dart';
+import '../kinerja_statistik_page.dart';
 
 class MonthlyStatsWidget extends StatelessWidget {
   final MonthlyActivityStats stats;
@@ -20,9 +22,10 @@ class MonthlyStatsWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Card Total Aktivitas ─────────────────────────────
+        // ── Card Total Kinerja ───────────────────────────────
         AppCard(
           outlined: true,
+          onTap: () => Get.to(() => const KinerjaStatistikPage()),
           padding: EdgeInsets.all(AppSpacing.s16.w),
           child: Row(
             children: [
@@ -45,12 +48,12 @@ class MonthlyStatsWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Total Aktivitas',
+                      'Total Kinerja',
                       style: typography.bodySmall.copyWith(
                         color: colors.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
-                    SizedBox(height: 2.h),
+                    SizedBox(height: 5.h),
                     Text(
                       '${stats.totalActivities} Kegiatan',
                       style: typography.titleMedium.copyWith(
@@ -64,81 +67,8 @@ class MonthlyStatsWidget extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(height: AppSpacing.s8.h),
 
-        // ── Card Aktivitas per Kategori ─────────────────────
-        AppCard(
-          outlined: true,
-          padding: EdgeInsets.all(AppSpacing.s16.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.category_rounded,
-                    size: 16,
-                    color: colors.secondary,
-                  ),
-                  SizedBox(width: AppSpacing.s8.w),
-                  Text(
-                    'Per Kategori',
-                    style: typography.labelLarge.copyWith(
-                      color: colors.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: AppSpacing.s12.h),
-              ...stats.activitiesByCategory.entries.map(
-                (entry) => Padding(
-                  padding: EdgeInsets.only(bottom: AppSpacing.s4.h),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: colors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      SizedBox(width: AppSpacing.s8.w),
-                      Expanded(
-                        child: Text(
-                          entry.key,
-                          style: typography.bodySmall.copyWith(
-                            color: colors.onSurface.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s8.w,
-                          vertical: 2.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.primaryContainer.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(AppRadius.r8),
-                        ),
-                        child: Text(
-                          '${entry.value}',
-                          style: typography.labelSmall.copyWith(
-                            color: colors.onPrimaryContainer,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: AppSpacing.s8.h),
-
+        SizedBox(height: 10.h),
         // ── Card Target Aktivitas ────────────────────────────
         AppCard(
           outlined: true,
@@ -206,4 +136,3 @@ class MonthlyStatsWidget extends StatelessWidget {
     );
   }
 }
-

@@ -15,6 +15,8 @@ import '../../../../design_system/tokens/app_typography.dart';
 import '../../data/models/activity_item.dart';
 import '../../data/services/kinerja_service.dart';
 import '../controllers/kinerja_controller.dart';
+import '../controllers/kinerja_bawahan_controller.dart';
+import 'kinerja_bawahan_list_page.dart';
 import 'kinerja_create_page.dart';
 import 'kinerja_detail_page.dart';
 import 'widgets/kinerja_item_detail_sheet.dart';
@@ -29,6 +31,7 @@ class KinerjaListPage extends StatefulWidget {
 
 class _KinerjaListPageState extends State<KinerjaListPage> {
   late final KinerjaController _controller;
+  late final KinerjaBawahanController _bawahanController;
 
   @override
   void initState() {
@@ -37,6 +40,7 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
       KinerjaController(service: Get.find<KinerjaService>()),
       tag: 'kinerja_list',
     );
+    _bawahanController = Get.find<KinerjaBawahanController>();
   }
 
   @override
@@ -83,6 +87,55 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Status Bawahan Section ─────────────────
+                  Obx(() {
+                    final pendingCount = _bawahanController.pendingCount.value;
+                    if (pendingCount == 0) return const SizedBox.shrink();
+
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: AppSpacing.s16.h),
+                      child: AppCard(
+                        outlined: true,
+                        onTap: () => Get.to(() => const KinerjaBawahanListPage()),
+                        padding: EdgeInsets.all(AppSpacing.s16.w),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(AppSpacing.s8.w),
+                              decoration: BoxDecoration(
+                                color: colors.warning.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(AppRadius.r8),
+                              ),
+                              child: Icon(Icons.assignment_ind_rounded, color: colors.warning, size: 24),
+                            ),
+                            SizedBox(width: AppSpacing.s12.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Kinerja Bawahan',
+                                    style: typography.titleSmall.copyWith(
+                                      color: colors.onSurface,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    '$pendingCount laporan menunggu persetujuan',
+                                    style: typography.bodySmall.copyWith(
+                                      color: colors.onSurface.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded, color: colors.outline),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+
                   // ── Statistics Section ─────────────────────
                   Obx(() {
                     final stats = _controller.monthlyStats.value;
