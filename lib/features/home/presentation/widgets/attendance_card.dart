@@ -179,7 +179,14 @@ class _AttendanceCardState extends State<AttendanceCard> {
           vertical: AppSpacing.s20.h,
         ),
         decoration: BoxDecoration(
-          color: colors.primary.withValues(alpha: 0.1),
+          image: DecorationImage(
+            image: const AssetImage('assets/images/kantor_bupati_barru.jpg'),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              colors.primary.withValues(alpha: 0.75),
+              BlendMode.srcOver,
+            ),
+          ),
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(AppRadius.r12),
           ),
@@ -187,16 +194,32 @@ class _AttendanceCardState extends State<AttendanceCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            AppAvatar(
-              imageUrl: photoUrl,
-              initials: initials,
-              size: 64.r,
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  width: 2.r,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: AppAvatar(
+                imageUrl: photoUrl,
+                initials: initials,
+                size: 64.r,
+              ),
             ),
             SizedBox(height: AppSpacing.s12.h),
             Text(
               name,
               style: typography.titleMedium.copyWith(
-                color: colors.onSurface,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
@@ -207,7 +230,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
             Text(
               nip,
               style: typography.bodySmall.copyWith(
-                color: colors.onSurface.withValues(alpha: 0.55),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -227,7 +250,20 @@ class _AttendanceCardState extends State<AttendanceCard> {
     AppTypography typography,
   ) {
     final isWorkday = schedule.isWorkday;
-    final color = isWorkday ? colors.primary : colors.warning;
+    final Color chipBg;
+    final Color chipText;
+    final Color chipBorder;
+
+    if (isWorkday) {
+      chipBg = Colors.white.withValues(alpha: 0.15);
+      chipText = Colors.white;
+      chipBorder = Colors.white.withValues(alpha: 0.25);
+    } else {
+      chipBg = colors.warning.withValues(alpha: 0.2);
+      chipText = colors.warning;
+      chipBorder = colors.warning.withValues(alpha: 0.35);
+    }
+
     final label = isWorkday
         ? '${schedule.schedule?.name ?? 'Shift'}  •  '
             '${_fmtTime(schedule.scheduledStartAt)} – ${_fmtTime(schedule.scheduledEndAt)}'
@@ -239,20 +275,20 @@ class _AttendanceCardState extends State<AttendanceCard> {
         vertical: AppSpacing.s4.h,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: chipBg,
         borderRadius: BorderRadius.circular(AppRadius.r20),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        border: Border.all(color: chipBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.schedule_rounded, size: 10.sp, color: color),
+          Icon(Icons.schedule_rounded, size: 10.sp, color: chipText),
           SizedBox(width: 4.w),
           Flexible(
             child: Text(
               label,
               style: typography.caption.copyWith(
-                color: color,
+                color: chipText,
                 fontWeight: FontWeight.w600,
                 fontSize: 10.sp,
               ),
