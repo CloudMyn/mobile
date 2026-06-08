@@ -68,42 +68,17 @@ class LoginPage extends StatelessWidget {
   }
 
   Widget _buildHeader(AppColors colors, AppTypography typography) {
-    return Column(
-      children: [
-        // Icon logo
-        Container(
-          width: 72.w,
-          height: 72.h,
-          decoration: BoxDecoration(
-            color: colors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Icon(
-            Icons.fingerprint,
-            size: 36,
-            color: colors.primary,
-          ),
+    return Center(
+      child: Image.asset(
+        'assets/images/logo_presensi.png',
+        height: 64.h,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => Icon(
+          Icons.domain,
+          size: 48,
+          color: colors.primary,
         ),
-        SizedBox(height: 16.h),
-
-        // App name
-        Text(
-          AppConstants.appName,
-          style: typography.h2.copyWith(
-            color: colors.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(height: 4.h),
-
-        // Subtitle
-        Text(
-          'Sistem Presensi ASN',
-          style: typography.bodyMedium.copyWith(
-            color: colors.onSurface.withValues(alpha: 0.5),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
