@@ -21,6 +21,7 @@ import '../../../../profile/presentation/pages/update_password_page.dart';
 import '../../../../profile/presentation/pages/update_photo_page.dart';
 import '../../../../profile/presentation/pages/request_log_page.dart';
 import '../../../../../core/network/session_manager.dart';
+import '../../../../auth/presentation/pages/leader_splash_page.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -186,11 +187,22 @@ class ProfileTab extends StatelessWidget {
           AppCard(
             outlined: true,
             padding: EdgeInsets.zero,
-            child: AppListItem(
-              title: 'Request Log',
-              subtitle: 'Lihat log request & response API',
-              leading: const Icon(Icons.bug_report_rounded),
-              onTap: () => Get.to(() => const RequestLogPage()),
+            child: Column(
+              children: [
+                AppListItem(
+                  title: 'Request Log',
+                  subtitle: 'Lihat log request & response API',
+                  leading: const Icon(Icons.bug_report_rounded),
+                  showDivider: true,
+                  onTap: () => Get.to(() => const RequestLogPage()),
+                ),
+                AppListItem(
+                  title: 'Leader Splash Page',
+                  subtitle: 'Tampilkan Splash Pimpinan Daerah (Tanpa Auto Close)',
+                  leading: const Icon(Icons.slideshow_rounded),
+                  onTap: () => Get.to(() => const LeaderSplashPage(autoClose: false)),
+                ),
+              ],
             ),
           ),
           SizedBox(height: AppSpacing.s32.h),

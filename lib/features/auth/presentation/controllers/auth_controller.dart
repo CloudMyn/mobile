@@ -4,8 +4,8 @@ import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/session_manager.dart';
 import '../../../../core/network/token_storage.dart';
 import '../../data/services/auth_service.dart';
-import '../../../home/presentation/pages/home_page.dart';
 import '../../../home/presentation/controllers/home_controller.dart';
+import '../pages/leader_splash_page.dart';
 
 class AuthController extends GetxController {
   final nipController = TextEditingController();
@@ -54,7 +54,7 @@ class AuthController extends GetxController {
       }
 
       FocusManager.instance.primaryFocus?.unfocus();
-      Get.offAll(() => const HomePage());
+      Get.offAll(() => const LeaderSplashPage());
     } on ApiException catch (e) {
       _showError(_mapApiErrorMessage(e));
     } on NetworkException {
