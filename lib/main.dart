@@ -21,7 +21,10 @@ Future<void> main() async {
   // bisa tetap synchronous dan GetX tidak melewatkan registrasi.
   final prefs = await SharedPreferences.getInstance();
   const secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: false,
+      resetOnError: true,
+    ),
   );
 
   runApp(MyApp(prefs: prefs, secureStorage: secureStorage));

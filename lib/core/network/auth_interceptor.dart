@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -32,10 +33,11 @@ class AuthInterceptor extends Interceptor {
 
     // Tidak ada response → masalah koneksi
     if (response == null) {
+      debugPrint('[AuthInterceptor] Connection error detail: ${err.message} | Error object: ${err.error} | Type: ${err.type}');
       return handler.reject(
         DioException(
           requestOptions: err.requestOptions,
-          error: const NetworkException(),
+          error: NetworkException('Tidak ada koneksi internet (${err.type.name})'),
           type: err.type,
         ),
       );

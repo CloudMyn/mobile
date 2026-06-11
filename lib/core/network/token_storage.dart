@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 import '../constants/app_constants.dart';
@@ -13,29 +14,61 @@ class TokenStorage {
 
   // ── Token ───────────────────────────────────────────────────────────────────
 
-  Future<String?> getToken() =>
-      _storage.read(key: AppConstants.secureKeyAccessToken);
+  Future<String?> getToken() async {
+    try {
+      return await _storage.read(key: AppConstants.secureKeyAccessToken);
+    } catch (e, stack) {
+      debugPrint('TokenStorage: Error reading token: $e\n$stack');
+      return null;
+    }
+  }
 
-  Future<void> saveToken(String token) =>
-      _storage.write(key: AppConstants.secureKeyAccessToken, value: token);
+  Future<void> saveToken(String token) async {
+    try {
+      await _storage.write(key: AppConstants.secureKeyAccessToken, value: token);
+    } catch (e, stack) {
+      debugPrint('TokenStorage: Error saving token: $e\n$stack');
+    }
+  }
 
-  Future<void> clearToken() =>
-      _storage.delete(key: AppConstants.secureKeyAccessToken);
+  Future<void> clearToken() async {
+    try {
+      await _storage.delete(key: AppConstants.secureKeyAccessToken);
+    } catch (e, stack) {
+      debugPrint('TokenStorage: Error clearing token: $e\n$stack');
+    }
+  }
 
   // ── Device UUID ─────────────────────────────────────────────────────────────
 
   /// Mengembalikan device UUID. Jika belum ada, buat UUID v4 baru dan simpan.
   /// UUID sama digunakan di setiap login request agar perangkat dikenali.
   Future<String> getOrCreateDeviceUuid() async {
-    final existing = await _storage.read(key: AppConstants.secureKeyDeviceUuid);
-    if (existing != null && existing.isNotEmpty) return existing;
+    try {
+      final existing = await _storage.read(key: AppConstants.secureKeyDeviceUuid);
+      if (existing != null && existing.isNotEmpty) return existing;
+    } catch (e, stack) {
+      debugPrint('TokenStorage: Error reading device UUID: $e\n$stack');
+      try {
+        await _storage.deleteAll();
+      } catch (_) {}
+    }
+
     final newUuid = const Uuid().v4();
-    await _storage.write(key: AppConstants.secureKeyDeviceUuid, value: newUuid);
+    try {
+      await _storage.write(key: AppConstants.secureKeyDeviceUuid, value: newUuid);
+    } catch (e, stack) {
+      debugPrint('TokenStorage: Error saving device UUID: $e\n$stack');
+    }
     return newUuid;
   }
 
   Future<void> clearAll() async {
-    await _storage.delete(key: AppConstants.secureKeyAccessToken);
+    try {
+      await _storage.delete(key: AppConstants.secureKeyAccessToken);
+    } catch (e, stack) {
+      debugPrint('TokenStorage: Error clearAll: $e\n$stack');
+    }
     // UUID tidak di-clear agar perangkat tetap dikenali setelah logout
   }
 }

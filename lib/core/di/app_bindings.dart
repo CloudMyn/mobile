@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -68,6 +70,19 @@ class AppBindings extends Bindings {
         receiveTimeout: Duration(seconds: AppConstants.apiTimeoutSeconds),
         headers: {'Accept': 'application/json'},
       ),
+    );
+    // Bypass SSL certificate validation for barrukab.go.id to support devices with out-of-date root certs (e.g. Android 14)
+    dio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+          if (host.endsWith('barrukab.go.id')) {
+            return true;
+          }
+          return false;
+        };
+        return client;
+      },
     );
     dio.interceptors.add(AuthInterceptor(tokenStorage));
     dio.interceptors.add(RequestLogInterceptor(RequestLogDb.instance));
