@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../design_system/components/app_card.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
+import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 import '../../data/models/activity_item.dart';
@@ -394,7 +395,60 @@ class _DetailPageActivityCard extends StatelessWidget {
                 color: colors.onSurface.withValues(alpha: 0.6),
               ),
             ),
+            if ((item.startTime != null && item.endTime != null) || item.status != null) ...[
+              SizedBox(height: AppSpacing.s8.h),
+              Row(
+                children: [
+                  if (item.startTime != null && item.endTime != null) ...[
+                    Icon(
+                      Icons.access_time_rounded,
+                      size: 12,
+                      color: colors.onSurface.withValues(alpha: 0.4),
+                    ),
+                    SizedBox(width: AppSpacing.s2.w),
+                    Text(
+                      '${item.startTime} - ${item.endTime}',
+                      style: typography.caption.copyWith(
+                        fontSize: 10,
+                        color: colors.onSurface.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  if (item.status != null) _buildStatusChip(item.status!),
+                ],
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    Color bg;
+    Color fg;
+    
+    if (status == 'Selesai') {
+      bg = colors.success.withValues(alpha: 0.15);
+      fg = colors.success;
+    } else {
+      bg = colors.warning.withValues(alpha: 0.15);
+      fg = colors.warning;
+    }
+    
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.s8.w, vertical: AppSpacing.s2.h),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadius.r4),
+      ),
+      child: Text(
+        status,
+        style: typography.caption.copyWith(
+          color: fg,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

@@ -56,7 +56,8 @@ class ProfileTab extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () async {
         await Future.wait([
-          ctrl.loadProfile(),
+          ctrl.loadProfile(force: true, showLoading: false),
+          ctrl.loadEmployeeData(showLoading: false),
           ctrl.loadShifts(),
         ]);
       },

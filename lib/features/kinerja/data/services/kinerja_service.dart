@@ -19,12 +19,20 @@ abstract class KinerjaService {
     required String typeId,
     required String description,
     String? imagePath,
+    String? startTime,
+    String? endTime,
+    String? status,
+    DateTime? date,
   });
   Future<ActivityItem> updateActivity({
     required String id,
     required String typeId,
     required String description,
     String? imagePath,
+    String? startTime,
+    String? endTime,
+    String? status,
+    DateTime? date,
   });
   Future<void> deleteActivity(String id);
 }
@@ -74,6 +82,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Menyusun laporan capaian kinerja triwulan II',
       date: DateTime(2026, 5, 13),
       createdAt: DateTime(2026, 5, 13, 8, 30),
+      startTime: '08:00',
+      endTime: '12:00',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_002',
@@ -82,6 +93,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Rapat koordinasi lintas sektor program pembangunan infrastruktur',
       date: DateTime(2026, 5, 12),
       createdAt: DateTime(2026, 5, 12, 9, 0),
+      startTime: '09:00',
+      endTime: '11:30',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_003',
@@ -90,6 +104,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Melayani pengaduan masyarakat terkait layanan administrasi',
       date: DateTime(2026, 5, 12),
       createdAt: DateTime(2026, 5, 12, 10, 15),
+      startTime: '10:00',
+      endTime: '14:00',
+      status: 'Belum Selesai',
     ),
     ActivityItem(
       id: 'k_004',
@@ -98,6 +115,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Verifikasi berkas usulan kenaikan pangkat',
       date: DateTime(2026, 5, 11),
       createdAt: DateTime(2026, 5, 11, 8, 0),
+      startTime: '08:00',
+      endTime: '10:30',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_005',
@@ -106,6 +126,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Bimtek pengelolaan Sistem Informasi Pemerintahan Daerah (SIPD)',
       date: DateTime(2026, 5, 10),
       createdAt: DateTime(2026, 5, 10, 7, 45),
+      startTime: '08:00',
+      endTime: '16:00',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_006',
@@ -114,6 +137,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Rapat persiapan evaluasi kinerja tengah tahun',
       date: DateTime(2026, 5, 8),
       createdAt: DateTime(2026, 5, 8, 9, 30),
+      startTime: '09:30',
+      endTime: '12:00',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_007',
@@ -122,6 +148,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Sosialisasi program layanan administrasi terpadu',
       date: DateTime(2026, 5, 7),
       createdAt: DateTime(2026, 5, 7, 13, 0),
+      startTime: '13:00',
+      endTime: '15:30',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_008',
@@ -130,6 +159,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Mengikuti upacara bendera Hari Kebangkitan Nasional',
       date: DateTime(2026, 5, 6),
       createdAt: DateTime(2026, 5, 6, 7, 0),
+      startTime: '07:00',
+      endTime: '08:30',
+      status: 'Selesai',
     ),
     // ── April 2026 ────────────────────────────────────────────
     ActivityItem(
@@ -139,6 +171,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Menyusun rencana kebutuhan anggaran bulanan',
       date: DateTime(2026, 4, 30),
       createdAt: DateTime(2026, 4, 30, 8, 15),
+      startTime: '08:15',
+      endTime: '11:00',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_010',
@@ -147,6 +182,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Rapat koordinasi persiapan kegiatan hari jadi kabupaten',
       date: DateTime(2026, 4, 28),
       createdAt: DateTime(2026, 4, 28, 10, 0),
+      startTime: '10:00',
+      endTime: '13:00',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_011',
@@ -155,6 +193,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Workshop penyusunan Standar Operasional Prosedur (SOP)',
       date: DateTime(2026, 4, 25),
       createdAt: DateTime(2026, 4, 25, 8, 0),
+      startTime: '08:00',
+      endTime: '15:00',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_012',
@@ -163,6 +204,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Pelayanan pembuatan dokumen kependudukan',
       date: DateTime(2026, 4, 24),
       createdAt: DateTime(2026, 4, 24, 13, 30),
+      startTime: '13:30',
+      endTime: '16:00',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_013',
@@ -171,6 +215,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Gotong royong pembersihan lingkungan kantor',
       date: DateTime(2026, 4, 22),
       createdAt: DateTime(2026, 4, 22, 7, 30),
+      startTime: '07:30',
+      endTime: '09:30',
+      status: 'Selesai',
     ),
     // ── Maret 2026 ────────────────────────────────────────────
     ActivityItem(
@@ -180,6 +227,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Penginputan data capaian kinerja bulan Maret',
       date: DateTime(2026, 3, 31),
       createdAt: DateTime(2026, 3, 31, 9, 0),
+      startTime: '09:00',
+      endTime: '12:00',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_015',
@@ -188,6 +238,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Rapat evaluasi program kerja triwulan I',
       date: DateTime(2026, 3, 28),
       createdAt: DateTime(2026, 3, 28, 10, 0),
+      startTime: '10:00',
+      endTime: '12:30',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_016',
@@ -196,6 +249,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Pelayanan pembuatan KTP dan KK',
       date: DateTime(2026, 3, 25),
       createdAt: DateTime(2026, 3, 25, 8, 30),
+      startTime: '08:30',
+      endTime: '14:30',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_017',
@@ -204,6 +260,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Bimtek penggunaan aplikasi e-office',
       date: DateTime(2026, 3, 20),
       createdAt: DateTime(2026, 3, 20, 9, 0),
+      startTime: '09:00',
+      endTime: '16:00',
+      status: 'Selesai',
     ),
     ActivityItem(
       id: 'k_018',
@@ -212,6 +271,9 @@ class MockKinerjaService implements KinerjaService {
       description: 'Apel pagi gabungan seluruh SKPD',
       date: DateTime(2026, 3, 17),
       createdAt: DateTime(2026, 3, 17, 7, 0),
+      startTime: '07:00',
+      endTime: '08:00',
+      status: 'Selesai',
     ),
   ];
 
@@ -288,6 +350,10 @@ class MockKinerjaService implements KinerjaService {
     required String typeId,
     required String description,
     String? imagePath,
+    String? startTime,
+    String? endTime,
+    String? status,
+    DateTime? date,
   }) async {
     await Future.delayed(_delay);
 
@@ -297,9 +363,12 @@ class MockKinerjaService implements KinerjaService {
       typeId: typeId,
       typeName: type.name,
       description: description,
-      date: DateTime.now(),
+      date: date ?? DateTime.now(),
       imageUrl: imagePath,
       createdAt: DateTime.now(),
+      startTime: startTime,
+      endTime: endTime,
+      status: status,
     );
 
     _activities.insert(0, item);
@@ -312,6 +381,10 @@ class MockKinerjaService implements KinerjaService {
     required String typeId,
     required String description,
     String? imagePath,
+    String? startTime,
+    String? endTime,
+    String? status,
+    DateTime? date,
   }) async {
     await Future.delayed(_delay);
 
@@ -327,6 +400,10 @@ class MockKinerjaService implements KinerjaService {
       typeName: type.name,
       description: description,
       imageUrl: imagePath,
+      startTime: startTime,
+      endTime: endTime,
+      status: status,
+      date: date,
     );
     _activities[index] = updated;
     return updated;

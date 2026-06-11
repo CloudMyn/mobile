@@ -389,6 +389,29 @@ class _ActivityCard3Day extends StatelessWidget {
               color: colors.onSurface.withValues(alpha: 0.7),
             ),
           ),
+          SizedBox(height: AppSpacing.s8.h),
+
+          // ── Time & Status ────────────────────────────────
+          Row(
+            children: [
+              if (item.startTime != null && item.endTime != null) ...[
+                Icon(
+                  Icons.access_time_rounded,
+                  size: 14,
+                  color: colors.onSurface.withValues(alpha: 0.5),
+                ),
+                SizedBox(width: AppSpacing.s4.w),
+                Text(
+                  '${item.startTime} - ${item.endTime}',
+                  style: typography.caption.copyWith(
+                    color: colors.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+              const Spacer(),
+              if (item.status != null) _buildStatusChip(item.status!),
+            ],
+          ),
 
           // ── Image thumbnail ───────────────────────────────
           if (hasImage) ...[
@@ -481,5 +504,33 @@ class _ActivityCard3Day extends StatelessWidget {
       'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
     ];
     return '${d.day} ${months[d.month - 1]}';
+  }
+
+  Widget _buildStatusChip(String status) {
+    Color bg;
+    Color fg;
+    
+    if (status == 'Selesai') {
+      bg = colors.success.withValues(alpha: 0.15);
+      fg = colors.success;
+    } else {
+      bg = colors.warning.withValues(alpha: 0.15);
+      fg = colors.warning;
+    }
+    
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.s8.w, vertical: AppSpacing.s4.h),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadius.r8),
+      ),
+      child: Text(
+        status,
+        style: typography.caption.copyWith(
+          color: fg,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 }

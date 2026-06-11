@@ -111,6 +111,32 @@ class KinerjaItemDetailSheet extends StatelessWidget {
             ),
             SizedBox(height: AppSpacing.s16.h),
 
+            // ── Time & Status ───────────────────────────────
+            if ((item.startTime != null && item.endTime != null) || item.status != null) ...[
+              Row(
+                children: [
+                  if (item.startTime != null && item.endTime != null) ...[
+                    Icon(
+                      Icons.access_time_rounded,
+                      size: 16,
+                      color: colors.primary,
+                    ),
+                    SizedBox(width: AppSpacing.s8.w),
+                    Text(
+                      'Pukul ${item.startTime} - ${item.endTime}',
+                      style: typography.bodyMedium.copyWith(
+                        color: colors.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  if (item.status != null) _buildStatusChip(item.status!, colors, typography),
+                ],
+              ),
+              SizedBox(height: AppSpacing.s16.h),
+            ],
+
             // ── Description ────────────────────────────────
             Text(
               'Deskripsi',
@@ -252,5 +278,33 @@ class KinerjaItemDetailSheet extends StatelessWidget {
     final time =
         '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
     return '$date $time';
+  }
+
+  Widget _buildStatusChip(String status, AppColors colors, AppTypography typography) {
+    Color bg;
+    Color fg;
+    
+    if (status == 'Selesai') {
+      bg = colors.success.withValues(alpha: 0.15);
+      fg = colors.success;
+    } else {
+      bg = colors.warning.withValues(alpha: 0.15);
+      fg = colors.warning;
+    }
+    
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.s10.w, vertical: AppSpacing.s4.h),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadius.r8),
+      ),
+      child: Text(
+        status,
+        style: typography.caption.copyWith(
+          color: fg,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 }

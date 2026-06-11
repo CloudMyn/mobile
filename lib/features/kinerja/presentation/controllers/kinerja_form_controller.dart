@@ -13,8 +13,13 @@ class KinerjaFormController extends GetxController {
 
   final formKey = GlobalKey<FormState>();
   final descriptionCtrl = TextEditingController();
+  final startTimeCtrl = TextEditingController();
+  final endTimeCtrl = TextEditingController();
+  final dateCtrl = TextEditingController();
 
   final selectedType = Rx<ActivityType?>(null);
+  final selectedStatus = Rx<String?>(null);
+  final selectedDate = Rx<DateTime>(DateTime.now());
   final originalImagePath = Rx<String?>(null);
   final compressedImagePath = Rx<String?>(null);
   final isLoading = false.obs;
@@ -27,6 +32,14 @@ class KinerjaFormController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    final now = DateTime.now();
+    if (!isEditMode.value) {
+      final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+      startTimeCtrl.text = timeStr;
+      endTimeCtrl.text = timeStr;
+      selectedDate.value = now;
+      dateCtrl.text = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+    }
     ever(selectedType, (_) {});
   }
 
@@ -47,6 +60,15 @@ class KinerjaFormController extends GetxController {
     // Pre-fill description
     descriptionCtrl.text = item.description;
 
+    // Pre-fill time and status fields
+    startTimeCtrl.text = item.startTime ?? '';
+    endTimeCtrl.text = item.endTime ?? '';
+    selectedStatus.value = item.status;
+
+    // Pre-fill date fields
+    selectedDate.value = item.date;
+    dateCtrl.text = '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}';
+
     // Set image if exists
     if (item.imageUrl != null) {
       originalImagePath.value = item.imageUrl;
@@ -56,6 +78,15 @@ class KinerjaFormController extends GetxController {
 
   void selectType(ActivityType type) {
     selectedType.value = type;
+  }
+
+  void selectStatus(String status) {
+    selectedStatus.value = status;
+  }
+
+  void selectDate(DateTime date) {
+    selectedDate.value = date;
+    dateCtrl.text = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   Future<void> pickAndCompressImage(String sourcePath) async {
@@ -97,6 +128,25 @@ class KinerjaFormController extends GetxController {
     if (descriptionCtrl.text.trim().length < 10) {
       return 'Deskripsi minimal 10 karakter';
     }
+    if (startTimeCtrl.text.isEmpty) return 'Jam mulai wajib diisi';
+    if (endTimeCtrl.text.isEmpty) return 'Jam selesai wajib diisi';
+    if (selectedStatus.value == null) return 'Pilih status terlebih dahulu';
+    if (dateCtrl.text.isEmpty) return 'Tanggal wajib diisi';
+
+    try {
+      final startParts = startTimeCtrl.text.split(':');
+      final endParts = endTimeCtrl.text.split(':');
+      if (startParts.length == 2 && endParts.length == 2) {
+        final startMinutes = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
+        final endMinutes = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
+        if (endMinutes < startMinutes) {
+          return 'Jam selesai tidak boleh sebelum jam mulai';
+        }
+      }
+    } catch (_) {
+      return 'Format jam tidak valid';
+    }
+
     return null;
   }
 
@@ -123,6 +173,10 @@ class KinerjaFormController extends GetxController {
           typeId: selectedType.value!.id,
           description: descriptionCtrl.text.trim(),
           imagePath: compressedImagePath.value,
+          startTime: startTimeCtrl.text.trim(),
+          endTime: endTimeCtrl.text.trim(),
+          status: selectedStatus.value,
+          date: selectedDate.value,
         );
 
         if (Get.isRegistered<KinerjaController>(tag: 'kinerja_list')) {
@@ -142,6 +196,10 @@ class KinerjaFormController extends GetxController {
           typeId: selectedType.value!.id,
           description: descriptionCtrl.text.trim(),
           imagePath: compressedImagePath.value,
+          startTime: startTimeCtrl.text.trim(),
+          endTime: endTimeCtrl.text.trim(),
+          status: selectedStatus.value,
+          date: selectedDate.value,
         );
 
         if (Get.isRegistered<KinerjaController>(tag: 'kinerja_list')) {
@@ -164,5 +222,13 @@ class KinerjaFormController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  @override
+  void onClose() {
+    startTimeCtrl.dispose();
+    endTimeCtrl.dispose();
+    dateCtrl.dispose();
+    super.onClose();
   }
 }

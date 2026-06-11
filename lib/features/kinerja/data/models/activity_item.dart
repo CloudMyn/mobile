@@ -6,6 +6,9 @@ class ActivityItem {
   final DateTime date;
   final String? imageUrl;
   final DateTime createdAt;
+  final String? startTime;
+  final String? endTime;
+  final String? status;
 
   const ActivityItem({
     required this.id,
@@ -15,6 +18,9 @@ class ActivityItem {
     required this.date,
     this.imageUrl,
     required this.createdAt,
+    this.startTime,
+    this.endTime,
+    this.status,
   });
 
   String get formattedDate =>
@@ -26,6 +32,9 @@ class ActivityItem {
     String? description,
     DateTime? date,
     String? imageUrl,
+    String? startTime,
+    String? endTime,
+    String? status,
   }) =>
       ActivityItem(
         id: id,
@@ -35,5 +44,8 @@ class ActivityItem {
         date: date ?? this.date,
         imageUrl: imageUrl ?? this.imageUrl,
         createdAt: createdAt,
+        startTime: startTime ?? this.startTime,
+        endTime: endTime ?? this.endTime,
+        status: status ?? this.status,
       );
 }

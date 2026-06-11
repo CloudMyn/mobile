@@ -79,6 +79,108 @@ class KinerjaCreatePage extends StatelessWidget {
               }),
               SizedBox(height: AppSpacing.s16.h),
 
+              // ── Tanggal Kegiatan ───────────────────────────
+              AppTextField(
+                label: 'Tanggal Kegiatan',
+                hint: 'Pilih tanggal kegiatan',
+                controller: ctrl.dateCtrl,
+                readOnly: true,
+                suffixIcon: const Icon(Icons.calendar_today_rounded),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: ctrl.selectedDate.value,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) {
+                    ctrl.selectDate(picked);
+                  }
+                },
+              ),
+              SizedBox(height: AppSpacing.s16.h),
+
+              // ── Jam Mulai & Jam Selesai ──────────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      label: 'Jam Mulai',
+                      hint: 'Pilih jam mulai',
+                      controller: ctrl.startTimeCtrl,
+                      readOnly: true,
+                      suffixIcon: const Icon(Icons.access_time_rounded),
+                      onTap: () async {
+                        final parts = ctrl.startTimeCtrl.text.split(':');
+                        TimeOfDay initialTime = TimeOfDay.now();
+                        if (parts.length == 2) {
+                          initialTime = TimeOfDay(
+                            hour: int.tryParse(parts[0]) ?? initialTime.hour,
+                            minute: int.tryParse(parts[1]) ?? initialTime.minute,
+                          );
+                        }
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: initialTime,
+                        );
+                        if (picked != null) {
+                          final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                          ctrl.startTimeCtrl.text = formatted;
+                        }
+                      },
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.s16.w),
+                  Expanded(
+                    child: AppTextField(
+                      label: 'Jam Selesai',
+                      hint: 'Pilih jam selesai',
+                      controller: ctrl.endTimeCtrl,
+                      readOnly: true,
+                      suffixIcon: const Icon(Icons.access_time_rounded),
+                      onTap: () async {
+                        final parts = ctrl.endTimeCtrl.text.split(':');
+                        TimeOfDay initialTime = TimeOfDay.now();
+                        if (parts.length == 2) {
+                          initialTime = TimeOfDay(
+                            hour: int.tryParse(parts[0]) ?? initialTime.hour,
+                            minute: int.tryParse(parts[1]) ?? initialTime.minute,
+                          );
+                        }
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: initialTime,
+                        );
+                        if (picked != null) {
+                          final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                          ctrl.endTimeCtrl.text = formatted;
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: AppSpacing.s16.h),
+
+              // ── Status Kegiatan ─────────────────────────────
+              Obx(() {
+                return AppDropdown<String>(
+                  label: 'Status Kegiatan',
+                  hint: 'Pilih status kegiatan',
+                  value: ctrl.selectedStatus.value,
+                  items: const [
+                    DropdownMenuItem(value: 'Selesai', child: Text('Selesai')),
+                    DropdownMenuItem(value: 'Belum Selesai', child: Text('Belum Selesai')),
+                  ],
+                  onChanged: (status) {
+                    if (status != null) ctrl.selectStatus(status);
+                  },
+                  validator: (_) =>
+                      ctrl.selectedStatus.value == null ? 'Status wajib dipilih' : null,
+                );
+              }),
+              SizedBox(height: AppSpacing.s16.h),
+
               // ── Deskripsi ──────────────────────────────────
               AppTextField(
                 label: 'Deskripsi Kegiatan',

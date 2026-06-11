@@ -101,41 +101,52 @@ class ProfileController extends GetxController {
     alamatCtrl.text = address;
   }
 
-  Future<void> loadProfile() async {
-    final sessionUser = Get.find<SessionManager>().currentUser.value;
-    if (sessionUser != null) {
-      _syncEmployeeState(user: sessionUser);
-      return;
+  Future<void> loadProfile({bool force = false, bool showLoading = true}) async {
+    if (!force) {
+      final sessionUser = Get.find<SessionManager>().currentUser.value;
+      if (sessionUser != null) {
+        _syncEmployeeState(user: sessionUser);
+        return;
+      }
     }
 
-    isLoadingProfile.value = true;
+    if (showLoading) {
+      isLoadingProfile.value = true;
+    }
     try {
       final user = await Get.find<AuthService>().getMe();
       Get.find<SessionManager>().setUser(user);
       _syncEmployeeState(user: user);
     } catch (_) {
-      employee.value = const EmployeeModel(
-        id: '001',
-        nip: '19850412 200903 1 012',
-        name: 'Budi Santoso, S.Kom.',
-        position: 'Pranata Komputer Muda',
-        unit: 'Dinas Komunikasi dan Informatika',
-        email: 'budi.santoso@barrukab.go.id',
-        phone: '08123456789',
-        address: '',
-        photoUrl: null,
-      );
-      namaCtrl.text = employee.value!.name;
-      emailCtrl.text = employee.value!.email;
-      phoneCtrl.text = employee.value!.phone;
-      alamatCtrl.text = employee.value!.address;
+      final sessionUser = Get.find<SessionManager>().currentUser.value;
+      if (sessionUser == null) {
+        employee.value = const EmployeeModel(
+          id: '001',
+          nip: '19850412 200903 1 012',
+          name: 'Budi Santoso, S.Kom.',
+          position: 'Pranata Komputer Muda',
+          unit: 'Dinas Komunikasi dan Informatika',
+          email: 'budi.santoso@barrukab.go.id',
+          phone: '08123456789',
+          address: '',
+          photoUrl: null,
+        );
+        namaCtrl.text = employee.value!.name;
+        emailCtrl.text = employee.value!.email;
+        phoneCtrl.text = employee.value!.phone;
+        alamatCtrl.text = employee.value!.address;
+      }
     } finally {
-      isLoadingProfile.value = false;
+      if (showLoading) {
+        isLoadingProfile.value = false;
+      }
     }
   }
 
-  Future<void> loadEmployeeData() async {
-    isLoadingEmployeeData.value = true;
+  Future<void> loadEmployeeData({bool showLoading = true}) async {
+    if (showLoading) {
+      isLoadingEmployeeData.value = true;
+    }
     try {
       employeeData.value = await Get.find<ProfileRepository>().getEmployeeData();
       _syncEmployeeState();
@@ -145,7 +156,9 @@ class ProfileController extends GetxController {
     } on NetworkException {
       // Biarkan UI menggunakan data session saat koneksi gagal.
     } finally {
-      isLoadingEmployeeData.value = false;
+      if (showLoading) {
+        isLoadingEmployeeData.value = false;
+      }
     }
   }
 
