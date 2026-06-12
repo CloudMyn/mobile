@@ -149,17 +149,56 @@ class HomeController extends GetxController {
         ? (num.tryParse(rawRadius.toString())?.toInt() ?? 100)
         : 100;
 
+    // Resolve lokasi berdasarkan event geofence mode
+    final resolvedLocations = _resolveLocations(record, locations);
+    final geofenceMode = record.effectiveGeofenceMode ?? 'default';
+
     final config = AttendanceConfig.fromRecord(
       record,
-      locations,
+      resolvedLocations,
       defaultRadius,
       storedFaceData: dashboardData.value?.user.faceData,
+      locationEventName: record.eventGeofence?.name,
+      geofenceMode: geofenceMode,
     );
     Get.find<PresensiController>().setConfig(
       record.attendanceType.code,
       config,
     );
     Get.to(() => const PresencePage());
+  }
+
+  /// Resolve daftar lokasi valid berdasarkan event geofence mode.
+  ///
+  /// - `override` → hanya lokasi event yang digunakan (menggantikan lokasi institusi)
+  /// - `additional` → lokasi event ditambahkan ke lokasi institusi
+  /// - `default` / null → lokasi institusi saja
+  List<RequiredLocation> _resolveLocations(
+    TodayRecord record,
+    List<RequiredLocation> institutionLocations,
+  ) {
+    final event = record.eventGeofence;
+    final mode = record.effectiveGeofenceMode;
+
+    if (event == null || mode == null || mode == 'default') {
+      return institutionLocations;
+    }
+
+    final eventLocation = RequiredLocation(
+      id: event.id,
+      name: event.name,
+      latitude: event.latitude,
+      longitude: event.longitude,
+      radiusMeters: event.radiusMeters,
+      source: 'event',
+    );
+
+    if (mode == 'override') {
+      return [eventLocation];
+    }
+
+    // mode == 'additional'
+    return [...institutionLocations, eventLocation];
   }
 
   // =========================================================================

@@ -8,6 +8,8 @@ class AttendanceConfig {
   final List<RequiredLocation> validLocations;
   final int defaultRadius;
   final String? storedFaceData;
+  final String? locationEventName;
+  final String geofenceMode; // "default" | "override" | "additional"
 
   const AttendanceConfig({
     required this.faceRecognition,
@@ -17,6 +19,8 @@ class AttendanceConfig {
     required this.validLocations,
     required this.defaultRadius,
     this.storedFaceData,
+    this.locationEventName,
+    this.geofenceMode = 'default',
   });
 
   bool get needsGeofenceCheck => geofenceEnabled && requiredLocation;
@@ -40,6 +44,8 @@ class AttendanceConfig {
     List<RequiredLocation> locations,
     int defaultRadius, {
     String? storedFaceData,
+    String? locationEventName,
+    String geofenceMode = 'default',
   }) {
     return AttendanceConfig(
       faceRecognition: record.attendanceType.requiresFaceVerification,
@@ -49,6 +55,8 @@ class AttendanceConfig {
       validLocations: locations,
       defaultRadius: defaultRadius,
       storedFaceData: storedFaceData,
+      locationEventName: locationEventName,
+      geofenceMode: geofenceMode,
     );
   }
 
@@ -60,6 +68,8 @@ class AttendanceConfig {
     List<RequiredLocation>? validLocations,
     int? defaultRadius,
     String? storedFaceData,
+    String? locationEventName,
+    String? geofenceMode,
   }) {
     return AttendanceConfig(
       faceRecognition: faceRecognition ?? this.faceRecognition,
@@ -69,6 +79,8 @@ class AttendanceConfig {
       validLocations: validLocations ?? this.validLocations,
       defaultRadius: defaultRadius ?? this.defaultRadius,
       storedFaceData: storedFaceData ?? this.storedFaceData,
+      locationEventName: locationEventName ?? this.locationEventName,
+      geofenceMode: geofenceMode ?? this.geofenceMode,
     );
   }
 }

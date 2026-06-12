@@ -114,4 +114,88 @@ class SubordinateSubmissionItem {
       subordinateAvatar: subordinateAvatar ?? this.subordinateAvatar,
     );
   }
+
+  factory SubordinateSubmissionItem.fromJson(Map<String, dynamic> json) {
+    final typeJson = json['submission_type'] as Map<String, dynamic>?;
+    final userJson = json['user'] as Map<String, dynamic>?;
+    final dateRange = json['date_range'] as Map<String, dynamic>?;
+    final timeRange = json['time_range'] as Map<String, dynamic>?;
+    final tracking = json['tracking'] as Map<String, dynamic>?;
+
+    final attachmentsList = json['attachments'] as List<dynamic>?;
+    final attachments = attachmentsList
+        ?.map((a) => SubmissionAttachment.fromJson(a as Map<String, dynamic>))
+        .toList() ??
+        [];
+
+    final subordinateName = userJson?['name'] as String? ?? '-';
+    String avatar = 'UK'; // Unknown
+    if (subordinateName.isNotEmpty && subordinateName != '-') {
+      final parts = subordinateName.split(' ');
+      if (parts.length > 1) {
+        avatar = '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+      } else {
+        avatar = subordinateName.substring(0, subordinateName.length >= 2 ? 2 : 1).toUpperCase();
+      }
+    }
+
+    return SubordinateSubmissionItem(
+      id: json['id'] as int,
+      typeId: typeJson?['id'] as int? ?? 0,
+      typeName: typeJson?['name'] as String? ?? 'Unknown',
+      typeCode: typeJson?['code'] as String? ?? 'unknown',
+      title: typeJson?['name'] as String? ?? 'Pengajuan',
+      description: json['reason'] as String? ?? '-',
+      reason: json['reason'] as String?,
+      startDate: dateRange?['start_date'] != null
+          ? DateTime.parse(dateRange!['start_date'] as String)
+          : DateTime.now(),
+      endDate: dateRange?['end_date'] != null
+          ? DateTime.parse(dateRange!['end_date'] as String)
+          : null,
+      totalDays: dateRange?['total_days'] != null 
+          ? (dateRange!['total_days'] as num).toInt() 
+          : null,
+      startTime: timeRange?['start_time'] as String?,
+      endTime: timeRange?['end_time'] as String?,
+      totalHours: timeRange?['total_hours'] != null 
+          ? (timeRange!['total_hours'] as num).toInt() 
+          : null,
+      status: _parseStatus(json['status'] as String?),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+      submittedAt: tracking?['submitted_at'] != null
+          ? DateTime.parse(tracking!['submitted_at'] as String)
+          : null,
+      approvedAt: tracking?['approved_at'] != null
+          ? DateTime.parse(tracking!['approved_at'] as String)
+          : null,
+      rejectedAt: tracking?['rejected_at'] != null
+          ? DateTime.parse(tracking!['rejected_at'] as String)
+          : null,
+      approvalNote: null, // Note isn't usually sent directly in summary list API, requires steps check
+      attachments: attachments,
+      subordinateName: subordinateName,
+      subordinateNip: userJson?['nip'] as String? ?? '-',
+      subordinateAvatar: avatar,
+    );
+  }
+
+  static SubmissionStatus _parseStatus(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return SubmissionStatus.pending;
+      case 'approved':
+        return SubmissionStatus.approved;
+      case 'rejected':
+        return SubmissionStatus.rejected;
+      case 'draft':
+        return SubmissionStatus.draft;
+      case 'cancelled':
+        return SubmissionStatus.cancelled;
+      default:
+        return SubmissionStatus.pending;
+    }
+  }
 }

@@ -11,6 +11,7 @@ import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 import '../controllers/presensi_controller.dart';
+import '../../data/models/attendance_config.dart';
 
 class PresencePage extends StatefulWidget {
   const PresencePage({super.key});
@@ -183,10 +184,12 @@ class _PresencePageState extends State<PresencePage> {
         ),
         CircleLayer(
           circles: validLocations.map((loc) {
+            final isEvent = loc.isEvent;
+            final circleColor = isEvent ? Colors.amber : colors.primary;
             return CircleMarker(
               point: LatLng(loc.latitude, loc.longitude),
-              color: colors.primary.withValues(alpha: 0.2),
-              borderColor: colors.primary,
+              color: circleColor.withValues(alpha: 0.2),
+              borderColor: circleColor,
               borderStrokeWidth: 2,
               useRadiusInMeter: true,
               radius: (loc.radiusMeters ?? cfg.defaultRadius).toDouble(),
@@ -202,11 +205,16 @@ class _PresencePageState extends State<PresencePage> {
               child: const Icon(Icons.person_pin_circle, color: Colors.blue, size: 40),
             ),
             ...validLocations.map((loc) {
+              final isEvent = loc.isEvent;
               return Marker(
                 point: LatLng(loc.latitude, loc.longitude),
                 width: 40,
                 height: 40,
-                child: Icon(Icons.location_on, color: colors.error, size: 40),
+                child: Icon(
+                  isEvent ? Icons.event_rounded : Icons.location_on,
+                  color: isEvent ? Colors.amber.shade800 : colors.error,
+                  size: 40,
+                ),
               );
             }),
           ],
@@ -318,6 +326,7 @@ class _PresencePageState extends State<PresencePage> {
     final isInside = ctrl.isInsideGeofence.value;
     final dist = ctrl.distanceToFence.value;
     final locName = ctrl.closestLocationName.value;
+    final hasEvent = cfg.locationEventName != null;
 
     final statusColor = isChecking
         ? colors.primary
@@ -392,6 +401,10 @@ class _PresencePageState extends State<PresencePage> {
                     ),
                   ],
                 ),
+                if (hasEvent) ...[
+                  SizedBox(height: AppSpacing.s8.h),
+                  _buildEventBadge(colors, typography, cfg),
+                ],
                 SizedBox(height: AppSpacing.s8.h),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -423,6 +436,47 @@ class _PresencePageState extends State<PresencePage> {
                 ],
               ],
             ),
+    );
+  }
+
+  Widget _buildEventBadge(AppColors colors, AppTypography typography, AttendanceConfig cfg) {
+    final isOverride = cfg.geofenceMode == 'override';
+    final modeLabel = isOverride ? 'Override' : 'Tambahan';
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.s8.w,
+        vertical: AppSpacing.s4.h,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(AppRadius.r8),
+        border: Border.all(
+          color: Colors.amber.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.event_rounded,
+            color: Colors.amber.shade800,
+            size: 16.w,
+          ),
+          SizedBox(width: 4.w),
+          Flexible(
+            child: Text(
+              'Event: ${cfg.locationEventName} ($modeLabel)',
+              style: typography.bodySmall.copyWith(
+                color: Colors.amber.shade900,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

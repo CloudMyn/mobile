@@ -191,6 +191,8 @@ class TodayRecord {
     this.attendedAt,
     this.photoUrl,
     this.requiredLocation,
+    this.eventGeofence,
+    this.effectiveGeofenceMode,
   });
 
   final int id;
@@ -205,6 +207,8 @@ class TodayRecord {
   final String? attendedAt;
   final String? photoUrl;
   final RequiredLocation? requiredLocation;
+  final RequiredLocation? eventGeofence;
+  final String? effectiveGeofenceMode; // "override" | "additional" | "default"
 
   bool get isPending => status.toLowerCase() == 'pending';
   bool get isCompleted => attendedAt != null;
@@ -240,6 +244,13 @@ class TodayRecord {
               json['required_location'] as Map<String, dynamic>,
             )
           : null,
+      eventGeofence: json['event_geofence'] != null
+          ? RequiredLocation.fromJson(
+              json['event_geofence'] as Map<String, dynamic>,
+              source: 'event',
+            )
+          : null,
+      effectiveGeofenceMode: json['effective_geofence_mode'] as String?,
     );
   }
 }
@@ -303,6 +314,7 @@ class RequiredLocation {
     required this.latitude,
     required this.longitude,
     this.radiusMeters,
+    this.source = 'institution',
   });
 
   final int id;
@@ -310,14 +322,18 @@ class RequiredLocation {
   final double latitude;
   final double longitude;
   final int? radiusMeters;
+  final String source; // "institution" | "event"
 
-  factory RequiredLocation.fromJson(Map<String, dynamic> json) {
+  bool get isEvent => source == 'event';
+
+  factory RequiredLocation.fromJson(Map<String, dynamic> json, {String source = 'institution'}) {
     return RequiredLocation(
       id: json['id'] as int,
       name: json['name'] as String? ?? '',
       latitude: double.tryParse(json['latitude']?.toString() ?? '') ?? 0.0,
       longitude: double.tryParse(json['longitude']?.toString() ?? '') ?? 0.0,
       radiusMeters: int.tryParse(json['radius_meters']?.toString() ?? ''),
+      source: source,
     );
   }
 }
