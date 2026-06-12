@@ -11,6 +11,8 @@ import '../../data/services/face_service.dart';
 import '../../data/services/location_service.dart';
 import '../pages/face_capture_page.dart';
 import '../pages/liveness_page.dart';
+import '../../../home/data/models/dashboard_model.dart';
+import '../../../home/data/services/dashboard_service.dart';
 
 enum PresensiStep {
   idle,
@@ -39,15 +41,18 @@ class PresensiController extends GetxController {
     required FaceService faceService,
     required LocationService locationService,
     required TokenStorage tokenStorage,
+    required DashboardService dashboardService,
   })  : _repository = repository,
         _faceService = faceService,
         _locationService = locationService,
-        _tokenStorage = tokenStorage;
+        _tokenStorage = tokenStorage,
+        _dashboardService = dashboardService;
 
   final PresensiRepository _repository;
   final FaceService _faceService;
   final LocationService _locationService;
   final TokenStorage _tokenStorage;
+  final DashboardService _dashboardService;
 
   // =========================================================================
   //  Reactive State
@@ -57,6 +62,9 @@ class PresensiController extends GetxController {
   final config = Rx<AttendanceConfig?>(null);
   final errorType = Rx<PresensiErrorType?>(null);
   final errorMessage = Rx<String?>(null);
+
+  /// Rekam presensi saat ini
+  final activeRecord = Rx<TodayRecord?>(null);
 
   /// Code tipe presensi aktif — contoh: "check-in", "check-out"
   final activeCode = Rx<String?>(null);
@@ -82,10 +90,41 @@ class PresensiController extends GetxController {
   //  Entry Point — dipanggil dari HomeController
   // =========================================================================
 
-  void setConfig(String code, AttendanceConfig cfg) {
+  void setConfig(TodayRecord record, AttendanceConfig cfg) {
     _reset();
-    activeCode.value = code;
+    activeRecord.value = record;
+    activeCode.value = record.attendanceType.code;
     config.value = cfg;
+  }
+
+  // =========================================================================
+  //  Refresh Config — memanggil API dashboard untuk perbarui konfigurasi lokasi
+  // =========================================================================
+
+  Future<void> refreshLocationConfig() async {
+    final record = activeRecord.value;
+    if (record == null) {
+      debugPrint('[PresensiController] refreshLocationConfig: activeRecord is null');
+      return;
+    }
+
+    step.value = PresensiStep.geofenceCheck; // Tampilkan loading check lokasi
+    
+    try {
+      debugPrint('[PresensiController] refreshLocationConfig: Fetching dashboard data...');
+      final dashboard = await _dashboardService.fetchDashboard();
+      
+      // Update config dengan data terbaru
+      final newConfig = AttendanceConfig.fromDashboard(dashboard, record);
+      config.value = newConfig;
+      debugPrint('[PresensiController] refreshLocationConfig: Config updated');
+      
+      // Setelah mendapatkan konfigurasi terbaru, cek ulang lokasi
+      await checkLocation();
+    } catch (e) {
+      debugPrint('[PresensiController] refreshLocationConfig: Error $e');
+      _setError(PresensiErrorType.locationTimeout, 'Gagal memperbarui data lokasi presensi.');
+    }
   }
 
   // =========================================================================
@@ -378,6 +417,7 @@ class PresensiController extends GetxController {
   void _reset() {
     step.value = PresensiStep.idle;
     config.value = null;
+    activeRecord.value = null;
     errorType.value = null;
     errorMessage.value = null;
     faceImageBytes.value = null;

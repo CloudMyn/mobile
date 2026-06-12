@@ -123,6 +123,7 @@ class AppBindings extends Bindings {
         faceService: Get.find<FaceService>(),
         locationService: Get.find<LocationService>(),
         tokenStorage: tokenStorage,
+        dashboardService: Get.find<DashboardService>(),
       ),
       permanent: true,
     );

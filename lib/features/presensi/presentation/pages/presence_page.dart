@@ -395,7 +395,7 @@ class _PresencePageState extends State<PresencePage> {
                     ),
                     IconButton(
                       icon: Icon(Icons.refresh_rounded, color: colors.primary),
-                      onPressed: () => ctrl.checkLocation(),
+                      onPressed: () => ctrl.refreshLocationConfig(),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),

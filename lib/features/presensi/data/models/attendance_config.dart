@@ -60,6 +60,45 @@ class AttendanceConfig {
     );
   }
 
+  /// Buat config langsung dari [DashboardModel] dan [TodayRecord] tanpa perlu me-resolve manual.
+  factory AttendanceConfig.fromDashboard(DashboardModel dashboard, TodayRecord record) {
+    final locations = dashboard.institutionInfo?.locations ?? [];
+    final settings = dashboard.settings;
+    final rawRadius = settings?['attendance']?['default_radius_meters'];
+    final defaultRadius = rawRadius != null
+        ? (num.tryParse(rawRadius.toString())?.toInt() ?? 100)
+        : 100;
+
+    final event = record.eventGeofence;
+    final mode = record.effectiveGeofenceMode ?? 'default';
+
+    List<RequiredLocation> resolvedLocations = locations;
+    if (event != null && mode != 'default') {
+      final eventLocation = RequiredLocation(
+        id: event.id,
+        name: event.name,
+        latitude: event.latitude,
+        longitude: event.longitude,
+        radiusMeters: event.radiusMeters,
+        source: 'event',
+      );
+      if (mode == 'override') {
+        resolvedLocations = [eventLocation];
+      } else if (mode == 'additional') {
+        resolvedLocations = [...locations, eventLocation];
+      }
+    }
+
+    return AttendanceConfig.fromRecord(
+      record,
+      resolvedLocations,
+      defaultRadius,
+      storedFaceData: dashboard.user.faceData,
+      locationEventName: event?.name,
+      geofenceMode: mode,
+    );
+  }
+
   AttendanceConfig copyWith({
     bool? faceRecognition,
     bool? faceCapture,
