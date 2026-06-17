@@ -162,7 +162,35 @@ class _PresencePageState extends State<PresencePage> {
     final pos = ctrl.currentPosition.value;
     final cfg = ctrl.config.value;
 
-    if (pos == null || cfg == null) {
+    if (cfg == null) {
+      return const AppSkeleton();
+    }
+
+    if (pos == null) {
+      if (!cfg.needsGeofenceCheck) {
+        return Container(
+          color: colors.primary.withValues(alpha: 0.05),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.location_off_rounded,
+                  size: 48.w,
+                  color: colors.primary.withValues(alpha: 0.5),
+                ),
+                SizedBox(height: AppSpacing.s8.h),
+                Text(
+                  'Lokasi tidak diperlukan untuk presensi ini',
+                  style: typography.bodyMedium.copyWith(
+                    color: colors.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
       return const AppSkeleton();
     }
 
@@ -416,6 +444,22 @@ class _PresencePageState extends State<PresencePage> {
                     ),
                   ],
                 ),
+                if (ctrl.currentPosition.value != null) ...[
+                  SizedBox(height: AppSpacing.s4.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Akurasi GPS:', style: typography.bodyMedium),
+                      Text(
+                        '±${ctrl.currentPosition.value!.accuracy.toStringAsFixed(0)} meter',
+                        style: typography.bodyMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: ctrl.currentPosition.value!.accuracy > 100 ? Colors.amber.shade800 : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 if (locName != null) ...[
                   SizedBox(height: AppSpacing.s4.h),
                   Row(
@@ -432,6 +476,42 @@ class _PresencePageState extends State<PresencePage> {
                         ),
                       ),
                     ],
+                  ),
+                ],
+                if (ctrl.currentPosition.value != null && ctrl.currentPosition.value!.accuracy > 100) ...[
+                  SizedBox(height: AppSpacing.s8.h),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s10.w,
+                      vertical: AppSpacing.s8.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(AppRadius.r12),
+                      border: Border.all(
+                        color: Colors.amber.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.amber.shade800,
+                          size: 18.w,
+                        ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            'Akurasi GPS rendah. Disarankan untuk keluar ke area terbuka atau mengaktifkan Wi-Fi agar koordinat lebih akurat.',
+                            style: typography.bodySmall.copyWith(
+                              color: Colors.amber.shade900,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ],

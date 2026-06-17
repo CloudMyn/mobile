@@ -42,11 +42,11 @@ class PresensiController extends GetxController {
     required LocationService locationService,
     required TokenStorage tokenStorage,
     required DashboardService dashboardService,
-  })  : _repository = repository,
-        _faceService = faceService,
-        _locationService = locationService,
-        _tokenStorage = tokenStorage,
-        _dashboardService = dashboardService;
+  }) : _repository = repository,
+       _faceService = faceService,
+       _locationService = locationService,
+       _tokenStorage = tokenStorage,
+       _dashboardService = dashboardService;
 
   final PresensiRepository _repository;
   final FaceService _faceService;
@@ -108,26 +108,33 @@ class PresensiController extends GetxController {
   Future<void> refreshLocationConfig() async {
     final record = activeRecord.value;
     if (record == null) {
-      debugPrint('[PresensiController] refreshLocationConfig: activeRecord is null');
+      debugPrint(
+        '[PresensiController] refreshLocationConfig: activeRecord is null',
+      );
       return;
     }
 
     step.value = PresensiStep.geofenceCheck; // Tampilkan loading check lokasi
-    
+
     try {
-      debugPrint('[PresensiController] refreshLocationConfig: Fetching dashboard data...');
+      debugPrint(
+        '[PresensiController] refreshLocationConfig: Fetching dashboard data...',
+      );
       final dashboard = await _dashboardService.fetchDashboard();
-      
+
       // Update config dengan data terbaru
       final newConfig = AttendanceConfig.fromDashboard(dashboard, record);
       config.value = newConfig;
       debugPrint('[PresensiController] refreshLocationConfig: Config updated');
-      
+
       // Setelah mendapatkan konfigurasi terbaru, cek ulang lokasi
       await checkLocation();
     } catch (e) {
       debugPrint('[PresensiController] refreshLocationConfig: Error $e');
-      _setError(PresensiErrorType.locationTimeout, 'Gagal memperbarui data lokasi presensi.');
+      _setError(
+        PresensiErrorType.locationTimeout,
+        'Gagal memperbarui data lokasi presensi.',
+      );
     }
   }
 
@@ -142,11 +149,29 @@ class PresensiController extends GetxController {
       return;
     }
 
-    debugPrint('[PresensiController] checkLocation: Starting location check. Needs geofence: ${cfg.needsGeofenceCheck}');
+    debugPrint(
+      '[PresensiController] checkLocation: Starting location check. Needs geofence: ${cfg.needsGeofenceCheck}',
+    );
 
     if (!cfg.needsGeofenceCheck) {
-      debugPrint('[PresensiController] checkLocation: Geofence check not required. Setting isInsideGeofence = true');
+      debugPrint(
+        '[PresensiController] checkLocation: Geofence check not required. Setting isInsideGeofence = true',
+      );
       isInsideGeofence.value = true;
+
+      // Ambil lokasi best-effort agar peta memiliki posisi untuk dirender
+      step.value = PresensiStep.geofenceCheck;
+      try {
+        final result = await _locationService.getCurrentPosition();
+        if (result.isSuccess) {
+          currentPosition.value = result.position;
+        }
+      } catch (e) {
+        debugPrint(
+          '[PresensiController] checkLocation best-effort failed: $e',
+        );
+      }
+      step.value = PresensiStep.idle;
       return;
     }
 
@@ -154,10 +179,14 @@ class PresensiController extends GetxController {
     errorType.value = null;
     errorMessage.value = null;
 
-    debugPrint('[PresensiController] checkLocation: Fetching current position...');
+    debugPrint(
+      '[PresensiController] checkLocation: Fetching current position...',
+    );
     final result = await _locationService.getCurrentPosition();
     if (!result.isSuccess) {
-      debugPrint('[PresensiController] checkLocation: Failed to get position. Error: ${result.error}');
+      debugPrint(
+        '[PresensiController] checkLocation: Failed to get position. Error: ${result.error}',
+      );
       final errType = switch (result.error!) {
         LocationError.permissionDenied =>
           PresensiErrorType.locationPermissionDenied,
@@ -165,8 +194,8 @@ class PresensiController extends GetxController {
           PresensiErrorType.locationPermissionPermanentlyDenied,
         LocationError.serviceDisabled =>
           PresensiErrorType.locationServiceDisabled,
-        LocationError.timeout || LocationError.unknown =>
-          PresensiErrorType.locationTimeout,
+        LocationError.timeout ||
+        LocationError.unknown => PresensiErrorType.locationTimeout,
       };
       _setError(errType, _locationErrorMessage(result.error!));
       return;
@@ -174,10 +203,14 @@ class PresensiController extends GetxController {
 
     final pos = result.position!;
     currentPosition.value = pos;
-    debugPrint('[PresensiController] checkLocation: Current position: Lat: ${pos.latitude}, Lng: ${pos.longitude}, Accuracy: ${pos.accuracy}m');
+    debugPrint(
+      '[PresensiController] checkLocation: Current position: Lat: ${pos.latitude}, Lng: ${pos.longitude}, Accuracy: ${pos.accuracy}m',
+    );
 
     if (cfg.hasValidGeofence) {
-      debugPrint('[PresensiController] checkLocation: Config has valid geofence. Locations count: ${cfg.validLocations.length}');
+      debugPrint(
+        '[PresensiController] checkLocation: Config has valid geofence. Locations count: ${cfg.validLocations.length}',
+      );
       double minDistance = double.infinity;
       bool anyInside = false;
       String? closestName;
@@ -191,7 +224,9 @@ class PresensiController extends GetxController {
           fenceLng: loc.longitude,
         );
 
-        debugPrint('[PresensiController] checkLocation: Location "${loc.name}" (Lat: ${loc.latitude}, Lng: ${loc.longitude}), Radius: $r, Calculated Distance: ${dist.toStringAsFixed(2)}m');
+        debugPrint(
+          '[PresensiController] checkLocation: Location "${loc.name}" (Lat: ${loc.latitude}, Lng: ${loc.longitude}), Radius: $r, Calculated Distance: ${dist.toStringAsFixed(2)}m',
+        );
 
         if (dist < minDistance) {
           minDistance = dist;
@@ -206,17 +241,23 @@ class PresensiController extends GetxController {
           radiusMeters: r.toDouble(),
         )) {
           anyInside = true;
-          debugPrint('[PresensiController] checkLocation: User IS inside geofence for location "${loc.name}"');
+          debugPrint(
+            '[PresensiController] checkLocation: User IS inside geofence for location "${loc.name}"',
+          );
         }
       }
 
       distanceToFence.value = minDistance;
       isInsideGeofence.value = anyInside;
       closestLocationName.value = closestName;
-      debugPrint('[PresensiController] checkLocation: Min distance to closest fence: ${minDistance.toStringAsFixed(2)}m, isInsideGeofence: $anyInside, closestLocationName: $closestName');
+      debugPrint(
+        '[PresensiController] checkLocation: Min distance to closest fence: ${minDistance.toStringAsFixed(2)}m, isInsideGeofence: $anyInside, closestLocationName: $closestName',
+      );
     } else {
       isInsideGeofence.value = true;
-      debugPrint('[PresensiController] checkLocation: No valid geofence configurations found. Setting isInsideGeofence = true');
+      debugPrint(
+        '[PresensiController] checkLocation: No valid geofence configurations found. Setting isInsideGeofence = true',
+      );
     }
 
     step.value = PresensiStep.idle;
@@ -233,17 +274,25 @@ class PresensiController extends GetxController {
       return;
     }
 
-    debugPrint('[PresensiController] proceedPresensi: Proceeding. Active Code: ${activeCode.value}, FaceRecognition: ${cfg.faceRecognition}, FaceCapture: ${cfg.faceCapture}');
+    debugPrint(
+      '[PresensiController] proceedPresensi: Proceeding. Active Code: ${activeCode.value}, FaceRecognition: ${cfg.faceRecognition}, FaceCapture: ${cfg.faceCapture}',
+    );
 
     if (cfg.needsGeofenceCheck && !isInsideGeofence.value) {
-      debugPrint('[PresensiController] proceedPresensi: Blocked. User is outside geofence');
+      debugPrint(
+        '[PresensiController] proceedPresensi: Blocked. User is outside geofence',
+      );
       return; // Tombol seharusnya disabled
     }
 
     if (cfg.faceRecognition) {
-      debugPrint('[PresensiController] proceedPresensi: Starting liveness detection step...');
+      debugPrint(
+        '[PresensiController] proceedPresensi: Starting liveness detection step...',
+      );
       if (cfg.storedFaceData == null || cfg.storedFaceData!.isEmpty) {
-        debugPrint('[PresensiController] proceedPresensi: Error. Stored face data is empty/null');
+        debugPrint(
+          '[PresensiController] proceedPresensi: Error. Stored face data is empty/null',
+        );
         _setError(
           PresensiErrorType.livenessFailed,
           'Wajah Anda belum terdaftar. Silakan daftarkan wajah terlebih dahulu melalui halaman Profil.',
@@ -254,52 +303,83 @@ class PresensiController extends GetxController {
       step.value = PresensiStep.liveness;
       final resultBytes = await Get.to<Uint8List?>(() => const LivenessPage());
       if (resultBytes == null) {
-        debugPrint('[PresensiController] proceedPresensi: Liveness cancelled or returned null bytes');
+        debugPrint(
+          '[PresensiController] proceedPresensi: Liveness cancelled or returned null bytes',
+        );
         _setError(
           PresensiErrorType.livenessFailed,
           'Liveness detection tidak berhasil atau dibatalkan. Silakan coba lagi.',
         );
         return;
       }
-      
+
       step.value = PresensiStep.submitting;
-      debugPrint('[PresensiController] proceedPresensi: Liveness success, result bytes length: ${resultBytes.length}. Extracting embedding...');
-      
+      debugPrint(
+        '[PresensiController] proceedPresensi: Liveness success, result bytes length: ${resultBytes.length}. Extracting embedding...',
+      );
+
       try {
-        final liveResult = await _faceService.extractEmbeddingFromBytes(resultBytes);
+        final liveResult = await _faceService.extractEmbeddingFromBytes(
+          resultBytes,
+        );
         if (liveResult == null) {
-          debugPrint('[PresensiController] proceedPresensi: Failed to extract embedding (face not detected)');
-          _setError(PresensiErrorType.livenessFailed, 'Wajah tidak terdeteksi pada foto.');
+          debugPrint(
+            '[PresensiController] proceedPresensi: Failed to extract embedding (face not detected)',
+          );
+          _setError(
+            PresensiErrorType.livenessFailed,
+            'Wajah tidak terdeteksi pada foto.',
+          );
           return;
         }
 
-        debugPrint('[PresensiController] proceedPresensi: Embedding extracted. Comparing with stored embedding...');
+        debugPrint(
+          '[PresensiController] proceedPresensi: Embedding extracted. Comparing with stored embedding...',
+        );
         final storedEmb = _faceService.base64ToEmbedding(cfg.storedFaceData!);
-        final verifyResult = _faceService.verify(liveResult.embedding, storedEmb);
-        debugPrint('[PresensiController] proceedPresensi: Verification result - Match: ${verifyResult.isMatch}, Cosine Similarity: ${verifyResult.cosineSimilarity}, Euclidean Distance: ${verifyResult.euclideanDistance}');
+        final verifyResult = _faceService.verify(
+          liveResult.embedding,
+          storedEmb,
+        );
+        debugPrint(
+          '[PresensiController] proceedPresensi: Verification result - Match: ${verifyResult.isMatch}, Cosine Similarity: ${verifyResult.cosineSimilarity}, Euclidean Distance: ${verifyResult.euclideanDistance}',
+        );
 
         if (!verifyResult.isMatch) {
-          _setError(PresensiErrorType.livenessFailed, 'Wajah tidak dikenali. Pastikan Anda menghadap kamera dengan jelas.');
+          _setError(
+            PresensiErrorType.livenessFailed,
+            'Wajah tidak dikenali. Pastikan Anda menghadap kamera dengan jelas.',
+          );
           return;
         }
 
         faceScore.value = verifyResult.cosineSimilarity;
         faceImageBytes.value = liveResult.processedImageBytes ?? resultBytes;
 
-        debugPrint('[PresensiController] proceedPresensi: Face matched. Proceeding to submit...');
+        debugPrint(
+          '[PresensiController] proceedPresensi: Face matched. Proceeding to submit...',
+        );
         await _submitPresensi();
       } catch (e) {
-        debugPrint('[PresensiController] proceedPresensi: Exception during face matching: $e');
-        _setError(PresensiErrorType.livenessFailed, 'Gagal memproses pengenalan wajah.');
+        debugPrint(
+          '[PresensiController] proceedPresensi: Exception during face matching: $e',
+        );
+        _setError(
+          PresensiErrorType.livenessFailed,
+          'Gagal memproses pengenalan wajah.',
+        );
         return;
       }
-
     } else if (cfg.faceCapture) {
-      debugPrint('[PresensiController] proceedPresensi: Starting face capture...');
+      debugPrint(
+        '[PresensiController] proceedPresensi: Starting face capture...',
+      );
       step.value = PresensiStep.faceCapture;
       await _handleFaceCapture();
     } else {
-      debugPrint('[PresensiController] proceedPresensi: Direct submit (no face verification/capture required)...');
+      debugPrint(
+        '[PresensiController] proceedPresensi: Direct submit (no face verification/capture required)...',
+      );
       await _submitPresensi();
     }
   }
@@ -310,17 +390,25 @@ class PresensiController extends GetxController {
 
   Future<void> _handleFaceCapture() async {
     step.value = PresensiStep.faceCapture;
-    debugPrint('[PresensiController] _handleFaceCapture: Opening FaceCapturePage...');
+    debugPrint(
+      '[PresensiController] _handleFaceCapture: Opening FaceCapturePage...',
+    );
     final imageBytes = await Get.to<Uint8List?>(() => const FaceCapturePage());
     if (imageBytes == null) {
-      debugPrint('[PresensiController] _handleFaceCapture: FaceCapture cancelled or returned null');
+      debugPrint(
+        '[PresensiController] _handleFaceCapture: FaceCapture cancelled or returned null',
+      );
       step.value = PresensiStep.idle;
       return;
     }
-    debugPrint('[PresensiController] _handleFaceCapture: Captured image bytes length: ${imageBytes.length}. Cropping and compressing...');
+    debugPrint(
+      '[PresensiController] _handleFaceCapture: Captured image bytes length: ${imageBytes.length}. Cropping and compressing...',
+    );
     final compressed = await _faceService.cropAndCompress(imageBytes);
     faceImageBytes.value = compressed ?? imageBytes;
-    debugPrint('[PresensiController] _handleFaceCapture: Final compressed image bytes length: ${faceImageBytes.value?.length}. Submitting presence...');
+    debugPrint(
+      '[PresensiController] _handleFaceCapture: Final compressed image bytes length: ${faceImageBytes.value?.length}. Submitting presence...',
+    );
     await _submitPresensi();
   }
 
@@ -332,18 +420,22 @@ class PresensiController extends GetxController {
     step.value = PresensiStep.submitting;
     final pos = currentPosition.value;
 
-    debugPrint('[PresensiController] _submitPresensi: Generating/fetching device UUID...');
+    debugPrint(
+      '[PresensiController] _submitPresensi: Generating/fetching device UUID...',
+    );
     final deviceUuid = await _tokenStorage.getOrCreateDeviceUuid();
 
-    debugPrint('[PresensiController] _submitPresensi: Preparing submission request. '
-        'Code: ${activeCode.value}, '
-        'Device UUID: $deviceUuid, '
-        'Latitude: ${pos?.latitude}, '
-        'Longitude: ${pos?.longitude}, '
-        'Accuracy: ${pos?.accuracy}m, '
-        'Distance: ${distanceToFence.value}m, '
-        'Face Score: ${faceScore.value}, '
-        'Photo length: ${faceImageBytes.value?.length ?? 0} bytes');
+    debugPrint(
+      '[PresensiController] _submitPresensi: Preparing submission request. '
+      'Code: ${activeCode.value}, '
+      'Device UUID: $deviceUuid, '
+      'Latitude: ${pos?.latitude}, '
+      'Longitude: ${pos?.longitude}, '
+      'Accuracy: ${pos?.accuracy}m, '
+      'Distance: ${distanceToFence.value}m, '
+      'Face Score: ${faceScore.value}, '
+      'Photo length: ${faceImageBytes.value?.length ?? 0} bytes',
+    );
 
     final request = AttendanceSubmissionRequest(
       code: activeCode.value!,
@@ -358,19 +450,25 @@ class PresensiController extends GetxController {
     );
 
     try {
-      debugPrint('[PresensiController] _submitPresensi: Submitting via repository...');
+      debugPrint(
+        '[PresensiController] _submitPresensi: Submitting via repository...',
+      );
       final response = await _repository.submit(request);
-      debugPrint('[PresensiController] _submitPresensi: Submission SUCCESS! ID: ${response.id}, Status: ${response.status}, AttendedAt: ${response.attendedAt}');
+      debugPrint(
+        '[PresensiController] _submitPresensi: Submission SUCCESS! ID: ${response.id}, Status: ${response.status}, AttendedAt: ${response.attendedAt}',
+      );
       step.value = PresensiStep.success;
     } on ApiException catch (e) {
-      debugPrint('[PresensiController] _submitPresensi: ApiException: ${e.statusCode} - ${e.errorCode} - ${e.message}');
+      debugPrint(
+        '[PresensiController] _submitPresensi: ApiException: ${e.statusCode} - ${e.errorCode} - ${e.message}',
+      );
       final msg = switch (e.errorCode) {
         'ATTENDANCE_ALREADY_SUBMITTED' => 'Presensi hari ini sudah tercatat.',
         'ATTENDANCE_WINDOW_NOT_OPEN' =>
           'Belum waktunya presensi. Lihat jadwal Anda.',
         'ATTENDANCE_WINDOW_CLOSED' => 'Waktu presensi sudah ditutup.',
         'ATTENDANCE_SEQUENCE_ERROR' =>
-          'Urutan presensi tidak sesuai. Lakukan check-in terlebih dahulu.',
+          'Urutan presensi tidak sesuai. Lakukan presensi sebelumnya terlebih dahulu.',
         'LOCATION_REQUIRED' => 'Lokasi GPS diperlukan untuk presensi ini.',
         'DEVICE_LOCK_REQUIRED' =>
           'Perangkat ini tidak terdaftar untuk presensi.',
@@ -379,8 +477,10 @@ class PresensiController extends GetxController {
       _setError(PresensiErrorType.submitFailed, msg);
     } on NetworkException catch (e) {
       debugPrint('[PresensiController] _submitPresensi: NetworkException: $e');
-      _setError(PresensiErrorType.submitFailed,
-          'Tidak ada koneksi internet. Periksa jaringan Anda.');
+      _setError(
+        PresensiErrorType.submitFailed,
+        'Tidak ada koneksi internet. Periksa jaringan Anda.',
+      );
     } catch (e) {
       debugPrint('[PresensiController] _submitPresensi: Unknown exception: $e');
       _setError(PresensiErrorType.submitFailed, 'Gagal submit presensi: $e');
@@ -463,12 +563,12 @@ class PresensiController extends GetxController {
       step.value == PresensiStep.submitting;
 
   String get stepLabel => switch (step.value) {
-        PresensiStep.idle => '',
-        PresensiStep.liveness => 'Liveness detection',
-        PresensiStep.faceCapture => 'Ambil foto wajah',
-        PresensiStep.geofenceCheck => 'Memeriksa lokasi...',
-        PresensiStep.submitting => 'Menyimpan presensi...',
-        PresensiStep.success => 'Presensi berhasil!',
-        PresensiStep.error => 'Terjadi kesalahan',
-      };
+    PresensiStep.idle => '',
+    PresensiStep.liveness => 'Liveness detection',
+    PresensiStep.faceCapture => 'Ambil foto wajah',
+    PresensiStep.geofenceCheck => 'Memeriksa lokasi...',
+    PresensiStep.submitting => 'Menyimpan presensi...',
+    PresensiStep.success => 'Presensi berhasil!',
+    PresensiStep.error => 'Terjadi kesalahan',
+  };
 }

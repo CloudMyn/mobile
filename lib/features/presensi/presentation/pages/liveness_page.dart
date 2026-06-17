@@ -15,7 +15,7 @@ import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 
 /// Urutan langkah liveness
-enum _LivenessStep { align, blink, smile, done }
+enum _LivenessStep { blink, smile, done }
 
 /// Halaman liveness detection berbasis ML Kit.
 /// Mengembalikan [Uint8List] jika semua langkah berhasil (foto ditangkap otomatis), [null] jika dibatalkan.
@@ -34,10 +34,9 @@ class _LivenessPageState extends State<LivenessPage>
   bool _isInitialized = false;
   bool _isDetecting = false;
   String? _initError;
-  Size? _screenSize;
   CameraImage? _lastFrame;
 
-  _LivenessStep _step = _LivenessStep.align;
+  _LivenessStep _step = _LivenessStep.blink;
   int _failCount = 0;
   static const int _maxFails = 3;
 
@@ -173,32 +172,19 @@ class _LivenessPageState extends State<LivenessPage>
 
     final faces = await _detector!.processImage(inputImage);
     if (faces.isEmpty || !mounted) {
-      // Jika wajah tidak terdeteksi, reset progres kembali ke langkah awal (align)
-      if (_step != _LivenessStep.align && _step != _LivenessStep.done) {
-        _advanceTo(_LivenessStep.align);
+      // Jika wajah tidak terdeteksi, reset progres kembali ke langkah awal (blink)
+      if (_step != _LivenessStep.blink && _step != _LivenessStep.done) {
+        _advanceTo(_LivenessStep.blink);
       }
       return;
     }
 
     final face = faces.first;
 
-    // Pastikan wajah berada di dalam area lingkaran panduan
-    final isInside = _isFaceInCircle(face, image);
-    if (!isInside) {
-      // Jika wajah keluar dari lingkaran, reset progres kembali ke langkah awal (align)
-      if (_step != _LivenessStep.align && _step != _LivenessStep.done) {
-        _advanceTo(_LivenessStep.align);
-      }
-      return;
-    }
-
     final now = DateTime.now();
     if (now.difference(_lastStepChange) < _stepCooldown) return;
 
     switch (_step) {
-      case _LivenessStep.align:
-        // Wajah terdeteksi di dalam circle → lanjut ke blink
-        _advanceTo(_LivenessStep.blink);
       case _LivenessStep.blink:
         final leftEye = face.leftEyeOpenProbability ?? 1.0;
         final rightEye = face.rightEyeOpenProbability ?? 1.0;
@@ -216,46 +202,7 @@ class _LivenessPageState extends State<LivenessPage>
     }
   }
 
-  bool _isFaceInCircle(Face face, CameraImage image) {
-    if (_screenSize == null || _camCtrl == null) return false;
 
-    final camera = _camCtrl!.description;
-    final rotation = InputImageRotationValue.fromRawValue(
-          camera.sensorOrientation,
-        ) ??
-        InputImageRotation.rotation0deg;
-
-    final isRotated = rotation == InputImageRotation.rotation90deg ||
-        rotation == InputImageRotation.rotation270deg;
-
-    final double imageWidth = (isRotated ? image.height : image.width).toDouble();
-    final double imageHeight = (isRotated ? image.width : image.height).toDouble();
-
-    final double scaleX = _screenSize!.width / imageWidth;
-    final double scaleY = _screenSize!.height / imageHeight;
-    final double scale = scaleX > scaleY ? scaleX : scaleY;
-
-    final double dx = (_screenSize!.width - imageWidth * scale) / 2;
-    final double dy = (_screenSize!.height - imageHeight * scale) / 2;
-
-    final double faceScreenX = face.boundingBox.center.dx * scale + dx;
-    final double faceScreenY = face.boundingBox.center.dy * scale + dy;
-    final double faceScreenWidth = face.boundingBox.width * scale;
-
-    final faceCenter = Offset(faceScreenX, faceScreenY);
-    final circleCenter = Offset(_screenSize!.width / 2, _screenSize!.height * 0.42);
-    final circleRadius = _screenSize!.width * 0.4;
-
-    final dist = (faceCenter - circleCenter).distance;
-
-    // Deteksi valid jika pusat wajah dekat dengan pusat lingkaran
-    // dan ukuran wajah proporsional terhadap ukuran lingkaran
-    final isCentered = dist < circleRadius * 0.4;
-    final isRightSize = faceScreenWidth >= circleRadius * 0.8 &&
-        faceScreenWidth <= circleRadius * 1.8;
-
-    return isCentered && isRightSize;
-  }
 
   InputImage? _toInputImage(CameraImage image) {
     if (_camCtrl == null) return null;
@@ -389,7 +336,7 @@ class _LivenessPageState extends State<LivenessPage>
     if (_failCount >= _maxFails) {
       Get.back(result: null); // Return null instead of false to prevent TypeError
     } else {
-      setState(() => _step = _LivenessStep.align);
+      setState(() => _step = _LivenessStep.blink);
       _lastStepChange = DateTime.now();
     }
   }
@@ -400,7 +347,6 @@ class _LivenessPageState extends State<LivenessPage>
 
   @override
   Widget build(BuildContext context) {
-    _screenSize = MediaQuery.of(context).size;
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
 
@@ -433,9 +379,6 @@ class _LivenessPageState extends State<LivenessPage>
             child: CameraPreview(_camCtrl!),
           ),
         ),
-
-        // Overlay
-        _LivenessOverlay(step: _step, colors: colors),
 
         // Instruksi + progress di bawah
         Positioned(
@@ -527,60 +470,13 @@ class _LivenessPageState extends State<LivenessPage>
   }
 
   String _stepInstruction(_LivenessStep s) => switch (s) {
-        _LivenessStep.align => 'Arahkan wajah ke kamera',
         _LivenessStep.blink => 'Kedipkan kedua mata Anda',
         _LivenessStep.smile => 'Tersenyum ke kamera',
         _LivenessStep.done => 'Verifikasi berhasil!',
       };
 }
 
-// =============================================================================
-//  Liveness overlay — lingkaran + status icon per langkah
-// =============================================================================
-class _LivenessOverlay extends StatelessWidget {
-  final _LivenessStep step;
-  final AppColors colors;
-  const _LivenessOverlay({required this.step, required this.colors});
 
-  @override
-  Widget build(BuildContext context) {
-    final ringColor = step == _LivenessStep.done ? colors.success : colors.primary;
-    return CustomPaint(
-      painter: _LivenessOverlayPainter(ringColor: ringColor),
-    );
-  }
-}
-
-class _LivenessOverlayPainter extends CustomPainter {
-  final Color ringColor;
-  const _LivenessOverlayPainter({required this.ringColor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height * 0.42);
-    final radius = size.width * 0.4;
-
-    final path = Path()
-      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addOval(Rect.fromCircle(center: center, radius: radius))
-      ..fillType = PathFillType.evenOdd;
-
-    canvas.drawPath(path, Paint()..color = Colors.black.withValues(alpha: 0.5));
-
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..color = ringColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_LivenessOverlayPainter old) =>
-      old.ringColor != ringColor;
-}
 
 // =============================================================================
 //  Step indicator row (tiga lingkaran kecil)
@@ -594,7 +490,6 @@ class _StepIndicatorRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final steps = [
-      (_LivenessStep.align, Icons.face_rounded, 'Posisi'),
       (_LivenessStep.blink, Icons.remove_red_eye_rounded, 'Kedip'),
       (_LivenessStep.smile, Icons.sentiment_satisfied_rounded, 'Senyum'),
     ];
