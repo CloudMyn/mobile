@@ -86,15 +86,19 @@ class PresensiController extends GetxController {
 
   final closestLocationName = Rx<String?>(null);
 
+  /// Nomor shift aktif untuk daily record
+  final shiftNo = 1.obs;
+
   // =========================================================================
   //  Entry Point — dipanggil dari HomeController
   // =========================================================================
 
-  void setConfig(TodayRecord record, AttendanceConfig cfg) {
+  void setConfig(TodayRecord record, AttendanceConfig cfg, {int shiftNo = 1}) {
     _reset();
     activeRecord.value = record;
     activeCode.value = record.attendanceType.code;
     config.value = cfg;
+    this.shiftNo.value = shiftNo;
   }
 
   // =========================================================================
@@ -343,6 +347,7 @@ class PresensiController extends GetxController {
 
     final request = AttendanceSubmissionRequest(
       code: activeCode.value!,
+      shiftNo: shiftNo.value,
       deviceUuid: deviceUuid,
       latitude: pos?.latitude,
       longitude: pos?.longitude,
@@ -426,6 +431,7 @@ class PresensiController extends GetxController {
     isInsideGeofence.value = false;
     distanceToFence.value = 0.0;
     closestLocationName.value = null;
+    shiftNo.value = 1;
   }
 
   void _setError(PresensiErrorType type, String message) {

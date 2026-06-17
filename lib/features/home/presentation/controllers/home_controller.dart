@@ -129,7 +129,7 @@ class HomeController extends GetxController {
       if (currentIndex > 0) {
         final hasUncompletedPrevious = records
             .take(currentIndex)
-            .any((r) => !r.isCompleted);
+            .any((r) => !r.isCompleted && !r.attendanceType.isSkippable);
 
         if (hasUncompletedPrevious) {
           AppDialog.info(
@@ -149,6 +149,7 @@ class HomeController extends GetxController {
     Get.find<PresensiController>().setConfig(
       record,
       config,
+      shiftNo: schedule.shiftNo,
     );
     Get.to(() => const PresencePage());
   }

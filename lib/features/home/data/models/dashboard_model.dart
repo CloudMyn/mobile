@@ -74,6 +74,7 @@ class TodaySchedule {
     this.schedule,
     this.scheduledLocation,
     required this.records,
+    required this.shiftNo,
   });
 
   final int id;
@@ -90,6 +91,7 @@ class TodaySchedule {
   final ScheduleInfo? schedule;
   final ScheduleLocation? scheduledLocation;
   final List<TodayRecord> records;
+  final int shiftNo;
 
   bool get isWorkday {
     final status = dayStatus.toLowerCase();
@@ -129,11 +131,14 @@ class TodaySchedule {
       scheduledLocation: json['scheduled_location'] != null
           ? ScheduleLocation.fromJson(
               json['scheduled_location'] as Map<String, dynamic>,
-            )
+              )
           : null,
-      records: (json['records'] as List<dynamic>? ?? [])
-          .map((e) => TodayRecord.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      records: ((json['records'] as List<dynamic>? ?? [])
+              .map((e) => TodayRecord.fromJson(e as Map<String, dynamic>))
+              .toList())
+            ..sort((a, b) => a.attendanceType.defaultSequence
+                .compareTo(b.attendanceType.defaultSequence)),
+      shiftNo: json['shift_no'] as int? ?? 1,
     );
   }
 }
@@ -274,6 +279,7 @@ class AttendanceTypeConfig {
     required this.isSkippable,
     required this.isActive,
     required this.lateToleranceMinutes,
+    required this.defaultSequence,
   });
 
   final int id;
@@ -287,6 +293,7 @@ class AttendanceTypeConfig {
   final bool isSkippable;
   final bool isActive;
   final int lateToleranceMinutes;
+  final int defaultSequence;
 
   factory AttendanceTypeConfig.fromJson(Map<String, dynamic> json) {
     return AttendanceTypeConfig(
@@ -303,6 +310,7 @@ class AttendanceTypeConfig {
       isActive: json['is_active'] as bool? ?? true,
       lateToleranceMinutes:
           int.tryParse(json['late_tolerance_minutes']?.toString() ?? '') ?? 0,
+      defaultSequence: json['default_sequence'] as int? ?? 0,
     );
   }
 }
