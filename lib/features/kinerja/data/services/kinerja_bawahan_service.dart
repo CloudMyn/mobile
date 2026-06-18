@@ -1,3 +1,6 @@
+import 'package:dio/dio.dart';
+import '../../../../core/error/app_exception.dart';
+import '../../../../core/network/api_response.dart';
 import '../models/subordinate_activity_item.dart';
 
 abstract class KinerjaBawahanService {
@@ -150,5 +153,111 @@ class MockKinerjaBawahanService implements KinerjaBawahanService {
     );
     _activities[index] = updated;
     return updated;
+  }
+}
+
+class ApiKinerjaBawahanService implements KinerjaBawahanService {
+  final Dio _dio;
+
+  ApiKinerjaBawahanService(this._dio);
+
+  @override
+  Future<int> fetchPendingCount() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/activities/approvals/pending-count');
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => (data as Map<String, dynamic>)['count'] as int,
+      );
+      return envelope.data ?? 0;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memuat jumlah pending');
+    }
+  }
+
+  @override
+  Future<List<SubordinateActivityItem>> fetchSubordinateActivities({
+    required ActivityStatus status,
+    int page = 1,
+    int pageSize = 15,
+  }) async {
+    try {
+      final statusString = status == ActivityStatus.pending
+          ? 'pending'
+          : status == ActivityStatus.approved
+              ? 'approved'
+              : 'rejected';
+
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/activities/approvals',
+        queryParameters: {
+          'status': statusString,
+          'page': page,
+          'per_page': pageSize,
+        },
+      );
+
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) {
+          final list = (data as Map<String, dynamic>)['data'] as List;
+          return list
+              .map((e) => SubordinateActivityItem.fromJson(e as Map<String, dynamic>))
+              .toList();
+        },
+      );
+
+      return envelope.data ?? [];
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memuat aktivitas bawahan');
+    }
+  }
+
+  @override
+  Future<SubordinateActivityItem> approveActivity(String id) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/activities/approvals/$id/approve',
+      );
+
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => SubordinateActivityItem.fromJson(data as Map<String, dynamic>),
+      );
+
+      return envelope.data!;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal menyetujui aktivitas');
+    }
+  }
+
+  @override
+  Future<SubordinateActivityItem> rejectActivity(String id, String reason) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/activities/approvals/$id/reject',
+        data: {'reason': reason},
+      );
+
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => SubordinateActivityItem.fromJson(data as Map<String, dynamic>),
+      );
+
+      return envelope.data!;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal menolak aktivitas');
+    }
+  }
+
+  Exception _mapDioError(DioException e, String fallbackMessage) {
+    final err = e.error;
+    if (err is ApiException) return err;
+    if (err is NetworkException) return err;
+
+    return ApiException(
+      statusCode: e.response?.statusCode ?? 0,
+      message: e.message ?? fallbackMessage,
+    );
   }
 }

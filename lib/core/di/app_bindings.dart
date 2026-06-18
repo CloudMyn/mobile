@@ -145,13 +145,13 @@ class AppBindings extends Bindings {
     );
 
     // ── Kinerja ───────────────────────────────────────────────────────────────
-    Get.put<KinerjaService>(MockKinerjaService(), permanent: true);
+    Get.put<KinerjaService>(ApiKinerjaService(Get.find<Dio>()), permanent: true);
     Get.put<KinerjaController>(
       KinerjaController(service: Get.find<KinerjaService>()),
       permanent: true,
     );
 
-    Get.put<KinerjaBawahanService>(MockKinerjaBawahanService(), permanent: true);
+    Get.put<KinerjaBawahanService>(ApiKinerjaBawahanService(Get.find<Dio>()), permanent: true);
     Get.put<KinerjaBawahanController>(
       KinerjaBawahanController(service: Get.find<KinerjaBawahanService>()),
       permanent: true,

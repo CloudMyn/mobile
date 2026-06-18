@@ -65,4 +65,46 @@ class SubordinateActivityItem {
       rejectReason: rejectReason ?? this.rejectReason,
     );
   }
+
+  factory SubordinateActivityItem.fromJson(Map<String, dynamic> json) {
+    ActivityStatus mapStatus(String? statusStr) {
+      switch (statusStr?.toLowerCase()) {
+        case 'approved':
+          return ActivityStatus.approved;
+        case 'rejected':
+          return ActivityStatus.rejected;
+        default:
+          return ActivityStatus.pending; // submitted maps to pending
+      }
+    }
+
+    String? attachment;
+    if (json['attachments'] != null && (json['attachments'] as List).isNotEmpty) {
+      attachment = json['attachments'][0]['url'];
+    }
+
+    final userObj = json['user'] as Map<String, dynamic>?;
+    final subordinateName = userObj?['full_name'] ?? userObj?['name'] ?? '';
+    final subordinateNip = userObj?['nip'] ?? '';
+    final subordinateAvatar = userObj?['avatar'] ?? '';
+
+    return SubordinateActivityItem(
+      id: json['id']?.toString() ?? '',
+      typeId: json['activity_type_id']?.toString() ?? '',
+      typeName: json['activity_type']?['name']?.toString() ?? '',
+      description: json['description'] ?? '',
+      date: json['activity_date'] != null
+          ? DateTime.parse(json['activity_date'])
+          : DateTime.now(),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+      attachmentUrl: attachment,
+      subordinateName: subordinateName,
+      subordinateNip: subordinateNip,
+      subordinateAvatar: subordinateAvatar,
+      status: mapStatus(json['status']),
+      rejectReason: json['reject_reason'],
+    );
+  }
 }

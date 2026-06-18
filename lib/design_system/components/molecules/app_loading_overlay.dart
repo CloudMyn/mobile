@@ -76,6 +76,12 @@ class AppLoadingOverlay {
     _message.value = null;
     if (Get.isDialogOpen == true) {
       Get.back();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (Get.isDialogOpen == true) {
+          Get.back();
+        }
+      });
     }
   }
 }

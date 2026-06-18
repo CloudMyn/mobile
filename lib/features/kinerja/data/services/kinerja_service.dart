@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import '../../../../core/error/app_exception.dart';
+import '../../../../core/network/api_response.dart';
 import '../models/activity_item.dart';
 import '../models/activity_type.dart';
 import '../models/monthly_activity_stats.dart';
@@ -413,5 +416,214 @@ class MockKinerjaService implements KinerjaService {
   Future<void> deleteActivity(String id) async {
     await Future.delayed(_delay);
     _activities.removeWhere((a) => a.id == id);
+  }
+}
+
+class ApiKinerjaService implements KinerjaService {
+  final Dio _dio;
+
+  ApiKinerjaService(this._dio);
+
+  @override
+  Future<List<ActivityType>> fetchTypes() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/activity-types');
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => (data as List)
+            .map((e) => ActivityType.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+      return envelope.data?.where((t) => t.id.isNotEmpty).toList() ?? [];
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memuat jenis kegiatan');
+    }
+  }
+
+  @override
+  Future<List<ActivityItem>> fetchActivities({
+    required int month,
+    required int year,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/activities',
+        queryParameters: {
+          'month': month,
+          'year': year,
+          'page': page,
+          'per_page': pageSize,
+        },
+      );
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) {
+          final list = (data as Map<String, dynamic>)['data'] as List;
+          return list.map((e) => ActivityItem.fromJson(e as Map<String, dynamic>)).toList();
+        },
+      );
+      return envelope.data ?? [];
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memuat daftar kinerja');
+    }
+  }
+
+  @override
+  Future<MonthlyActivityStats> fetchMonthlyStats({
+    required int month,
+    required int year,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/activities/stats',
+        queryParameters: {
+          'month': month,
+          'year': year,
+        },
+      );
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => MonthlyActivityStats.fromJson(data as Map<String, dynamic>),
+      );
+      return envelope.data!;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memuat statistik bulanan');
+    }
+  }
+
+  @override
+  Future<ActivityItem> createActivity({
+    required String typeId,
+    required String description,
+    String? imagePath,
+    String? startTime,
+    String? endTime,
+    String? status,
+    DateTime? date,
+  }) async {
+    try {
+      final activityDate = date ?? DateTime.now();
+      final dateStr = '${activityDate.year}-${activityDate.month.toString().padLeft(2, '0')}-${activityDate.day.toString().padLeft(2, '0')}';
+      
+      final Map<String, dynamic> fields = {
+        'activity_type_id': typeId,
+        'activity_date': dateStr,
+        'description': description,
+        'auto_submit': status == 'Selesai' ? 'true' : 'false',
+      };
+      
+      if (startTime != null && startTime.isNotEmpty) {
+        fields['start_at'] = startTime;
+      }
+      if (endTime != null && endTime.isNotEmpty) {
+        fields['end_at'] = endTime;
+      }
+
+      FormData formData;
+      if (imagePath != null && imagePath.isNotEmpty) {
+        formData = FormData.fromMap({
+          ...fields,
+          'file_attachments[]': await MultipartFile.fromFile(
+            imagePath,
+            filename: imagePath.split('/').last,
+          ),
+        });
+      } else {
+        formData = FormData.fromMap(fields);
+      }
+
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/activities',
+        data: formData,
+      );
+
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => ActivityItem.fromJson(data as Map<String, dynamic>),
+      );
+      return envelope.data!;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal mencatat kinerja');
+    }
+  }
+
+  @override
+  Future<ActivityItem> updateActivity({
+    required String id,
+    required String typeId,
+    required String description,
+    String? imagePath,
+    String? startTime,
+    String? endTime,
+    String? status,
+    DateTime? date,
+  }) async {
+    try {
+      final activityDate = date ?? DateTime.now();
+      final dateStr = '${activityDate.year}-${activityDate.month.toString().padLeft(2, '0')}-${activityDate.day.toString().padLeft(2, '0')}';
+
+      final Map<String, dynamic> fields = {
+        'activity_type_id': typeId,
+        'activity_date': dateStr,
+        'description': description,
+        'auto_submit': status == 'Selesai' ? 'true' : 'false',
+        '_method': 'PUT',
+      };
+
+      if (startTime != null && startTime.isNotEmpty) {
+        fields['start_at'] = startTime;
+      }
+      if (endTime != null && endTime.isNotEmpty) {
+        fields['end_at'] = endTime;
+      }
+
+      FormData formData;
+      if (imagePath != null && imagePath.isNotEmpty && !imagePath.startsWith('http')) {
+        formData = FormData.fromMap({
+          ...fields,
+          'file_attachments[]': await MultipartFile.fromFile(
+            imagePath,
+            filename: imagePath.split('/').last,
+          ),
+        });
+      } else {
+        formData = FormData.fromMap(fields);
+      }
+
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/activities/$id',
+        data: formData,
+      );
+
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => ActivityItem.fromJson(data as Map<String, dynamic>),
+      );
+      return envelope.data!;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memperbarui kinerja');
+    }
+  }
+
+  @override
+  Future<void> deleteActivity(String id) async {
+    try {
+      await _dio.delete<void>('/activities/$id');
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal menghapus kinerja');
+    }
+  }
+
+  Exception _mapDioError(DioException e, String fallbackMessage) {
+    final err = e.error;
+    if (err is ApiException) return err;
+    if (err is NetworkException) return err;
+
+    return ApiException(
+      statusCode: e.response?.statusCode ?? 0,
+      message: e.message ?? fallbackMessage,
+    );
   }
 }

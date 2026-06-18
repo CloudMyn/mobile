@@ -33,6 +33,12 @@ class _PresencePageState extends State<PresencePage> {
   }
 
   @override
+  void dispose() {
+    ctrl.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;

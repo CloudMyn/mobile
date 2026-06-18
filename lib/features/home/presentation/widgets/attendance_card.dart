@@ -44,7 +44,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
   void _setupWorkers() {
     // Loading overlay
     _workers.add(ever(_presCtrl.step, (PresensiStep step) {
-      final loadingSteps = {PresensiStep.submitting, PresensiStep.geofenceCheck};
+      final loadingSteps = {PresensiStep.submitting};
       if (loadingSteps.contains(step)) {
         AppLoadingOverlay.show(_presCtrl.stepLabel);
       } else {
