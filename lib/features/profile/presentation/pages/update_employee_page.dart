@@ -8,6 +8,7 @@ import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
+import '../../data/models/employee_enums.dart';
 import '../controllers/profile_controller.dart';
 
 class UpdateEmployeePage extends StatelessWidget {
@@ -19,193 +20,528 @@ class UpdateEmployeePage extends StatelessWidget {
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      appBar: AppTopAppBar(
-        title: 'Data Pegawai',
-        variant: AppTopAppBarVariant.withBack,
-      ),
-      body: Obx(() {
-        final emp = ctrl.employee.value;
-        final nipCtrl = TextEditingController(text: emp?.nip ?? '');
-        final jabatanCtrl = TextEditingController(text: emp?.position ?? '');
-        final unitCtrl = TextEditingController(text: emp?.unit ?? '');
-        final isHistoricalLocked = !ctrl.canEditHistoricalData;
-
-        return SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.s16.w,
-            vertical: AppSpacing.s16.h,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _PageIntro(colors: colors, typography: typography),
-              SizedBox(height: AppSpacing.s16.h),
-              _SectionLabel('Data Historis', colors, typography),
-              SizedBox(height: AppSpacing.s8.h),
-              _StatusCard(
-                colors: colors,
-                typography: typography,
-                icon: isHistoricalLocked
-                    ? Icons.lock_outline_rounded
-                    : Icons.info_outline_rounded,
-                title: isHistoricalLocked
-                    ? 'Data historis sudah terkunci'
-                    : 'Data historis hanya bisa diisi sekali',
-                message: isHistoricalLocked
-                    ? 'Perubahan nama lengkap, NIP, jabatan, dan unit kerja harus melalui admin atau operator.'
-                    : 'Lengkapi data historis sebelum tersimpan. Setelah record data pegawai terbentuk, field ini akan terkunci.',
-                tint: isHistoricalLocked
-                    ? colors.warning
-                    : colors.primary,
-              ),
-              SizedBox(height: AppSpacing.s8.h),
-              AppCard(
-                outlined: true,
-                child: Form(
-                  key: ctrl.formKeyHistorical,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppTextField(
-                        label: 'NIP',
-                        hint: 'Nomor Induk Pegawai',
-                        controller: nipCtrl,
-                        readOnly: true,
-                        prefixIcon: const Icon(Icons.badge_outlined),
-                      ),
-                      SizedBox(height: AppSpacing.s16.h),
-                      AppTextField(
-                        label: 'Nama Lengkap',
-                        hint: 'Masukkan nama lengkap',
-                        controller: ctrl.namaCtrl,
-                        readOnly: isHistoricalLocked,
-                        prefixIcon: const Icon(Icons.person_outline_rounded),
-                        validator: ctrl.validateHistoricalFullName,
-                        textInputAction: TextInputAction.next,
-                      ),
-                      SizedBox(height: AppSpacing.s16.h),
-                      AppTextField(
-                        label: 'Jabatan',
-                        hint: 'Jabatan pegawai',
-                        controller: jabatanCtrl,
-                        readOnly: true,
-                        prefixIcon: const Icon(Icons.work_outline_rounded),
-                      ),
-                      SizedBox(height: AppSpacing.s16.h),
-                      AppTextField(
-                        label: 'Unit Kerja',
-                        hint: 'Unit/OPD',
-                        controller: unitCtrl,
-                        readOnly: true,
-                        prefixIcon: const Icon(Icons.apartment_rounded),
-                      ),
-                      if (!isHistoricalLocked) ...[
-                        SizedBox(height: AppSpacing.s20.h),
-                        Obx(
-                          () => AppButton(
-                            label: 'Simpan Data Historis',
-                            fullWidth: true,
-                            icon: Icons.save_rounded,
-                            isLoading: ctrl.isSavingHistoricalData.value,
-                            onPressed: ctrl.saveHistoricalEmployeeData,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: AppSpacing.s24.h),
-              _SectionLabel('Data Dapat Diubah', colors, typography),
-              SizedBox(height: AppSpacing.s8.h),
-              _StatusCard(
-                colors: colors,
-                typography: typography,
-                icon: Icons.edit_note_rounded,
-                title: 'Kontak dapat diperbarui',
-                message:
-                    'Nomor HP dan alamat dapat diubah kapan saja. Email hanya ditampilkan dan belum dapat diperbarui dari aplikasi mobile.',
-                tint: colors.success,
-              ),
-              SizedBox(height: AppSpacing.s8.h),
-              AppCard(
-                outlined: true,
-                child: Form(
-                  key: ctrl.formKeyContact,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppTextField(
-                        label: 'Email',
-                        hint: 'Alamat email aktif',
-                        controller: ctrl.emailCtrl,
-                        keyboardType: TextInputType.emailAddress,
-                        readOnly: true,
-                        prefixIcon: const Icon(Icons.email_outlined),
-                      ),
-                      SizedBox(height: AppSpacing.s8.h),
-                      Text(
-                        'Email dikelola oleh sistem dan saat ini belum dapat diubah melalui mobile.',
-                        style: typography.caption.copyWith(
-                          color: colors.outline,
-                        ),
-                      ),
-                      SizedBox(height: AppSpacing.s16.h),
-                      AppTextField(
-                        label: 'Nomor HP',
-                        hint: 'Contoh: 08123456789',
-                        controller: ctrl.phoneCtrl,
-                        keyboardType: TextInputType.phone,
-                        prefixIcon: const Icon(Icons.phone_outlined),
-                        textInputAction: TextInputAction.next,
-                      ),
-                      SizedBox(height: AppSpacing.s16.h),
-                      AppTextField(
-                        label: 'Alamat',
-                        hint: 'Alamat lengkap',
-                        controller: ctrl.alamatCtrl,
-                        maxLines: 3,
-                        prefixIcon: const Icon(Icons.location_on_outlined),
-                        textInputAction: TextInputAction.done,
-                      ),
-                      SizedBox(height: AppSpacing.s20.h),
-                      Obx(
-                        () => AppButton(
-                          label: 'Simpan Kontak',
-                          fullWidth: true,
-                          icon: Icons.save_outlined,
-                          isLoading: ctrl.isSavingContactData.value,
-                          onPressed: ctrl.saveEditableEmployeeData,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (ctrl.isLoadingEmployeeData.value) ...[
-                SizedBox(height: AppSpacing.s16.h),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 16.w,
-                      height: 16.w,
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    SizedBox(width: AppSpacing.s8.w),
-                    Text(
-                      'Memuat status data pegawai...',
-                      style: typography.caption.copyWith(color: colors.outline),
-                    ),
-                  ],
-                ),
-              ],
-              SizedBox(height: AppSpacing.s32.h),
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        appBar: AppTopAppBar(
+          title: 'Data Pegawai',
+          variant: AppTopAppBarVariant.withBack,
+          bottom: TabBar(
+            isScrollable: true,
+            labelColor: colors.primary,
+            unselectedLabelColor: colors.outline,
+            indicatorColor: colors.primary,
+            labelStyle: typography.labelLarge.copyWith(fontWeight: FontWeight.bold),
+            unselectedLabelStyle: typography.labelLarge,
+            tabs: const [
+              Tab(text: 'Personal'),
+              Tab(text: 'Kontak & Alamat'),
+              Tab(text: 'Info Bank'),
+              Tab(text: 'Keluarga & Darurat'),
             ],
           ),
-        );
-      }),
+        ),
+        body: Obx(() {
+          if (ctrl.isLoadingEmployeeData.value) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  SizedBox(height: AppSpacing.s16.h),
+                  Text('Memuat data pegawai...', style: typography.bodyMedium),
+                ],
+              ),
+            );
+          }
+          return TabBarView(
+            children: [
+              _PersonalTab(colors: colors, typography: typography, ctrl: ctrl),
+              _ContactTab(colors: colors, typography: typography, ctrl: ctrl),
+              _BankTab(colors: colors, typography: typography, ctrl: ctrl),
+              _FamilyTab(colors: colors, typography: typography, ctrl: ctrl),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _PersonalTab extends StatelessWidget {
+  final AppColors colors;
+  final AppTypography typography;
+  final ProfileController ctrl;
+
+  const _PersonalTab({required this.colors, required this.typography, required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final emp = ctrl.employee.value;
+    final nipCtrl = TextEditingController(text: emp?.nip ?? '');
+    final jabatanCtrl = TextEditingController(text: emp?.position ?? '');
+    final unitCtrl = TextEditingController(text: emp?.unit ?? '');
+    final isLocked = !ctrl.canEditHistoricalData;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(AppSpacing.s16.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _PageIntro(
+            colors: colors,
+            typography: typography,
+            title: 'Data Personal',
+            subtitle: 'Lengkapi identitas dasar Anda. Data utama yang telah disimpan hanya dapat diubah oleh Admin.',
+          ),
+          SizedBox(height: AppSpacing.s16.h),
+          _StatusCard(
+            colors: colors,
+            typography: typography,
+            icon: isLocked ? Icons.lock_outline_rounded : Icons.info_outline_rounded,
+            title: isLocked ? 'Data historis terkunci' : 'Lengkapi dengan benar',
+            message: isLocked
+                ? 'NIP dan beberapa data utama dikunci.'
+                : 'Setelah disimpan, beberapa field utama tidak dapat diubah.',
+            tint: isLocked ? colors.warning : colors.primary,
+          ),
+          SizedBox(height: AppSpacing.s16.h),
+          AppCard(
+            outlined: true,
+            child: Form(
+              key: ctrl.formKeyPersonal,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppTextField(
+                    label: 'NIP',
+                    hint: 'Nomor Induk Pegawai',
+                    controller: nipCtrl,
+                    readOnly: true,
+                    prefixIcon: const Icon(Icons.badge_outlined),
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'NIK',
+                    hint: 'Nomor Induk Kependudukan',
+                    controller: ctrl.nikCtrl,
+                    keyboardType: TextInputType.number,
+                    prefixIcon: const Icon(Icons.credit_card_outlined),
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Nama Lengkap (Tanpa Gelar)',
+                    hint: 'Masukkan nama lengkap',
+                    controller: ctrl.namaCtrl,
+                    readOnly: isLocked,
+                    prefixIcon: const Icon(Icons.person_outline_rounded),
+                    validator: ctrl.validateHistoricalFullName,
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          label: 'Gelar Depan',
+                          hint: 'Contoh: Dr., Ir.',
+                          controller: ctrl.titlePrefixCtrl,
+                        ),
+                      ),
+                      SizedBox(width: AppSpacing.s16.w),
+                      Expanded(
+                        child: AppTextField(
+                          label: 'Gelar Belakang',
+                          hint: 'Contoh: S.Kom., M.Ti.',
+                          controller: ctrl.titleSuffixCtrl,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          label: 'Tempat Lahir',
+                          hint: 'Kota Lahir',
+                          controller: ctrl.birthPlaceCtrl,
+                        ),
+                      ),
+                      SizedBox(width: AppSpacing.s16.w),
+                      Expanded(
+                        child: Obx(() {
+                          final dateText = ctrl.birthDate.value != null
+                              ? ctrl.birthDate.value!.toIso8601String().split('T')[0]
+                              : '';
+                          final dateCtrl = TextEditingController(text: dateText);
+                          return AppTextField(
+                            label: 'Tanggal Lahir',
+                            hint: 'YYYY-MM-DD',
+                            controller: dateCtrl,
+                            readOnly: true,
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: ctrl.birthDate.value ?? DateTime(1990),
+                                firstDate: DateTime(1940),
+                                lastDate: DateTime.now(),
+                              );
+                              if (picked != null) {
+                                ctrl.birthDate.value = picked;
+                              }
+                            },
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  _buildDropdown<Gender>(
+                    label: 'Jenis Kelamin',
+                    value: ctrl.gender.value,
+                    items: Gender.values.map((e) => DropdownMenuItem(value: e, child: Text(e.label))).toList(),
+                    onChanged: (v) => ctrl.gender.value = v,
+                    colors: colors,
+                    typography: typography,
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  _buildDropdown<Religion>(
+                    label: 'Agama',
+                    value: ctrl.religion.value,
+                    items: Religion.values.map((e) => DropdownMenuItem(value: e, child: Text(e.label))).toList(),
+                    onChanged: (v) => ctrl.religion.value = v,
+                    colors: colors,
+                    typography: typography,
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  _buildDropdown<MaritalStatus>(
+                    label: 'Status Perkawinan',
+                    value: ctrl.maritalStatus.value,
+                    items: MaritalStatus.values.map((e) => DropdownMenuItem(value: e, child: Text(e.label))).toList(),
+                    onChanged: (v) => ctrl.maritalStatus.value = v,
+                    colors: colors,
+                    typography: typography,
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Jabatan',
+                    hint: 'Jabatan pegawai',
+                    controller: jabatanCtrl,
+                    readOnly: true,
+                    prefixIcon: const Icon(Icons.work_outline_rounded),
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Unit Kerja',
+                    hint: 'Unit/OPD',
+                    controller: unitCtrl,
+                    readOnly: true,
+                    prefixIcon: const Icon(Icons.apartment_rounded),
+                  ),
+                  SizedBox(height: AppSpacing.s24.h),
+                  Obx(
+                    () => AppButton(
+                      label: 'Simpan Data Personal',
+                      fullWidth: true,
+                      icon: Icons.save_rounded,
+                      isLoading: ctrl.isSavingPersonal.value,
+                      onPressed: ctrl.savePersonalData,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required String label,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+    required AppColors colors,
+    required AppTypography typography,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: typography.labelLarge.copyWith(color: colors.onSurface, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: AppSpacing.s8.h),
+        DropdownButtonFormField<T>(
+          initialValue: value,
+          items: items,
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.s16.w, vertical: AppSpacing.s12.h),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8.r),
+              borderSide: BorderSide(color: colors.outline),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8.r),
+              borderSide: BorderSide(color: colors.outline),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8.r),
+              borderSide: BorderSide(color: colors.primary, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ContactTab extends StatelessWidget {
+  final AppColors colors;
+  final AppTypography typography;
+  final ProfileController ctrl;
+
+  const _ContactTab({required this.colors, required this.typography, required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(AppSpacing.s16.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _PageIntro(
+            colors: colors,
+            typography: typography,
+            title: 'Kontak & Alamat',
+            subtitle: 'Pastikan email, nomor HP, dan alamat selalu diperbarui agar instansi mudah menghubungi Anda.',
+          ),
+          SizedBox(height: AppSpacing.s16.h),
+          AppCard(
+            outlined: true,
+            child: Form(
+              key: ctrl.formKeyContact,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppTextField(
+                    label: 'Email',
+                    hint: 'Alamat email aktif',
+                    controller: ctrl.emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    readOnly: true,
+                    prefixIcon: const Icon(Icons.email_outlined),
+                  ),
+                  SizedBox(height: AppSpacing.s8.h),
+                  Text(
+                    'Email dikelola oleh sistem dan saat ini belum dapat diubah melalui mobile.',
+                    style: typography.caption.copyWith(color: colors.outline),
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Nomor HP',
+                    hint: 'Contoh: 08123456789',
+                    controller: ctrl.phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: const Icon(Icons.phone_outlined),
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Alamat Domisili',
+                    hint: 'Jalan, RT/RW, Dusun',
+                    controller: ctrl.alamatCtrl,
+                    maxLines: 3,
+                    prefixIcon: const Icon(Icons.location_on_outlined),
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Kode Pos',
+                    hint: 'Contoh: 90711',
+                    controller: ctrl.postalCodeCtrl,
+                    keyboardType: TextInputType.number,
+                    prefixIcon: const Icon(Icons.markunread_mailbox_outlined),
+                  ),
+                  SizedBox(height: AppSpacing.s24.h),
+                  Obx(
+                    () => AppButton(
+                      label: 'Simpan Kontak',
+                      fullWidth: true,
+                      icon: Icons.save_outlined,
+                      isLoading: ctrl.isSavingContact.value,
+                      onPressed: ctrl.saveContactData,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BankTab extends StatelessWidget {
+  final AppColors colors;
+  final AppTypography typography;
+  final ProfileController ctrl;
+
+  const _BankTab({required this.colors, required this.typography, required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(AppSpacing.s16.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _PageIntro(
+            colors: colors,
+            typography: typography,
+            title: 'Informasi Rekening',
+            subtitle: 'Data rekening bank yang digunakan untuk keperluan penggajian dan administrasi lainnya.',
+          ),
+          SizedBox(height: AppSpacing.s16.h),
+          AppCard(
+            outlined: true,
+            child: Form(
+              key: ctrl.formKeyBank,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppTextField(
+                    label: 'Nama Bank',
+                    hint: 'Contoh: Bank Sulselbar, BRI, BNI',
+                    controller: ctrl.bankNameCtrl,
+                    prefixIcon: const Icon(Icons.account_balance_outlined),
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Nomor Rekening',
+                    hint: 'Masukkan nomor rekening',
+                    controller: ctrl.bankAccountNumberCtrl,
+                    keyboardType: TextInputType.number,
+                    prefixIcon: const Icon(Icons.numbers_outlined),
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Nama Pemilik Rekening',
+                    hint: 'Sesuai dengan buku tabungan',
+                    controller: ctrl.bankAccountHolderNameCtrl,
+                    prefixIcon: const Icon(Icons.person_outline),
+                  ),
+                  SizedBox(height: AppSpacing.s24.h),
+                  Obx(
+                    () => AppButton(
+                      label: 'Simpan Info Bank',
+                      fullWidth: true,
+                      icon: Icons.save_outlined,
+                      isLoading: ctrl.isSavingBank.value,
+                      onPressed: ctrl.saveBankData,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FamilyTab extends StatelessWidget {
+  final AppColors colors;
+  final AppTypography typography;
+  final ProfileController ctrl;
+
+  const _FamilyTab({required this.colors, required this.typography, required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(AppSpacing.s16.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _PageIntro(
+            colors: colors,
+            typography: typography,
+            title: 'Keluarga & Darurat',
+            subtitle: 'Informasi orang tua, jumlah anak, dan kontak darurat yang dapat dihubungi jika terjadi sesuatu.',
+          ),
+          SizedBox(height: AppSpacing.s16.h),
+          AppCard(
+            outlined: true,
+            child: Form(
+              key: ctrl.formKeyFamily,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Data Orang Tua & Anak', style: typography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+                  const Divider(),
+                  SizedBox(height: AppSpacing.s8.h),
+                  AppTextField(
+                    label: 'Nama Ayah Kandung',
+                    hint: 'Masukkan nama ayah',
+                    controller: ctrl.fatherNameCtrl,
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Nama Ibu Kandung',
+                    hint: 'Masukkan nama ibu',
+                    controller: ctrl.motherNameCtrl,
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Jumlah Anak',
+                    hint: 'Contoh: 2',
+                    controller: ctrl.childrenCountCtrl,
+                    keyboardType: TextInputType.number,
+                  ),
+                  SizedBox(height: AppSpacing.s24.h),
+                  
+                  Text('Kontak Darurat', style: typography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+                  const Divider(),
+                  SizedBox(height: AppSpacing.s8.h),
+                  AppTextField(
+                    label: 'Nama Kontak Darurat',
+                    hint: 'Nama lengkap kerabat/keluarga',
+                    controller: ctrl.emergencyContactNameCtrl,
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Nomor HP Darurat',
+                    hint: '08xxxxxxx',
+                    controller: ctrl.emergencyContactPhoneCtrl,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppTextField(
+                    label: 'Hubungan Darurat',
+                    hint: 'Contoh: Istri, Suami, Saudara',
+                    controller: ctrl.emergencyContactRelationshipCtrl,
+                  ),
+                  SizedBox(height: AppSpacing.s24.h),
+
+                  Obx(
+                    () => AppButton(
+                      label: 'Simpan Data Keluarga',
+                      fullWidth: true,
+                      icon: Icons.save_outlined,
+                      isLoading: ctrl.isSavingFamily.value,
+                      onPressed: ctrl.saveFamilyData,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -213,10 +549,14 @@ class UpdateEmployeePage extends StatelessWidget {
 class _PageIntro extends StatelessWidget {
   final AppColors colors;
   final AppTypography typography;
+  final String title;
+  final String subtitle;
 
   const _PageIntro({
     required this.colors,
     required this.typography,
+    required this.title,
+    required this.subtitle,
   });
 
   @override
@@ -244,7 +584,7 @@ class _PageIntro extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Kelola data pegawai',
+                  title,
                   style: typography.titleSmall.copyWith(
                     color: colors.onSurface,
                     fontWeight: FontWeight.w700,
@@ -252,7 +592,7 @@ class _PageIntro extends StatelessWidget {
                 ),
                 SizedBox(height: AppSpacing.s4.h),
                 Text(
-                  'Bagian historis hanya dapat disimpan sekali, sedangkan data kontak dapat diperbarui kapan saja.',
+                  subtitle,
                   style: typography.bodySmall.copyWith(
                     color: colors.onSurface.withValues(alpha: 0.7),
                   ),
@@ -324,28 +664,6 @@ class _StatusCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  final AppColors colors;
-  final AppTypography typography;
-
-  const _SectionLabel(this.label, this.colors, this.typography);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: AppSpacing.s4.h),
-      child: Text(
-        label,
-        style: typography.titleSmall.copyWith(
-          color: colors.primary,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }

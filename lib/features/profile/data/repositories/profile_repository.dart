@@ -4,6 +4,7 @@ import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/api_response.dart';
 import '../../../auth/data/models/user_model.dart';
 import '../models/profile_employee_data_model.dart';
+import '../models/employee_enums.dart';
 
 abstract class ProfileRepository {
   Future<UserModel> enrollFace(String faceDataBase64);
@@ -13,7 +14,25 @@ abstract class ProfileRepository {
   Future<ProfileEmployeeDataModel?> getEmployeeData();
   Future<ProfileEmployeeDataModel> upsertEmployeeData({
     String? fullName,
+    String? titlePrefix,
+    String? titleSuffix,
+    Gender? gender,
+    String? birthPlace,
+    DateTime? birthDate,
+    Religion? religion,
+    MaritalStatus? maritalStatus,
+    String? nik,
     String? address,
+    String? postalCode,
+    String? bankAccountNumber,
+    String? bankName,
+    String? bankAccountHolderName,
+    String? motherName,
+    String? fatherName,
+    int? childrenCount,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+    String? emergencyContactRelationship,
   });
   Future<void> updatePassword({
     required String currentPassword,
@@ -137,12 +156,48 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<ProfileEmployeeDataModel> upsertEmployeeData({
     String? fullName,
+    String? titlePrefix,
+    String? titleSuffix,
+    Gender? gender,
+    String? birthPlace,
+    DateTime? birthDate,
+    Religion? religion,
+    MaritalStatus? maritalStatus,
+    String? nik,
     String? address,
+    String? postalCode,
+    String? bankAccountNumber,
+    String? bankName,
+    String? bankAccountHolderName,
+    String? motherName,
+    String? fatherName,
+    int? childrenCount,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+    String? emergencyContactRelationship,
   }) async {
     try {
       final payload = <String, dynamic>{};
       if (fullName != null) payload['full_name'] = fullName;
+      if (titlePrefix != null) payload['title_prefix'] = titlePrefix;
+      if (titleSuffix != null) payload['title_suffix'] = titleSuffix;
+      if (gender != null) payload['gender'] = gender.name;
+      if (birthPlace != null) payload['birth_place'] = birthPlace;
+      if (birthDate != null) payload['birth_date'] = birthDate.toIso8601String().split('T')[0];
+      if (religion != null) payload['religion'] = religion.name;
+      if (maritalStatus != null) payload['marital_status'] = maritalStatus.name;
+      if (nik != null) payload['nik'] = nik;
       if (address != null) payload['address'] = address;
+      if (postalCode != null) payload['postal_code'] = postalCode;
+      if (bankAccountNumber != null) payload['bank_account_number'] = bankAccountNumber;
+      if (bankName != null) payload['bank_name'] = bankName;
+      if (bankAccountHolderName != null) payload['bank_account_holder_name'] = bankAccountHolderName;
+      if (motherName != null) payload['mother_name'] = motherName;
+      if (fatherName != null) payload['father_name'] = fatherName;
+      if (childrenCount != null) payload['children_count'] = childrenCount.toString();
+      if (emergencyContactName != null) payload['emergency_contact_name'] = emergencyContactName;
+      if (emergencyContactPhone != null) payload['emergency_contact_phone'] = emergencyContactPhone;
+      if (emergencyContactRelationship != null) payload['emergency_contact_relationship'] = emergencyContactRelationship;
 
       final response = await _dio.put<Map<String, dynamic>>(
         '/mobile/profile/employee-data',

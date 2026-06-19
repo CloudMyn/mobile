@@ -16,6 +16,7 @@ import '../../../auth/data/services/auth_service.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../data/models/employee_model.dart';
 import '../../data/models/profile_employee_data_model.dart';
+import '../../data/models/employee_enums.dart';
 import '../../data/models/shift_model.dart';
 import '../../data/repositories/profile_repository.dart';
 
@@ -30,8 +31,10 @@ class ProfileController extends GetxController {
   final isLoadingEmployeeData = false.obs;
   final isUpdatingPhoto = false.obs;
   final isUpdatingPassword = false.obs;
-  final isSavingHistoricalData = false.obs;
-  final isSavingContactData = false.obs;
+  final isSavingPersonal = false.obs;
+  final isSavingContact = false.obs;
+  final isSavingBank = false.obs;
+  final isSavingFamily = false.obs;
   final isUpdatingShift = false.obs;
 
   final formKeyPassword = GlobalKey<FormState>();
@@ -42,12 +45,36 @@ class ProfileController extends GetxController {
   final isNewPassVisible = false.obs;
   final isConfirmPassVisible = false.obs;
 
-  final formKeyHistorical = GlobalKey<FormState>();
+  final formKeyPersonal = GlobalKey<FormState>();
   final formKeyContact = GlobalKey<FormState>();
+  final formKeyBank = GlobalKey<FormState>();
+  final formKeyFamily = GlobalKey<FormState>();
+
+  final nikCtrl = TextEditingController();
   final namaCtrl = TextEditingController();
+  final titlePrefixCtrl = TextEditingController();
+  final titleSuffixCtrl = TextEditingController();
+  final birthPlaceCtrl = TextEditingController();
+  final gender = Rx<Gender?>(null);
+  final birthDate = Rx<DateTime?>(null);
+  final religion = Rx<Religion?>(null);
+  final maritalStatus = Rx<MaritalStatus?>(null);
+
   final emailCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
   final alamatCtrl = TextEditingController();
+  final postalCodeCtrl = TextEditingController();
+
+  final bankAccountNumberCtrl = TextEditingController();
+  final bankNameCtrl = TextEditingController();
+  final bankAccountHolderNameCtrl = TextEditingController();
+
+  final motherNameCtrl = TextEditingController();
+  final fatherNameCtrl = TextEditingController();
+  final childrenCountCtrl = TextEditingController();
+  final emergencyContactNameCtrl = TextEditingController();
+  final emergencyContactPhoneCtrl = TextEditingController();
+  final emergencyContactRelationshipCtrl = TextEditingController();
 
   bool get employeeDataExists => employeeData.value != null;
   bool get canEditHistoricalData => !employeeDataExists;
@@ -76,16 +103,16 @@ class ProfileController extends GetxController {
     final resolvedUser = user ?? Get.find<SessionManager>().currentUser.value;
     if (resolvedUser == null) return;
 
-    final historicalData = employeeData.value;
-    final fullName = historicalData != null && historicalData.fullName.trim().isNotEmpty
-        ? historicalData.fullName
+    final data = employeeData.value;
+    final fullName = data != null && data.fullName.trim().isNotEmpty
+        ? data.fullName
         : (resolvedUser.fullName.isNotEmpty ? resolvedUser.fullName : resolvedUser.name);
-    final phone = resolvedUser.phone ?? historicalData?.phone ?? '';
-    final address = historicalData?.address ?? '';
+    final phone = resolvedUser.phone ?? data?.phone ?? '';
+    final address = data?.address ?? '';
 
     employee.value = EmployeeModel(
       id: resolvedUser.id.toString(),
-      nip: historicalData?.nip.isNotEmpty == true ? historicalData!.nip : resolvedUser.nip,
+      nip: data?.nip.isNotEmpty == true ? data!.nip : resolvedUser.nip,
       name: fullName,
       position: resolvedUser.jobTitle?.name ?? '-',
       unit: resolvedUser.institution?.name ?? resolvedUser.department?.name ?? '-',
@@ -99,6 +126,30 @@ class ProfileController extends GetxController {
     emailCtrl.text = resolvedUser.email;
     phoneCtrl.text = phone;
     alamatCtrl.text = address;
+
+    if (data != null) {
+      nikCtrl.text = data.nik ?? '';
+      titlePrefixCtrl.text = data.titlePrefix ?? '';
+      titleSuffixCtrl.text = data.titleSuffix ?? '';
+      birthPlaceCtrl.text = data.birthPlace ?? '';
+      gender.value = data.gender;
+      birthDate.value = data.birthDate;
+      religion.value = data.religion;
+      maritalStatus.value = data.maritalStatus;
+
+      postalCodeCtrl.text = data.postalCode ?? '';
+
+      bankAccountNumberCtrl.text = data.bankAccountNumber ?? '';
+      bankNameCtrl.text = data.bankName ?? '';
+      bankAccountHolderNameCtrl.text = data.bankAccountHolderName ?? '';
+
+      motherNameCtrl.text = data.motherName ?? '';
+      fatherNameCtrl.text = data.fatherName ?? '';
+      childrenCountCtrl.text = data.childrenCount?.toString() ?? '';
+      emergencyContactNameCtrl.text = data.emergencyContactName ?? '';
+      emergencyContactPhoneCtrl.text = data.emergencyContactPhone ?? '';
+      emergencyContactRelationshipCtrl.text = data.emergencyContactRelationship ?? '';
+    }
   }
 
   Future<void> loadProfile({bool force = false, bool showLoading = true}) async {
@@ -328,77 +379,58 @@ class ProfileController extends GetxController {
     }
   }
 
-  Future<void> saveHistoricalEmployeeData() async {
-    final formState = formKeyHistorical.currentState;
-    if (!canEditHistoricalData ||
-        formState == null ||
-        !formState.validate() ||
-        isSavingHistoricalData.value) {
+  Future<void> savePersonalData() async {
+    final formState = formKeyPersonal.currentState;
+    if (formState == null || !formState.validate() || isSavingPersonal.value) {
       return;
     }
 
-    isSavingHistoricalData.value = true;
+    isSavingPersonal.value = true;
     try {
       employeeData.value = await Get.find<ProfileRepository>().upsertEmployeeData(
         fullName: namaCtrl.text.trim(),
+        nik: nikCtrl.text.trim().isEmpty ? null : nikCtrl.text.trim(),
+        titlePrefix: titlePrefixCtrl.text.trim().isEmpty ? null : titlePrefixCtrl.text.trim(),
+        titleSuffix: titleSuffixCtrl.text.trim().isEmpty ? null : titleSuffixCtrl.text.trim(),
+        birthPlace: birthPlaceCtrl.text.trim().isEmpty ? null : birthPlaceCtrl.text.trim(),
+        gender: gender.value,
+        birthDate: birthDate.value,
+        religion: religion.value,
+        maritalStatus: maritalStatus.value,
       );
       _syncEmployeeState();
       FocusManager.instance.primaryFocus?.unfocus();
       AppFeedback.showSnackbar(
         title: 'Berhasil',
-        message: 'Data historis berhasil disimpan',
+        message: 'Data personal berhasil disimpan',
       );
     } on ValidationException catch (e) {
-      AppFeedback.showSnackbar(
-        title: 'Gagal',
-        message: e.fieldError('full_name') ?? e.message,
-        isError: true,
-      );
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
     } on ApiException catch (e) {
-      AppFeedback.showSnackbar(
-        title: 'Gagal',
-        message: e.message,
-        isError: true,
-      );
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
     } on NetworkException catch (e) {
-      AppFeedback.showSnackbar(
-        title: 'Gagal',
-        message: e.message,
-        isError: true,
-      );
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
     } finally {
-      isSavingHistoricalData.value = false;
+      isSavingPersonal.value = false;
     }
   }
 
-  Future<void> saveEditableEmployeeData() async {
+  Future<void> saveContactData() async {
     final formState = formKeyContact.currentState;
-    if (formState == null || !formState.validate() || isSavingContactData.value) {
+    if (formState == null || !formState.validate() || isSavingContact.value) {
       return;
     }
 
     final session = Get.find<SessionManager>();
     final currentUser = session.currentUser.value;
     final currentPhone = currentUser?.phone ?? '';
-    final currentAddress = employeeData.value?.address ?? '';
     final nextPhone = phoneCtrl.text.trim();
     final nextAddress = alamatCtrl.text.trim();
+    final nextPostalCode = postalCodeCtrl.text.trim();
 
-    final phoneChanged = nextPhone != currentPhone;
-    final addressChanged = nextAddress != currentAddress;
-    final shouldBootstrapEmployeeData = !employeeDataExists && nextAddress.isNotEmpty;
-
-    if (!phoneChanged && !addressChanged && !shouldBootstrapEmployeeData) {
-      AppFeedback.showSnackbar(
-        title: 'Info',
-        message: 'Tidak ada perubahan yang perlu disimpan',
-      );
-      return;
-    }
-
-    isSavingContactData.value = true;
+    isSavingContact.value = true;
     try {
-      if (phoneChanged) {
+      if (nextPhone != currentPhone) {
         final updatedProfile = await Get.find<ProfileRepository>().updateProfile(
           phone: nextPhone.isEmpty ? '' : nextPhone,
         );
@@ -410,12 +442,10 @@ class ProfileController extends GetxController {
         }
       }
 
-      if (addressChanged || shouldBootstrapEmployeeData) {
-        employeeData.value = await Get.find<ProfileRepository>().upsertEmployeeData(
-          fullName: employeeDataExists ? null : namaCtrl.text.trim(),
-          address: nextAddress,
-        );
-      }
+      employeeData.value = await Get.find<ProfileRepository>().upsertEmployeeData(
+        address: nextAddress,
+        postalCode: nextPostalCode.isEmpty ? null : nextPostalCode,
+      );
 
       _syncEmployeeState();
       FocusManager.instance.primaryFocus?.unfocus();
@@ -424,30 +454,77 @@ class ProfileController extends GetxController {
         message: 'Data kontak berhasil diperbarui',
       );
     } on ValidationException catch (e) {
-      final message =
-          e.fieldError('phone') ??
-          e.fieldError('address') ??
-          e.fieldError('full_name') ??
-          e.message;
-      AppFeedback.showSnackbar(
-        title: 'Gagal',
-        message: message,
-        isError: true,
-      );
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
     } on ApiException catch (e) {
-      AppFeedback.showSnackbar(
-        title: 'Gagal',
-        message: e.message,
-        isError: true,
-      );
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
     } on NetworkException catch (e) {
-      AppFeedback.showSnackbar(
-        title: 'Gagal',
-        message: e.message,
-        isError: true,
-      );
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
     } finally {
-      isSavingContactData.value = false;
+      isSavingContact.value = false;
+    }
+  }
+
+  Future<void> saveBankData() async {
+    final formState = formKeyBank.currentState;
+    if (formState == null || !formState.validate() || isSavingBank.value) {
+      return;
+    }
+
+    isSavingBank.value = true;
+    try {
+      employeeData.value = await Get.find<ProfileRepository>().upsertEmployeeData(
+        bankAccountNumber: bankAccountNumberCtrl.text.trim().isEmpty ? null : bankAccountNumberCtrl.text.trim(),
+        bankName: bankNameCtrl.text.trim().isEmpty ? null : bankNameCtrl.text.trim(),
+        bankAccountHolderName: bankAccountHolderNameCtrl.text.trim().isEmpty ? null : bankAccountHolderNameCtrl.text.trim(),
+      );
+      _syncEmployeeState();
+      FocusManager.instance.primaryFocus?.unfocus();
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Data bank berhasil disimpan',
+      );
+    } on ValidationException catch (e) {
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
+    } finally {
+      isSavingBank.value = false;
+    }
+  }
+
+  Future<void> saveFamilyData() async {
+    final formState = formKeyFamily.currentState;
+    if (formState == null || !formState.validate() || isSavingFamily.value) {
+      return;
+    }
+
+    isSavingFamily.value = true;
+    try {
+      final childCount = int.tryParse(childrenCountCtrl.text.trim());
+      employeeData.value = await Get.find<ProfileRepository>().upsertEmployeeData(
+        motherName: motherNameCtrl.text.trim().isEmpty ? null : motherNameCtrl.text.trim(),
+        fatherName: fatherNameCtrl.text.trim().isEmpty ? null : fatherNameCtrl.text.trim(),
+        childrenCount: childCount,
+        emergencyContactName: emergencyContactNameCtrl.text.trim().isEmpty ? null : emergencyContactNameCtrl.text.trim(),
+        emergencyContactPhone: emergencyContactPhoneCtrl.text.trim().isEmpty ? null : emergencyContactPhoneCtrl.text.trim(),
+        emergencyContactRelationship: emergencyContactRelationshipCtrl.text.trim().isEmpty ? null : emergencyContactRelationshipCtrl.text.trim(),
+      );
+      _syncEmployeeState();
+      FocusManager.instance.primaryFocus?.unfocus();
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Data keluarga & darurat berhasil disimpan',
+      );
+    } on ValidationException catch (e) {
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(title: 'Gagal', message: e.message, isError: true);
+    } finally {
+      isSavingFamily.value = false;
     }
   }
 
@@ -568,9 +645,26 @@ class ProfileController extends GetxController {
     newPassCtrl.dispose();
     confirmPassCtrl.dispose();
     namaCtrl.dispose();
+    nikCtrl.dispose();
+    titlePrefixCtrl.dispose();
+    titleSuffixCtrl.dispose();
+    birthPlaceCtrl.dispose();
+
     emailCtrl.dispose();
     phoneCtrl.dispose();
     alamatCtrl.dispose();
+    postalCodeCtrl.dispose();
+
+    bankAccountNumberCtrl.dispose();
+    bankNameCtrl.dispose();
+    bankAccountHolderNameCtrl.dispose();
+
+    motherNameCtrl.dispose();
+    fatherNameCtrl.dispose();
+    childrenCountCtrl.dispose();
+    emergencyContactNameCtrl.dispose();
+    emergencyContactPhoneCtrl.dispose();
+    emergencyContactRelationshipCtrl.dispose();
     super.onClose();
   }
 

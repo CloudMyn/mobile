@@ -17,6 +17,7 @@ class AppTopAppBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
   final bool centerTitle;
   final double elevation;
+  final PreferredSizeWidget? bottom;
 
   const AppTopAppBar({
     super.key,
@@ -28,10 +29,15 @@ class AppTopAppBar extends StatefulWidget implements PreferredSizeWidget {
     this.onBack,
     this.centerTitle = true,
     this.elevation = AppElevation.none,
+    this.bottom,
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize {
+    double height = kToolbarHeight;
+    if (bottom != null) height += bottom!.preferredSize.height;
+    return Size.fromHeight(height);
+  }
 
   @override
   State<AppTopAppBar> createState() => _AppTopAppBarState();
@@ -68,6 +74,7 @@ class _AppTopAppBarState extends State<AppTopAppBar> {
             const SizedBox(width: AppSpacing.s8),
           ],
         ),
+        bottom: widget.bottom,
       );
     }
 
@@ -80,6 +87,7 @@ class _AppTopAppBarState extends State<AppTopAppBar> {
       leading: _buildLeading(colors),
       title: Text(widget.title, style: typography.h3.copyWith(color: colors.onSurface)),
       actions: _buildActions(colors),
+      bottom: widget.bottom,
     );
   }
 
