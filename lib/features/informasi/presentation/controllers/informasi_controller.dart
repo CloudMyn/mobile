@@ -223,6 +223,78 @@ class InformasiController extends GetxController {
     }
   }
 
+  Future<void> editComment(
+    String articleId,
+    String commentId,
+    String content,
+  ) async {
+    try {
+      final updatedComment = await _service.editComment(
+        commentId: commentId,
+        content: content,
+      );
+
+      final currentComments = List<CommentItem>.from(
+        commentsMap[articleId] ?? const [],
+      );
+      final index = currentComments.indexWhere((c) => c.id == commentId);
+      if (index != -1) {
+        currentComments[index] = currentComments[index].copyWith(
+          content: updatedComment.content,
+          editedAt: updatedComment.editedAt,
+        );
+        commentsMap[articleId] = currentComments;
+      }
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal mengedit',
+        message: e.message,
+        isError: true,
+      );
+      rethrow;
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal mengedit',
+        message: e.message,
+        isError: true,
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> deleteComment(String articleId, String commentId) async {
+    try {
+      await _service.deleteComment(commentId);
+
+      final currentComments = List<CommentItem>.from(
+        commentsMap[articleId] ?? const [],
+      );
+      final index = currentComments.indexWhere((c) => c.id == commentId);
+      if (index != -1) {
+        currentComments.removeAt(index);
+        commentsMap[articleId] = currentComments;
+        
+        // Recalculate total comments. Decrease by 1, plus any replies of this comment (if flat list, we might just decrease by 1 for now or rely on reload).
+        commentsTotalMap[articleId] = (commentsTotalMap[articleId] ?? 1) - 1;
+        _decrementArticleCommentCount(articleId);
+      }
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal menghapus',
+        message: e.message,
+        isError: true,
+      );
+      rethrow;
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal menghapus',
+        message: e.message,
+        isError: true,
+      );
+      rethrow;
+    }
+  }
+
   Future<void> loadComments(String articleSlug, String articleId) async {
     if (isCommentsInitialLoading(articleId)) return;
 
@@ -306,6 +378,23 @@ class InformasiController extends GetxController {
     if (listIndex >= 0) {
       items[listIndex] = items[listIndex].copyWith(
         commentCount: items[listIndex].commentCount + 1,
+      );
+      items.refresh();
+    }
+  }
+
+  void _decrementArticleCommentCount(String articleId) {
+    final current = detailItems[articleId];
+    if (current != null && current.commentCount > 0) {
+      detailItems[articleId] = current.copyWith(
+        commentCount: current.commentCount - 1,
+      );
+    }
+
+    final listIndex = items.indexWhere((item) => item.id == articleId);
+    if (listIndex >= 0 && items[listIndex].commentCount > 0) {
+      items[listIndex] = items[listIndex].copyWith(
+        commentCount: items[listIndex].commentCount - 1,
       );
       items.refresh();
     }

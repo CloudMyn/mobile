@@ -1,18 +1,22 @@
 class CommentItem {
   final String id;
+  final String authorId;
   final String authorName;
   final String content;
   final String? parentId;
   final DateTime createdAt;
+  final DateTime? editedAt;
   final int depth; // 1=root, 2=reply, 3=deep reply (flat)
   final List<CommentItem> replies;
 
   const CommentItem({
     required this.id,
+    required this.authorId,
     required this.authorName,
     required this.content,
     this.parentId,
     required this.createdAt,
+    this.editedAt,
     required this.depth,
     this.replies = const [],
   });
@@ -21,11 +25,13 @@ class CommentItem {
     final author = json['author'] as Map<String, dynamic>?;
     return CommentItem(
       id: '${json['id']}',
+      authorId: '${author?['id'] ?? ''}',
       authorName: author?['name']?.toString() ?? 'User',
       content: json['content']?.toString() ?? '',
       parentId: json['parent_id']?.toString(),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
           DateTime.now(),
+      editedAt: json['edited_at'] != null ? DateTime.tryParse(json['edited_at'].toString()) : null,
       depth: json['depth'] as int? ?? 1,
       replies: (json['replies'] as List<dynamic>? ?? [])
           .map((reply) => CommentItem.fromJson(reply as Map<String, dynamic>))
@@ -33,13 +39,15 @@ class CommentItem {
     );
   }
 
-  CommentItem copyWith({List<CommentItem>? replies}) {
+  CommentItem copyWith({List<CommentItem>? replies, String? content, DateTime? editedAt}) {
     return CommentItem(
       id: id,
+      authorId: authorId,
       authorName: authorName,
-      content: content,
+      content: content ?? this.content,
       parentId: parentId,
       createdAt: createdAt,
+      editedAt: editedAt ?? this.editedAt,
       depth: depth,
       replies: replies ?? this.replies,
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import '../../../../core/network/session_manager.dart';
 import '../../../../design_system/components/app_skeleton.dart';
 import '../../../../design_system/components/molecules/app_empty_state.dart';
 import '../../../../design_system/tokens/app_colors.dart';
@@ -16,12 +17,14 @@ class CommentSection extends StatelessWidget {
     required this.articleId,
     required this.articleSlug,
     required this.initialTotal,
+    this.isCommentsEnabled = true,
     required this.onReplyTap,
   });
 
   final String articleId;
   final String articleSlug;
   final int initialTotal;
+  final bool isCommentsEnabled;
   final void Function(String id, String name, int depth, String? parentId)
   onReplyTap;
 
@@ -30,6 +33,7 @@ class CommentSection extends StatelessWidget {
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
     final ctrl = Get.find<InformasiController>();
+    final session = Get.find<SessionManager>();
 
     return Obx(() {
       final comments = ctrl.commentsFor(articleId);
@@ -89,10 +93,13 @@ class CommentSection extends StatelessWidget {
           else ...[
             ...comments.map(
               (c) => _CommentTile(
+                articleId: articleId,
                 comment: c,
                 allComments: comments,
                 colors: colors,
                 typography: typography,
+                isCommentsEnabled: isCommentsEnabled,
+                currentUserId: session.currentUser.value?.id?.toString(),
                 onReply: onReplyTap,
               ),
             ),
@@ -107,17 +114,23 @@ class CommentSection extends StatelessWidget {
 
 class _CommentTile extends StatelessWidget {
   const _CommentTile({
+    required this.articleId,
     required this.comment,
     required this.allComments,
     required this.colors,
     required this.typography,
+    required this.isCommentsEnabled,
+    this.currentUserId,
     required this.onReply,
   });
 
+  final String articleId;
   final CommentItem comment;
   final List<CommentItem> allComments;
   final AppColors colors;
   final AppTypography typography;
+  final bool isCommentsEnabled;
+  final String? currentUserId;
   final void Function(String id, String name, int depth, String? parentId)
   onReply;
 
@@ -185,7 +198,7 @@ class _CommentTile extends StatelessWidget {
                     ),
                     SizedBox(width: AppSpacing.s8.w),
                     Text(
-                      comment.timeAgo,
+                      comment.timeAgo + (comment.editedAt != null ? ' (Diedit)' : ''),
                       style: typography.caption.copyWith(
                         color: colors.onSurface.withValues(alpha: 0.4),
                         fontSize: 10.sp,
@@ -246,44 +259,212 @@ class _CommentTile extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 4.h),
-                InkWell(
-                  onTap: () => onReply(
-                    comment.id,
-                    comment.authorName,
-                    comment.depth,
-                    comment.parentId,
-                  ),
-                  borderRadius: BorderRadius.circular(AppRadius.r8),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      vertical: AppSpacing.s4.h,
-                      horizontal: AppSpacing.s4.w,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.reply_rounded,
-                          size: 13.sp,
-                          color: colors.primary.withValues(alpha: 0.7),
+                Row(
+                  children: [
+                    if (isCommentsEnabled)
+                      InkWell(
+                        onTap: () => onReply(
+                          comment.id,
+                          comment.authorName,
+                          comment.depth,
+                          comment.parentId,
                         ),
-                        SizedBox(width: 4.w),
-                        Text(
-                          'Balas',
-                          style: typography.caption.copyWith(
-                            color: colors.primary.withValues(alpha: 0.7),
-                            fontWeight: FontWeight.w600,
+                        borderRadius: BorderRadius.circular(AppRadius.r8),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppSpacing.s4.h,
+                            horizontal: AppSpacing.s4.w,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.reply_rounded,
+                                size: 13.sp,
+                                color: colors.primary.withValues(alpha: 0.7),
+                              ),
+                              SizedBox(width: 4.w),
+                              Text(
+                                'Balas',
+                                style: typography.caption.copyWith(
+                                  color: colors.primary.withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    if (currentUserId != null && currentUserId == comment.authorId) ...[
+                      if (isCommentsEnabled) SizedBox(width: AppSpacing.s12.w),
+                      InkWell(
+                        onTap: () => _showEditDialog(context, Get.find<InformasiController>()),
+                        borderRadius: BorderRadius.circular(AppRadius.r8),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppSpacing.s4.h,
+                            horizontal: AppSpacing.s4.w,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.edit_rounded,
+                                size: 13.sp,
+                                color: colors.onSurface.withValues(alpha: 0.5),
+                              ),
+                              SizedBox(width: 4.w),
+                              Text(
+                                'Edit',
+                                style: typography.caption.copyWith(
+                                  color: colors.onSurface.withValues(alpha: 0.5),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: AppSpacing.s12.w),
+                      InkWell(
+                        onTap: () => _confirmDelete(context, Get.find<InformasiController>()),
+                        borderRadius: BorderRadius.circular(AppRadius.r8),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppSpacing.s4.h,
+                            horizontal: AppSpacing.s4.w,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.delete_outline_rounded,
+                                size: 13.sp,
+                                color: colors.error.withValues(alpha: 0.7),
+                              ),
+                              SizedBox(width: 4.w),
+                              Text(
+                                'Hapus',
+                                style: typography.caption.copyWith(
+                                  color: colors.error.withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, InformasiController ctrl) {
+    final textController = TextEditingController(text: comment.content);
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            'Edit Komentar',
+            style: typography.titleSmall.copyWith(fontWeight: FontWeight.bold),
+          ),
+          content: TextField(
+            controller: textController,
+            maxLines: null,
+            decoration: const InputDecoration(
+              hintText: 'Tulis komentar Anda...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final content = textController.text.trim();
+                if (content.isEmpty) return;
+                
+                // Show loading indicator in dialog
+                showDialog<void>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const Center(child: CircularProgressIndicator()),
+                );
+
+                try {
+                  await ctrl.editComment(articleId, comment.id, content);
+                  if (context.mounted) {
+                    Navigator.pop(context); // close loading
+                    Navigator.pop(context); // close dialog
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.pop(context); // close loading
+                  }
+                }
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmDelete(BuildContext context, InformasiController ctrl) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            'Hapus Komentar',
+            style: typography.titleSmall.copyWith(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            'Apakah Anda yakin ingin menghapus komentar ini?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () async {
+                showDialog<void>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const Center(child: CircularProgressIndicator()),
+                );
+
+                try {
+                  await ctrl.deleteComment(articleId, comment.id);
+                  if (context.mounted) {
+                    Navigator.pop(context); // close loading
+                    Navigator.pop(context); // close dialog
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.pop(context); // close loading
+                  }
+                }
+              },
+              child: Text(
+                'Hapus',
+                style: TextStyle(color: colors.error),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

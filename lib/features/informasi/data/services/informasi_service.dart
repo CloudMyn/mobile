@@ -151,6 +151,35 @@ class InformasiService {
     }
   }
 
+  Future<CommentItem> editComment({
+    required String commentId,
+    required String content,
+  }) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/mobile/information/comments/$commentId',
+        data: {'content': content},
+      );
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => data as Map<String, dynamic>,
+      );
+      final payload = envelope.data ?? <String, dynamic>{};
+      final commentJson = payload['comment'] as Map<String, dynamic>? ?? {};
+      return CommentItem.fromJson(commentJson);
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal mengedit komentar');
+    }
+  }
+
+  Future<void> deleteComment(String commentId) async {
+    try {
+      await _dio.delete<dynamic>('/mobile/information/comments/$commentId');
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal menghapus komentar');
+    }
+  }
+
   Exception _mapDioError(DioException e, String fallbackMessage) {
     final err = e.error;
     if (err is ApiException) return err;

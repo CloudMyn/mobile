@@ -306,12 +306,25 @@ class _InformasiDetailPageState extends State<InformasiDetailPage> {
                       articleId: article.id,
                       articleSlug: article.slug,
                       initialTotal: article.commentCount,
+                      isCommentsEnabled: article.isCommentsEnabled,
                       onReplyTap: (id, name, depth, parentId) =>
                           _showCommentSheet(
                             replyToId: depth >= 3 ? (parentId ?? id) : id,
                             replyToName: name,
                           ),
                     ),
+                    if (!article.isCommentsEnabled)
+                      Container(
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.s16.h),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Komentar dinonaktifkan untuk artikel ini',
+                          style: typography.bodyMedium.copyWith(
+                            color: colors.onSurface.withValues(alpha: 0.5),
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
                     SizedBox(height: 80.h),
                   ],
                 ),
@@ -319,13 +332,15 @@ class _InformasiDetailPageState extends State<InformasiDetailPage> {
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: _showCommentSheet,
-          icon: const Icon(Icons.chat_bubble_outline_rounded),
-          label: const Text('Tulis Komentar'),
-          backgroundColor: colors.primary,
-          foregroundColor: colors.onPrimary,
-        ),
+        floatingActionButton: article.isCommentsEnabled
+            ? FloatingActionButton.extended(
+                onPressed: _showCommentSheet,
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                label: const Text('Tulis Komentar'),
+                backgroundColor: colors.primary,
+                foregroundColor: colors.onPrimary,
+              )
+            : null,
       );
     });
   }

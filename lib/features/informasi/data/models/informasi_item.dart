@@ -9,6 +9,7 @@ class InformasiItem {
   final String author;
   final String? imageUrl;
   final bool isPinned;
+  final bool isCommentsEnabled;
   final DateTime publishedAt;
   final List<String> tags;
   final int commentCount;
@@ -25,6 +26,7 @@ class InformasiItem {
     required this.author,
     this.imageUrl,
     this.isPinned = false,
+    this.isCommentsEnabled = true,
     required this.publishedAt,
     this.tags = const [],
     this.commentCount = 0,
@@ -52,6 +54,7 @@ class InformasiItem {
           '',
       imageUrl: json['cover_image_url']?.toString(),
       isPinned: json['is_pinned'] as bool? ?? false,
+      isCommentsEnabled: json['is_comments_enabled'] as bool? ?? true,
       publishedAt:
           DateTime.tryParse(json['published_at']?.toString() ?? '') ??
           DateTime.now(),
@@ -72,6 +75,7 @@ class InformasiItem {
     String? author,
     String? imageUrl,
     bool? isPinned,
+    bool? isCommentsEnabled,
     DateTime? publishedAt,
     List<String>? tags,
     int? commentCount,
@@ -88,6 +92,7 @@ class InformasiItem {
       author: author ?? this.author,
       imageUrl: imageUrl ?? this.imageUrl,
       isPinned: isPinned ?? this.isPinned,
+      isCommentsEnabled: isCommentsEnabled ?? this.isCommentsEnabled,
       publishedAt: publishedAt ?? this.publishedAt,
       tags: tags ?? this.tags,
       commentCount: commentCount ?? this.commentCount,
