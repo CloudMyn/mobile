@@ -22,6 +22,7 @@ import '../../../../profile/presentation/pages/update_photo_page.dart';
 import '../../../../profile/presentation/pages/request_log_page.dart';
 import '../../../../../core/network/session_manager.dart';
 import '../../../../auth/presentation/pages/leader_splash_page.dart';
+import '../../../../profile/presentation/pages/supervisor_history_page.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -110,7 +111,14 @@ class ProfileTab extends StatelessWidget {
                   title: 'Pembaruan Data Pegawai',
                   subtitle: 'Edit data kontak dan identitas',
                   leading: const Icon(Icons.manage_accounts_rounded),
+                  showDivider: true,
                   onTap: () => Get.to(() => const UpdateEmployeePage()),
+                ),
+                AppListItem(
+                  title: 'Menu Atasan',
+                  subtitle: 'Riwayat dan pengajuan atasan',
+                  leading: const Icon(Icons.supervisor_account_rounded),
+                  onTap: () => Get.to(() => const SupervisorHistoryPage()),
                 ),
               ],
             ),
