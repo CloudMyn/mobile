@@ -15,9 +15,11 @@ import '../../features/auth/data/services/auth_service.dart';
 import '../../features/home/data/services/dashboard_service.dart';
 import '../../features/home/data/services/notification_service.dart';
 import '../../features/home/data/services/statistik_service.dart';
+import '../../features/home/data/services/work_calendar_service.dart';
 import '../../features/home/presentation/controllers/home_controller.dart';
 import '../../features/home/presentation/controllers/notification_controller.dart';
 import '../../features/home/presentation/controllers/statistik_controller.dart';
+import '../../features/home/presentation/controllers/work_calendar_controller.dart';
 import '../../features/informasi/data/services/informasi_service.dart';
 import '../../features/informasi/presentation/controllers/informasi_controller.dart';
 import '../../features/kinerja/data/services/kinerja_bawahan_service.dart';
@@ -165,6 +167,16 @@ class AppBindings extends Bindings {
     // ── Home ──────────────────────────────────────────────────────────────────
     Get.put<HomeController>(
       HomeController(dashboardService: Get.find<DashboardService>()),
+      permanent: true,
+    );
+
+    Get.put<WorkCalendarService>(
+      WorkCalendarService(Get.find<Dio>()),
+      permanent: true,
+    );
+
+    Get.put<WorkCalendarController>(
+      WorkCalendarController(service: Get.find<WorkCalendarService>()),
       permanent: true,
     );
 

@@ -7,6 +7,7 @@ import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 import '../controllers/home_controller.dart';
+import '../controllers/work_calendar_controller.dart';
 
 class WorkCalendarBottomSheet {
   static Future<void> show(BuildContext context) {
@@ -19,15 +20,8 @@ class WorkCalendarBottomSheet {
   }
 }
 
-class _CalendarBody extends StatefulWidget {
+class _CalendarBody extends StatelessWidget {
   const _CalendarBody();
-
-  @override
-  State<_CalendarBody> createState() => _CalendarBodyState();
-}
-
-class _CalendarBodyState extends State<_CalendarBody> {
-  late DateTime _displayMonth;
 
   static const List<String> _dayLabels = [
     'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'
@@ -38,45 +32,6 @@ class _CalendarBodyState extends State<_CalendarBody> {
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
   ];
 
-  // Hari libur nasional Indonesia 2025–2026 (sample)
-  static final List<DateTime> _nationalHolidays = [
-    DateTime(2026, 1, 1),
-    DateTime(2026, 3, 31),
-    DateTime(2026, 4, 1),
-    DateTime(2026, 4, 2),
-    DateTime(2026, 4, 3),
-    DateTime(2026, 5, 1),
-    DateTime(2026, 5, 14),
-    DateTime(2026, 5, 29),
-    DateTime(2026, 6, 1),
-    DateTime(2026, 8, 17),
-    DateTime(2026, 12, 25),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    final ctrl = Get.find<HomeController>();
-    _displayMonth = DateTime(
-      ctrl.currentDateTime.value.year,
-      ctrl.currentDateTime.value.month,
-    );
-  }
-
-  void _prevMonth() => setState(() {
-        _displayMonth = DateTime(_displayMonth.year, _displayMonth.month - 1);
-      });
-
-  void _nextMonth() => setState(() {
-        _displayMonth = DateTime(_displayMonth.year, _displayMonth.month + 1);
-      });
-
-  bool _isHoliday(DateTime date) => _nationalHolidays.any(
-        (h) => h.year == date.year && h.month == date.month && h.day == date.day,
-      );
-
-  bool _isWeekend(DateTime date) => date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
-
   bool _isToday(DateTime date) {
     final now = DateTime.now();
     return date.year == now.year && date.month == now.month && date.day == now.day;
@@ -86,144 +41,178 @@ class _CalendarBodyState extends State<_CalendarBody> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
+    final controller = Get.find<WorkCalendarController>();
 
-    final firstDay = DateTime(_displayMonth.year, _displayMonth.month, 1);
-    // weekday: 1=Mon ... 7=Sun → offset = weekday - 1
-    final startOffset = firstDay.weekday - 1;
-    final daysInMonth = DateUtils.getDaysInMonth(_displayMonth.year, _displayMonth.month);
-    final totalCells = startOffset + daysInMonth;
-    final rowCount = (totalCells / 7).ceil();
+    return Obx(() {
+      final displayMonth = controller.currentMonth.value;
+      final isLoading = controller.isLoading.value;
+      final errorMessage = controller.errorMessage.value;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Month navigator
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            IconButton(
-              onPressed: _prevMonth,
-              icon: Icon(Icons.chevron_left_rounded, color: colors.onSurface),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            ),
-            Text(
-              '${_monthNames[_displayMonth.month]} ${_displayMonth.year}',
-              style: typography.titleMedium.copyWith(
-                color: colors.onSurface,
-                fontWeight: FontWeight.bold,
+      final firstDay = DateTime(displayMonth.year, displayMonth.month, 1);
+      final startOffset = firstDay.weekday - 1;
+      final daysInMonth = DateUtils.getDaysInMonth(displayMonth.year, displayMonth.month);
+      final totalCells = startOffset + daysInMonth;
+      final rowCount = (totalCells / 7).ceil();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Month navigator
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: isLoading ? null : controller.prevMonth,
+                icon: Icon(Icons.chevron_left_rounded, color: colors.onSurface),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               ),
-            ),
-            IconButton(
-              onPressed: _nextMonth,
-              icon: Icon(Icons.chevron_right_rounded, color: colors.onSurface),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            ),
-          ],
-        ),
-        SizedBox(height: AppSpacing.s12.h),
-
-        // Day-of-week header
-        Row(
-          children: _dayLabels.map((d) {
-            final isWeekendHeader = d == 'Sab' || d == 'Min';
-            return Expanded(
-              child: Center(
-                child: Text(
-                  d,
-                  style: typography.caption.copyWith(
-                    color: isWeekendHeader
-                        ? colors.warning
-                        : colors.onSurface.withValues(alpha: 0.5),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11.sp,
-                  ),
+              Text(
+                '${_monthNames[displayMonth.month]} ${displayMonth.year}',
+                style: typography.titleMedium.copyWith(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            );
-          }).toList(),
-        ),
-        SizedBox(height: AppSpacing.s8.h),
+              IconButton(
+                onPressed: isLoading ? null : controller.nextMonth,
+                icon: Icon(Icons.chevron_right_rounded, color: colors.onSurface),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.s12.h),
 
-        // Calendar grid
-        ...List.generate(rowCount, (row) {
-          return Row(
-            children: List.generate(7, (col) {
-              final cellIndex = row * 7 + col;
-              final dayNum = cellIndex - startOffset + 1;
-              if (dayNum < 1 || dayNum > daysInMonth) {
-                return const Expanded(child: SizedBox(height: 40));
-              }
-
-              final date = DateTime(_displayMonth.year, _displayMonth.month, dayNum);
-              final isHoliday = _isHoliday(date);
-              final isWeekend = _isWeekend(date);
-              final isToday = _isToday(date);
-
-              Color textColor;
-              Color? bgColor;
-              if (isToday) {
-                bgColor = colors.primary;
-                textColor = colors.onPrimary;
-              } else if (isHoliday) {
-                textColor = colors.error;
-              } else if (isWeekend) {
-                textColor = colors.warning;
-              } else {
-                textColor = colors.onSurface;
-              }
-
+          // Day-of-week header
+          Row(
+            children: _dayLabels.map((d) {
+              final isWeekendHeader = d == 'Sab' || d == 'Min';
               return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: 3.h,
-                    horizontal: 3.w,
-                  ),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: bgColor ?? (isHoliday
-                            ? colors.error.withValues(alpha: 0.08)
-                            : isWeekend
-                                ? colors.warning.withValues(alpha: 0.08)
-                                : Colors.transparent),
-                        borderRadius: BorderRadius.circular(AppRadius.r8),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$dayNum',
-                          style: typography.bodySmall.copyWith(
-                            color: textColor,
-                            fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-                          ),
-                        ),
-                      ),
+                child: Center(
+                  child: Text(
+                    d,
+                    style: typography.caption.copyWith(
+                      color: isWeekendHeader
+                          ? colors.warning
+                          : colors.onSurface.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11.sp,
                     ),
                   ),
                 ),
               );
+            }).toList(),
+          ),
+          SizedBox(height: AppSpacing.s8.h),
+
+          // Handling Error
+          if (errorMessage != null) ...[
+            SizedBox(height: AppSpacing.s24.h),
+            Center(
+              child: Column(
+                children: [
+                  Icon(Icons.error_outline_rounded, color: colors.error, size: 48),
+                  SizedBox(height: AppSpacing.s8.h),
+                  Text(
+                    errorMessage,
+                    style: typography.bodyMedium.copyWith(color: colors.error),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: AppSpacing.s24.h),
+          ]
+          // Handling Loading
+          else if (isLoading) ...[
+            SizedBox(height: AppSpacing.s48.h),
+            Center(child: CircularProgressIndicator(color: colors.primary)),
+            SizedBox(height: AppSpacing.s48.h),
+          ]
+          // Calendar grid
+          else ...[
+            ...List.generate(rowCount, (row) {
+              return Row(
+                children: List.generate(7, (col) {
+                  final cellIndex = row * 7 + col;
+                  final dayNum = cellIndex - startOffset + 1;
+                  if (dayNum < 1 || dayNum > daysInMonth) {
+                    return const Expanded(child: SizedBox(height: 40));
+                  }
+
+                  final date = DateTime(displayMonth.year, displayMonth.month, dayNum);
+                  final isToday = _isToday(date);
+                  
+                  final dayData = controller.getDayData(date);
+                  final isHoliday = dayData?.isHoliday ?? false;
+                  final isWeekend = dayData?.isWeekend ?? (date.weekday == DateTime.saturday || date.weekday == DateTime.sunday);
+
+                  Color textColor;
+                  Color? bgColor;
+                  if (isToday) {
+                    bgColor = colors.primary;
+                    textColor = colors.onPrimary;
+                  } else if (isHoliday) {
+                    textColor = colors.error;
+                  } else if (isWeekend) {
+                    textColor = colors.warning;
+                  } else {
+                    textColor = colors.onSurface;
+                  }
+
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: 3.h,
+                        horizontal: 3.w,
+                      ),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: bgColor ?? (isHoliday
+                                ? colors.error.withValues(alpha: 0.08)
+                                : isWeekend
+                                    ? colors.warning.withValues(alpha: 0.08)
+                                    : Colors.transparent),
+                            borderRadius: BorderRadius.circular(AppRadius.r8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$dayNum',
+                              style: typography.bodySmall.copyWith(
+                                color: textColor,
+                                fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              );
             }),
-          );
-        }),
-
-        SizedBox(height: AppSpacing.s16.h),
-
-        // Legend
-        Wrap(
-          spacing: AppSpacing.s16.w,
-          runSpacing: AppSpacing.s8.h,
-          children: [
-            _LegendItem(color: colors.primary, label: 'Hari Ini', typography: typography),
-            _LegendItem(color: colors.onSurface, label: 'Hari Kerja', typography: typography),
-            _LegendItem(color: colors.warning, label: 'Weekend', typography: typography),
-            _LegendItem(color: colors.error, label: 'Hari Libur', typography: typography),
           ],
-        ),
-        SizedBox(height: AppSpacing.s8.h),
-      ],
-    );
+
+          SizedBox(height: AppSpacing.s16.h),
+
+          // Legend
+          Wrap(
+            spacing: AppSpacing.s16.w,
+            runSpacing: AppSpacing.s8.h,
+            children: [
+              _LegendItem(color: colors.primary, label: 'Hari Ini', typography: typography),
+              _LegendItem(color: colors.onSurface, label: 'Hari Kerja', typography: typography),
+              _LegendItem(color: colors.warning, label: 'Weekend', typography: typography),
+              _LegendItem(color: colors.error, label: 'Hari Libur', typography: typography),
+            ],
+          ),
+          SizedBox(height: AppSpacing.s8.h),
+        ],
+      );
+    });
   }
 }
 
