@@ -25,56 +25,161 @@ class ShiftSchedulePage extends StatelessWidget {
         title: 'Jadwal Shift',
         variant: AppTopAppBarVariant.withBack,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.s16.w,
-                vertical: AppSpacing.s16.h,
-              ),
+      body: Obx(() {
+        if (ctrl.isLoadingSchedules.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (ctrl.shifts.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.s24.w),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  Icon(
+                    Icons.event_busy_rounded,
+                    size: 64,
+                    color: colors.outline.withValues(alpha: 0.4),
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
                   Text(
-                    'Pilih jadwal shift kerja Anda',
+                    'Tidak ada jadwal tersedia',
+                    style: typography.titleMedium.copyWith(
+                      color: colors.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: AppSpacing.s8.h),
+                  Text(
+                    'Hubungi admin instansi Anda untuk mengatur jadwal kerja.',
                     style: typography.bodyMedium.copyWith(
                       color: colors.onSurface.withValues(alpha: 0.6),
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: AppSpacing.s16.h),
-                  Obx(() => Column(
-                        children: ctrl.shifts
-                            .map((shift) => Padding(
-                                  padding: EdgeInsets.only(
-                                      bottom: AppSpacing.s12.h),
-                                  child: _ShiftCard(
-                                    shift: shift,
-                                    isSelected:
-                                        ctrl.selectedShiftId.value == shift.id,
-                                    onTap: () => ctrl.selectShift(shift.id),
-                                  ),
-                                ))
-                            .toList(),
-                      )),
                 ],
               ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.s16.w,
-              AppSpacing.s8.h,
-              AppSpacing.s16.w,
-              AppSpacing.s32.h,
+          );
+        }
+
+        return Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s16.w,
+                  vertical: AppSpacing.s16.h,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pilih jadwal shift kerja Anda',
+                      style: typography.bodyMedium.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.s12.h),
+                    _InfoBanner(
+                      hasCheckedInToday: ctrl.hasCheckedInToday.value,
+                      colors: colors,
+                      typography: typography,
+                    ),
+                    SizedBox(height: AppSpacing.s16.h),
+                    Obx(() => Column(
+                          children: ctrl.shifts
+                              .map((shift) => Padding(
+                                    padding: EdgeInsets.only(
+                                        bottom: AppSpacing.s12.h),
+                                    child: _ShiftCard(
+                                      shift: shift,
+                                      isSelected:
+                                          ctrl.selectedShiftId.value == shift.id,
+                                      isCurrent: ctrl.selectedShiftId.value == shift.id,
+                                      onTap: () => ctrl.selectShift(shift.id),
+                                    ),
+                                  ))
+                              .toList(),
+                        )),
+                  ],
+                ),
+              ),
             ),
-            child: Obx(() => AppButton(
-                  label: 'Simpan Jadwal',
-                  fullWidth: true,
-                  icon: Icons.check_circle_outline_rounded,
-                  isLoading: ctrl.isUpdatingShift.value,
-                  onPressed: ctrl.saveShift,
-                )),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.s16.w,
+                AppSpacing.s8.h,
+                AppSpacing.s16.w,
+                AppSpacing.s32.h,
+              ),
+              child: Obx(() => AppButton(
+                    label: 'Simpan Jadwal',
+                    fullWidth: true,
+                    icon: Icons.check_circle_outline_rounded,
+                    isLoading: ctrl.isUpdatingShift.value,
+                    onPressed: ctrl.saveShift,
+                  )),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+}
+
+class _InfoBanner extends StatelessWidget {
+  final bool hasCheckedInToday;
+  final AppColors colors;
+  final AppTypography typography;
+
+  const _InfoBanner({
+    required this.hasCheckedInToday,
+    required this.colors,
+    required this.typography,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final IconData icon;
+    final String message;
+    final Color bgColor;
+    final Color iconColor;
+
+    if (hasCheckedInToday) {
+      icon = Icons.info_outline_rounded;
+      bgColor = colors.tertiaryContainer.withValues(alpha: 0.3);
+      iconColor = colors.tertiary;
+      message =
+          'Anda sudah presensi masuk hari ini. Jika mengubah jadwal, perubahan akan berlaku mulai besok.';
+    } else {
+      icon = Icons.check_circle_outline_rounded;
+      bgColor = colors.primaryContainer.withValues(alpha: 0.3);
+      iconColor = colors.primary;
+      message =
+          'Anda belum presensi hari ini. Jika mengubah jadwal, perubahan akan langsung berlaku hari ini.';
+    }
+
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.s12.w),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(AppRadius.r12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: iconColor),
+          SizedBox(width: AppSpacing.s8.w),
+          Expanded(
+            child: Text(
+              message,
+              style: typography.bodySmall.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.8),
+                height: 1.4,
+              ),
+            ),
           ),
         ],
       ),
@@ -85,11 +190,13 @@ class ShiftSchedulePage extends StatelessWidget {
 class _ShiftCard extends StatelessWidget {
   final ShiftModel shift;
   final bool isSelected;
+  final bool isCurrent;
   final VoidCallback onTap;
 
   const _ShiftCard({
     required this.shift,
     required this.isSelected,
+    required this.isCurrent,
     required this.onTap,
   });
 
@@ -137,12 +244,40 @@ class _ShiftCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Shift ${shift.name}',
-                      style: typography.titleSmall.copyWith(
-                        color: colors.onSurface,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            shift.name,
+                            style: typography.titleSmall.copyWith(
+                              color: colors.onSurface,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (shift.isGlobal) ...[
+                          SizedBox(width: AppSpacing.s8.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.outline.withValues(alpha: 0.1),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.r4),
+                            ),
+                            child: Text(
+                              'Global',
+                              style: typography.labelSmall.copyWith(
+                                color: colors.outline,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     SizedBox(height: 2.h),
                     Text(
@@ -151,6 +286,17 @@ class _ShiftCard extends StatelessWidget {
                         color: colors.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
+                    if (shift.institutionName != null) ...[
+                      SizedBox(height: 2.h),
+                      Text(
+                        shift.institutionName!,
+                        style: typography.labelSmall.copyWith(
+                          color: colors.outline.withValues(alpha: 0.5),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -169,15 +315,19 @@ class _ShiftCard extends StatelessWidget {
   }
 
   IconData get _shiftIcon {
-    switch (shift.name.toLowerCase()) {
-      case 'pagi':
-        return Icons.wb_sunny_rounded;
-      case 'siang':
-        return Icons.brightness_5_rounded;
-      case 'malam':
-        return Icons.nights_stay_rounded;
-      default:
-        return Icons.schedule_rounded;
+    final name = shift.name.toLowerCase();
+    if (name.contains('pagi') || name.contains('morning')) {
+      return Icons.wb_sunny_rounded;
     }
+    if (name.contains('siang') || name.contains('afternoon')) {
+      return Icons.brightness_5_rounded;
+    }
+    if (name.contains('malam') || name.contains('night')) {
+      return Icons.nights_stay_rounded;
+    }
+    if (name.contains('reguler') || name.contains('normal')) {
+      return Icons.access_time_rounded;
+    }
+    return Icons.schedule_rounded;
   }
 }

@@ -135,13 +135,18 @@ class ProfileTab extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                AppListItem(
-                  title: 'Atur Jadwal Shift',
-                  subtitle: 'Pilih jadwal shift kerja Anda',
-                  leading: const Icon(Icons.schedule_rounded),
-                  showDivider: true,
-                  onTap: () => Get.to(() => const ShiftSchedulePage()),
-                ),
+                Obx(() {
+                  if (!ctrl.canChooseSchedule.value) {
+                    return const SizedBox.shrink();
+                  }
+                  return AppListItem(
+                    title: 'Atur Jadwal Shift',
+                    subtitle: 'Pilih jadwal shift kerja Anda',
+                    leading: const Icon(Icons.schedule_rounded),
+                    showDivider: true,
+                    onTap: () => Get.to(() => const ShiftSchedulePage()),
+                  );
+                }),
                 AppListItem(
                   title: 'FAQ',
                   subtitle: 'Pertanyaan yang sering diajukan',

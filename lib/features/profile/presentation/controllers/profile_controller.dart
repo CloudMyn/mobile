@@ -17,6 +17,7 @@ import '../../../auth/presentation/pages/login_page.dart';
 import '../../data/models/employee_model.dart';
 import '../../data/models/profile_employee_data_model.dart';
 import '../../data/models/employee_enums.dart';
+import '../../data/models/schedule_data_model.dart';
 import '../../data/models/shift_model.dart';
 import '../../data/repositories/profile_repository.dart';
 
@@ -24,8 +25,12 @@ class ProfileController extends GetxController {
   final employee = Rx<EmployeeModel?>(null);
   final employeeData = Rx<ProfileEmployeeDataModel?>(null);
   final shifts = <ShiftModel>[].obs;
-  final selectedShiftId = Rx<String?>(null);
+  final selectedShiftId = Rx<int?>(null);
   final photoFile = Rx<File?>(null);
+
+  final canChooseSchedule = false.obs;
+  final hasCheckedInToday = false.obs;
+  final isLoadingSchedules = false.obs;
 
   final isLoadingProfile = false.obs;
   final isLoadingEmployeeData = false.obs;
@@ -214,31 +219,28 @@ class ProfileController extends GetxController {
   }
 
   Future<void> loadShifts() async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    shifts.assignAll([
-      const ShiftModel(
-        id: 's1',
-        name: 'Pagi',
-        checkIn: '07:30',
-        checkOut: '16:00',
-        isActive: true,
-      ),
-      const ShiftModel(
-        id: 's2',
-        name: 'Siang',
-        checkIn: '13:00',
-        checkOut: '21:00',
-        isActive: false,
-      ),
-      const ShiftModel(
-        id: 's3',
-        name: 'Malam',
-        checkIn: '21:00',
-        checkOut: '07:00',
-        isActive: false,
-      ),
-    ]);
-    selectedShiftId.value = shifts.firstWhereOrNull((s) => s.isActive)?.id;
+    isLoadingSchedules.value = true;
+    try {
+      final data = await Get.find<ProfileRepository>().getSchedules();
+      canChooseSchedule.value = data.canChooseSchedule;
+      hasCheckedInToday.value = data.hasCheckedInToday;
+      shifts.assignAll(data.availableSchedules);
+      selectedShiftId.value = data.currentScheduleId;
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } finally {
+      isLoadingSchedules.value = false;
+    }
   }
 
   Future<void> pickPhoto(ImageSource source) async {
@@ -528,20 +530,43 @@ class ProfileController extends GetxController {
     }
   }
 
-  void selectShift(String shiftId) {
+  void selectShift(int shiftId) {
     selectedShiftId.value = shiftId;
   }
 
   Future<void> saveShift() async {
     if (selectedShiftId.value == null) return;
     isUpdatingShift.value = true;
-    await Future.delayed(const Duration(milliseconds: 800));
-    isUpdatingShift.value = false;
-    AppFeedback.showSnackbar(
-      title: 'Berhasil',
-      message: 'Jadwal shift berhasil disimpan',
-    );
-    Get.back();
+    try {
+      final result = await Get.find<ProfileRepository>()
+          .updateSchedule(selectedShiftId.value!);
+      final message = result['message'] as String? ?? 'Jadwal berhasil disimpan';
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: message,
+      );
+      Get.back();
+    } on ValidationException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } finally {
+      isUpdatingShift.value = false;
+    }
   }
 
   Future<void> logout() async {

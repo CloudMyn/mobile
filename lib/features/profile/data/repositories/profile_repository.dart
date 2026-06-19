@@ -5,6 +5,7 @@ import '../../../../core/network/api_response.dart';
 import '../../../auth/data/models/user_model.dart';
 import '../models/profile_employee_data_model.dart';
 import '../models/employee_enums.dart';
+import '../models/schedule_data_model.dart';
 
 abstract class ProfileRepository {
   Future<UserModel> enrollFace(String faceDataBase64);
@@ -39,6 +40,8 @@ abstract class ProfileRepository {
     required String newPassword,
     required String newPasswordConfirmation,
   });
+  Future<ScheduleDataModel> getSchedules();
+  Future<Map<String, dynamic>> updateSchedule(int scheduleId);
 }
 
 class ProfileRepositoryImpl implements ProfileRepository {
@@ -233,6 +236,44 @@ class ProfileRepositoryImpl implements ProfileRepository {
       );
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal memperbarui password');
+    }
+  }
+
+  @override
+  Future<ScheduleDataModel> getSchedules() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/mobile/profile/schedules',
+      );
+
+      return ApiResponse.fromJson(
+        response.data!,
+        (data) => ScheduleDataModel.fromJson(data as Map<String, dynamic>),
+      ).data!;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memuat data jadwal');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateSchedule(int scheduleId) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/mobile/profile/schedules',
+        data: {'schedule_id': scheduleId},
+      );
+
+      final apiResponse = ApiResponse.fromJson(
+        response.data!,
+        (data) => data as Map<String, dynamic>,
+      );
+
+      return {
+        'data': apiResponse.data,
+        'message': apiResponse.message,
+      };
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal menyimpan jadwal');
     }
   }
 }
