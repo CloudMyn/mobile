@@ -129,7 +129,7 @@ class AppBindings extends Bindings {
     );
 
     // ── Submission ────────────────────────────────────────────────────────────
-    Get.put<SubmissionService>(MockSubmissionService(), permanent: true);
+    Get.put<SubmissionService>(ApiSubmissionService(dio), permanent: true);
     Get.put<SubordinateSubmissionService>(ApiSubordinateSubmissionService(dio), permanent: true);
     Get.put<SubmissionLookupService>(
       SubmissionLookupService(dio),

@@ -77,6 +77,27 @@ class SubmissionController extends GetxController {
     submissionsMap.refresh();
   }
 
+  void updateSubmissionItem(SubmissionItem updatedItem) {
+    final list = List<SubmissionItem>.from(submissionsMap[updatedItem.typeId] ?? []);
+    final index = list.indexWhere((item) => item.id == updatedItem.id);
+    if (index != -1) {
+      list[index] = updatedItem;
+      submissionsMap[updatedItem.typeId] = list;
+      submissionsMap.refresh();
+    }
+  }
+
+  Future<void> submitDraft(int id, int typeId) async {
+    try {
+      final result = await _service.submitDraft(id);
+      updateSubmissionItem(result);
+      Get.snackbar('Berhasil', 'Draft berhasil diajukan');
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal mengajukan draft: $e');
+      rethrow;
+    }
+  }
+
   SubmissionType? get currentType {
     if (currentTypeIndex.value >= types.length) return null;
     return types[currentTypeIndex.value];

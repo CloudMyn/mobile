@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import '../../../../design_system/components/app_button.dart';
 import '../../../../design_system/components/app_card.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
@@ -8,6 +10,7 @@ import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 import '../../data/models/submission_item.dart';
 import '../../data/models/submission_type.dart';
+import '../controllers/submission_controller.dart';
 import 'widgets/submission_type_info_card.dart';
 
 class SubmissionDetailPage extends StatelessWidget {
@@ -130,6 +133,26 @@ class SubmissionDetailPage extends StatelessWidget {
             // ── Informasi Jenis Pengajuan ────────────────────────────
             SizedBox(height: AppSpacing.s12.h),
             SubmissionTypeInfoCard(type: type),
+            
+            // ── Tombol Ajukan (Khusus Draft) ─────────────────────────
+            if (item.status == SubmissionStatus.draft) ...[
+              SizedBox(height: AppSpacing.s24.h),
+              AppButton(
+                label: 'Ajukan Sekarang',
+                icon: Icons.send_rounded,
+                fullWidth: true,
+                onPressed: () async {
+                  if (!Get.isRegistered<SubmissionController>()) return;
+                  final ctrl = Get.find<SubmissionController>();
+                  try {
+                    await ctrl.submitDraft(item.id, type.id);
+                    Get.back();
+                  } catch (e) {
+                    // Error is already handled by controller with snackbar
+                  }
+                },
+              ),
+            ],
           ],
         ),
       ),

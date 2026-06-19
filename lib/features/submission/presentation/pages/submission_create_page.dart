@@ -190,12 +190,27 @@ class SubmissionCreatePage extends StatelessWidget {
 
               // ── Tombol submit ────────────────────────────────────────
               Obx(
-                () => AppButton(
-                  label: 'Kirim Pengajuan',
-                  onPressed: ctrl.isLoading.value ? null : ctrl.submit,
-                  isLoading: ctrl.isLoading.value,
-                  fullWidth: true,
-                  icon: Icons.send_rounded,
+                () => Row(
+                  children: [
+                    Expanded(
+                      child: AppButton(
+                        label: 'Simpan Draft',
+                        onPressed: ctrl.isLoading.value ? null : () => ctrl.submit(autoSubmit: false),
+                        isLoading: ctrl.isLoading.value,
+                        variant: AppButtonVariant.outlined,
+                        icon: Icons.save_rounded,
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.s12.w),
+                    Expanded(
+                      child: AppButton(
+                        label: 'Ajukan',
+                        onPressed: ctrl.isLoading.value ? null : () => ctrl.submit(autoSubmit: true),
+                        isLoading: ctrl.isLoading.value,
+                        icon: Icons.send_rounded,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

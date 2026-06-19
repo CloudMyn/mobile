@@ -124,7 +124,7 @@ class SubmissionFormController extends GetxController {
     return null;
   }
 
-  Future<void> submit() async {
+  Future<void> submit({bool autoSubmit = false}) async {
     if (!formKey.currentState!.validate()) return;
     final extraError = validateForm();
     if (extraError != null) {
@@ -143,6 +143,7 @@ class SubmissionFormController extends GetxController {
         startTime: useTimeRange.value && startTime.value != null ? _formatTime(startTime.value!) : null,
         endTime: useTimeRange.value && endTime.value != null ? _formatTime(endTime.value!) : null,
         attachments: Map.from(attachments),
+        autoSubmit: autoSubmit,
       );
 
       if (Get.isRegistered<SubmissionController>()) {
@@ -151,10 +152,11 @@ class SubmissionFormController extends GetxController {
 
       FocusManager.instance.primaryFocus?.unfocus();
       Get.back();
-      Get.snackbar('Berhasil', 'Pengajuan berhasil dikirim',
+      final msg = autoSubmit ? 'Pengajuan berhasil dikirim' : 'Draft pengajuan berhasil disimpan';
+      Get.snackbar('Berhasil', msg,
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Error', 'Gagal mengirim pengajuan: $e',
+      Get.snackbar('Error', 'Gagal menyimpan pengajuan: $e',
           snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
