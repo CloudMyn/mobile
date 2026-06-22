@@ -197,7 +197,7 @@ class SubmissionCreatePage extends StatelessWidget {
                         label: 'Simpan Draft',
                         onPressed: ctrl.isLoading.value ? null : () => ctrl.submit(autoSubmit: false),
                         isLoading: ctrl.isLoading.value,
-                        variant: AppButtonVariant.outlined,
+                        style: AppButtonStyle.outlined,
                         icon: Icons.save_rounded,
                       ),
                     ),

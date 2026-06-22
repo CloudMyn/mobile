@@ -19,6 +19,7 @@ class SupervisorHistoryPage extends StatelessWidget {
         appBar: AppTopAppBar(
           title: 'Menu Atasan',
           bottom: TabBar(
+            tabAlignment: TabAlignment.fill,
             labelColor: colors.primary,
             unselectedLabelColor: colors.outline,
             indicatorColor: colors.primary,

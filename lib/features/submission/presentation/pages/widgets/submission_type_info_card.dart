@@ -118,7 +118,7 @@ class SubmissionTypeInfoCard extends StatelessWidget {
   }
 
   String _initials(String name) {
-    final parts = name.replaceAll(RegExp(r'[^a-zA-Z\s]'), '').trim().split(RegExp(r'\s+'));
+    final parts = name.replaceAll(RegExp(r'[^a-zA-Z\s]'), '').trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts[0][0].toUpperCase();
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();

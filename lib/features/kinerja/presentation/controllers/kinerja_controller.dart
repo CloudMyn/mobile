@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
 import '../../data/models/activity_item.dart';
-import '../../data/models/activity_type.dart';
 import '../../data/models/monthly_activity_stats.dart';
 import '../../data/services/kinerja_service.dart';
 
@@ -10,12 +9,10 @@ class KinerjaController extends GetxController {
   KinerjaController({required KinerjaService service}) : _service = service;
 
   // ── Main Page State ────────────────────────────────────────
-  final types = <ActivityType>[].obs;
   final activities = <ActivityItem>[].obs;
   final monthlyStats = Rx<MonthlyActivityStats?>(null);
   final selectedMonth = DateTime.now().month.obs;
   final selectedYear = DateTime.now().year.obs;
-  final isLoadingTypes = true.obs;
   final isLoadingActivities = false.obs;
   final isLoadingStats = false.obs;
   final errorMessage = Rx<String?>(null);
@@ -31,28 +28,15 @@ class KinerjaController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadTypes();
     loadActivities();
     loadMonthlyStats();
   }
 
   // ── Load Methods ───────────────────────────────────────────
 
-  Future<void> loadTypes() async {
-    isLoadingTypes.value = true;
-    errorMessage.value = null;
-    try {
-      final result = await _service.fetchTypes();
-      types.assignAll(result);
-    } catch (e) {
-      errorMessage.value = 'Gagal memuat jenis kegiatan: $e';
-    } finally {
-      isLoadingTypes.value = false;
-    }
-  }
-
   Future<void> loadActivities() async {
     isLoadingActivities.value = true;
+    errorMessage.value = null;
     try {
       final result = await _service.fetchActivities(
         month: selectedMonth.value,
@@ -60,6 +44,7 @@ class KinerjaController extends GetxController {
       );
       activities.assignAll(result);
     } catch (e) {
+      errorMessage.value = 'Gagal memuat data kinerja: $e';
       Get.snackbar('Error', 'Gagal memuat data kinerja: $e');
     } finally {
       isLoadingActivities.value = false;

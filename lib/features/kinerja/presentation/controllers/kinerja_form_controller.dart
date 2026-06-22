@@ -8,8 +8,12 @@ import 'kinerja_controller.dart';
 
 class KinerjaFormController extends GetxController {
   final KinerjaService _service;
+  final ActivityItem? initialItem;
 
-  KinerjaFormController({required KinerjaService service}) : _service = service;
+  KinerjaFormController({
+    required KinerjaService service,
+    this.initialItem,
+  }) : _service = service;
 
   final formKey = GlobalKey<FormState>();
   final descriptionCtrl = TextEditingController();
@@ -25,6 +29,11 @@ class KinerjaFormController extends GetxController {
   final isLoading = false.obs;
   final isCompressing = false.obs;
 
+  // ── Local Activity Types State ──────────────────────────────
+  final types = <ActivityType>[].obs;
+  final isLoadingTypes = false.obs;
+  final errorTypes = Rx<String?>(null);
+
   // ── Edit Mode State ─────────────────────────────────────────
   final editingItem = Rx<ActivityItem?>(null);
   final isEditMode = false.obs;
@@ -32,15 +41,43 @@ class KinerjaFormController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    final now = DateTime.now();
-    if (!isEditMode.value) {
+    
+    if (initialItem != null) {
+      loadFromItem(initialItem!);
+    } else {
+      isEditMode.value = false;
+      final now = DateTime.now();
       final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       startTimeCtrl.text = timeStr;
       endTimeCtrl.text = timeStr;
       selectedDate.value = now;
       dateCtrl.text = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
     }
+
+    loadTypes();
+
     ever(selectedType, (_) {});
+  }
+
+  Future<void> loadTypes() async {
+    isLoadingTypes.value = true;
+    errorTypes.value = null;
+    try {
+      final result = await _service.fetchTypes();
+      types.assignAll(result);
+
+      // Auto-select type in edit mode once types are loaded
+      if (isEditMode.value && editingItem.value != null && selectedType.value == null) {
+        final match = types.firstWhereOrNull((t) => t.id == editingItem.value!.typeId);
+        if (match != null) {
+          selectedType.value = match;
+        }
+      }
+    } catch (e) {
+      errorTypes.value = e.toString();
+    } finally {
+      isLoadingTypes.value = false;
+    }
   }
 
   /// Muat data dari item yang akan diedit ke form.
@@ -49,8 +86,7 @@ class KinerjaFormController extends GetxController {
     isEditMode.value = true;
 
     // Pre-select type
-    if (Get.isRegistered<KinerjaController>(tag: 'kinerja_list')) {
-      final types = Get.find<KinerjaController>(tag: 'kinerja_list').types;
+    if (types.isNotEmpty) {
       final match = types.firstWhereOrNull((t) => t.id == item.typeId);
       if (match != null) {
         selectedType.value = match;

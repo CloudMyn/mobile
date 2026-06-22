@@ -11,12 +11,17 @@ class TokenStorage {
   TokenStorage(this._storage);
 
   final FlutterSecureStorage _storage;
+  String? _cachedToken;
 
   // ── Token ───────────────────────────────────────────────────────────────────
 
   Future<String?> getToken() async {
+    if (_cachedToken != null) {
+      return _cachedToken;
+    }
     try {
-      return await _storage.read(key: AppConstants.secureKeyAccessToken);
+      _cachedToken = await _storage.read(key: AppConstants.secureKeyAccessToken);
+      return _cachedToken;
     } catch (e, stack) {
       debugPrint('TokenStorage: Error reading token: $e\n$stack');
       return null;
@@ -25,6 +30,7 @@ class TokenStorage {
 
   Future<void> saveToken(String token) async {
     try {
+      _cachedToken = token;
       await _storage.write(key: AppConstants.secureKeyAccessToken, value: token);
     } catch (e, stack) {
       debugPrint('TokenStorage: Error saving token: $e\n$stack');
@@ -33,6 +39,7 @@ class TokenStorage {
 
   Future<void> clearToken() async {
     try {
+      _cachedToken = null;
       await _storage.delete(key: AppConstants.secureKeyAccessToken);
     } catch (e, stack) {
       debugPrint('TokenStorage: Error clearing token: $e\n$stack');
@@ -65,6 +72,7 @@ class TokenStorage {
 
   Future<void> clearAll() async {
     try {
+      _cachedToken = null;
       await _storage.delete(key: AppConstants.secureKeyAccessToken);
     } catch (e, stack) {
       debugPrint('TokenStorage: Error clearAll: $e\n$stack');

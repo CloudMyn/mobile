@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/components/app_card.dart';
+import '../../../../design_system/components/molecules/app_empty_state.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
@@ -201,16 +202,10 @@ class _KinerjaDetailPageState extends State<KinerjaDetailPage> {
 
   Widget _buildActivityList(AppColors colors, AppTypography typography) {
     if (_controller.allActivities.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.s16.w),
-          child: Text(
-            'Belum ada data kinerja',
-            style: typography.bodyMedium.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.4),
-            ),
-          ),
-        ),
+      return AppEmptyState(
+        icon: Icons.assignment_outlined,
+        title: 'Belum ada data kinerja',
+        subtitle: 'Tidak ada aktivitas untuk bulan ini.',
       );
     }
 

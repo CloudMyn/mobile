@@ -7,6 +7,7 @@ import '../../../../design_system/components/app_button.dart';
 import '../../../../design_system/components/app_card.dart';
 import '../../../../design_system/components/app_skeleton.dart';
 import '../../../../design_system/components/molecules/app_empty_state.dart';
+import '../../../../design_system/components/molecules/app_error_state.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
@@ -51,166 +52,173 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppTopAppBar(
-        title: 'Kinerja',
+        title: 'Kinerja Pegawai',
         variant: AppTopAppBarVariant.standard,
         centerTitle: true,
       ),
-      body: Obx(
-        () {
-          if (_controller.isLoadingActivities.value &&
-              _controller.activities.isEmpty) {
-            return _buildLoadingSkeleton();
-          }
+      body: Obx(() {
+        if (_controller.isLoadingActivities.value &&
+            _controller.activities.isEmpty) {
+          return _buildLoadingSkeleton();
+        }
 
-          if (_controller.errorMessage.value != null &&
-              _controller.activities.isEmpty) {
-            return _buildErrorState();
-          }
+        if (_controller.errorMessage.value != null &&
+            _controller.activities.isEmpty) {
+          return _buildErrorState();
+        }
 
-          final threeDaysItems = _controller.last3DaysActivities;
+        final threeDaysItems = _controller.last3DaysActivities;
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              await Future.wait([
-                _controller.loadActivities(),
-                _controller.loadMonthlyStats(),
-              ]);
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.s16.w,
-                AppSpacing.s8.h,
-                AppSpacing.s16.w,
-                AppSpacing.s32.h,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Status Bawahan Section ─────────────────
-                  Obx(() {
-                    final pendingCount = _bawahanController.pendingCount.value;
-                    if (pendingCount == 0) return const SizedBox.shrink();
-
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: AppSpacing.s16.h),
-                      child: AppCard(
-                        outlined: true,
-                        onTap: () => Get.to(() => const KinerjaBawahanListPage()),
-                        padding: EdgeInsets.all(AppSpacing.s16.w),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(AppSpacing.s8.w),
-                              decoration: BoxDecoration(
-                                color: colors.warning.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(AppRadius.r8),
-                              ),
-                              child: Icon(Icons.assignment_ind_rounded, color: colors.warning, size: 24),
-                            ),
-                            SizedBox(width: AppSpacing.s12.w),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Kinerja Bawahan',
-                                    style: typography.titleSmall.copyWith(
-                                      color: colors.onSurface,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    '$pendingCount laporan menunggu persetujuan',
-                                    style: typography.bodySmall.copyWith(
-                                      color: colors.onSurface.withValues(alpha: 0.7),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(Icons.chevron_right_rounded, color: colors.outline),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-
-                  // ── Statistics Section ─────────────────────
-                  Obx(() {
-                    final stats = _controller.monthlyStats.value;
-                    if (stats == null) return const SizedBox.shrink();
-                    return Column(
-                      children: [
-                        MonthlyStatsWidget(stats: stats),
-                        SizedBox(height: AppSpacing.s16.h),
-                      ],
-                    );
-                  }),
-
-                  // ── 3 Hari Terakhir Header ────────────────
-                  Text(
-                    '3 Hari Terakhir',
-                    style: typography.titleMedium.copyWith(
-                      color: colors.onSurface,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.s4.h),
-                  Text(
-                    'Kinerja yang dicatat dalam 3 hari terakhir',
-                    style: typography.bodySmall.copyWith(
-                      color: colors.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.s16.h),
-
-                  // ── 3-Day Content ─────────────────────────
-                  if (threeDaysItems.isEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(top: AppSpacing.s32.h),
-                      child: AppEmptyState(
-                        icon: Icons.assignment_outlined,
-                        title: 'Belum ada catatan kinerja',
-                        subtitle: 'Belum ada aktivitas dalam 3 hari terakhir',
-                        actionLabel: 'Buat Kinerja',
-                        onAction: () => _navigateToCreate(context),
-                      ),
-                    )
-                  else
-                    ...threeDaysItems.map(
-                      (item) => Padding(
-                        padding: EdgeInsets.only(bottom: AppSpacing.s12.h),
-                        child: _ActivityCard3Day(
-                          item: item,
-                          colors: colors,
-                          typography: typography,
-                          onEdit: () => _navigateToEdit(context, item),
-                          onDelete: () =>
-                              _confirmDelete(context, item, colors, typography),
-                        ),
-                      ),
-                    ),
-
-                  // ── Lihat Selengkapnya Button ─────────────
-                  if (threeDaysItems.isNotEmpty) ...[
-                    SizedBox(height: AppSpacing.s16.h),
-                    SizedBox(
-                      width: double.infinity,
-                      child: AppButton(
-                        label: 'Lihat Selengkapnya',
-                        onPressed: () => _navigateToDetailPage(context),
-                        style: AppButtonStyle.outlined,
-                        icon: Icons.arrow_forward_rounded,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+        return RefreshIndicator(
+          onRefresh: () async {
+            await Future.wait([
+              _controller.loadActivities(),
+              _controller.loadMonthlyStats(),
+            ]);
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.s16.w,
+              AppSpacing.s8.h,
+              AppSpacing.s16.w,
+              AppSpacing.s32.h,
             ),
-          );
-        },
-      ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Status Bawahan Section ─────────────────
+                Obx(() {
+                  final pendingCount = _bawahanController.pendingCount.value;
+                  if (pendingCount == 0) return const SizedBox.shrink();
+
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: AppSpacing.s16.h),
+                    child: AppCard(
+                      outlined: true,
+                      onTap: () => Get.to(() => const KinerjaBawahanListPage()),
+                      padding: EdgeInsets.all(AppSpacing.s16.w),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(AppSpacing.s8.w),
+                            decoration: BoxDecoration(
+                              color: colors.warning.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(AppRadius.r8),
+                            ),
+                            child: Icon(
+                              Icons.assignment_ind_rounded,
+                              color: colors.warning,
+                              size: 24,
+                            ),
+                          ),
+                          SizedBox(width: AppSpacing.s12.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Kinerja Bawahan',
+                                  style: typography.titleSmall.copyWith(
+                                    color: colors.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '$pendingCount laporan menunggu persetujuan',
+                                  style: typography.bodySmall.copyWith(
+                                    color: colors.onSurface.withValues(
+                                      alpha: 0.7,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: colors.outline,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+
+                // ── Statistics Section ─────────────────────
+                Obx(() {
+                  final stats = _controller.monthlyStats.value;
+                  if (stats == null) return const SizedBox.shrink();
+                  return Column(
+                    children: [
+                      MonthlyStatsWidget(stats: stats),
+                      SizedBox(height: AppSpacing.s16.h),
+                    ],
+                  );
+                }),
+
+                // ── 3 Hari Terakhir Header ────────────────
+                Text(
+                  '3 Hari Terakhir',
+                  style: typography.titleMedium.copyWith(
+                    color: colors.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: AppSpacing.s4.h),
+                Text(
+                  'Kinerja yang dicatat dalam 3 hari terakhir',
+                  style: typography.bodySmall.copyWith(
+                    color: colors.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+                SizedBox(height: AppSpacing.s16.h),
+
+                // ── 3-Day Content ─────────────────────────
+                if (threeDaysItems.isEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: AppSpacing.s32.h),
+                    child: AppEmptyState(
+                      icon: Icons.assignment_outlined,
+                      title: 'Belum ada catatan kinerja',
+                      subtitle: 'Belum ada aktivitas dalam 3 hari terakhir',
+                      actionLabel: 'Buat Kinerja',
+                      onAction: () => _navigateToCreate(context),
+                    ),
+                  )
+                else
+                  ...threeDaysItems.map(
+                    (item) => Padding(
+                      padding: EdgeInsets.only(bottom: AppSpacing.s12.h),
+                      child: _ActivityCard3Day(
+                        item: item,
+                        colors: colors,
+                        typography: typography,
+                        onEdit: () => _navigateToEdit(context, item),
+                        onDelete: () =>
+                            _confirmDelete(context, item, colors, typography),
+                      ),
+                    ),
+                  ),
+
+                // ── Lihat Selengkapnya Button ─────────────
+                if (threeDaysItems.isNotEmpty) ...[
+                  SizedBox(height: AppSpacing.s16.h),
+                  SizedBox(
+                    width: double.infinity,
+                    child: AppButton(
+                      label: 'Lihat Selengkapnya',
+                      onPressed: () => _navigateToDetailPage(context),
+                      style: AppButtonStyle.outlined,
+                      icon: Icons.arrow_forward_rounded,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      }),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToCreate(context),
         backgroundColor: colors.primary,
@@ -244,26 +252,25 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
   }
 
   Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.cloud_off_rounded, size: 48, color: Colors.grey),
-          SizedBox(height: AppSpacing.s16.h),
-          Text(
-            _controller.errorMessage.value ?? 'Terjadi kesalahan',
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: AppSpacing.s16.h),
-          AppButton(
-            label: 'Coba Lagi',
-            onPressed: () {
-              _controller.loadActivities();
-              _controller.loadMonthlyStats();
-            },
-          ),
-        ],
-      ),
+    final rawError = _controller.errorMessage.value ?? '';
+    final isPermissionError =
+        rawError.contains('403') ||
+        rawError.contains('Akses ditolak') ||
+        rawError.contains('Forbidden');
+
+    return AppErrorState(
+      icon: isPermissionError
+          ? Icons.lock_outline_rounded
+          : Icons.cloud_off_rounded,
+      title: isPermissionError ? 'Akses Terbatas' : 'Gagal Memuat Kinerja',
+      message: isPermissionError
+          ? 'Anda tidak memiliki izin untuk melihat data kinerja. Silakan hubungi admin instansi Anda.'
+          : 'Terjadi kesalahan saat memuat data kinerja Anda. Silakan coba beberapa saat lagi.',
+      technicalDetails: rawError.isNotEmpty ? rawError : null,
+      onRetry: () {
+        _controller.loadActivities();
+        _controller.loadMonthlyStats();
+      },
     );
   }
 
@@ -355,11 +362,7 @@ class _ActivityCard3Day extends StatelessWidget {
           // ── Header: icon jenis + nama + tanggal ────────────
           Row(
             children: [
-              Icon(
-                _getTypeIcon(item.typeId),
-                size: 18,
-                color: colors.primary,
-              ),
+              Icon(_getTypeIcon(item.typeId), size: 18, color: colors.primary),
               SizedBox(width: AppSpacing.s8.w),
               Expanded(
                 child: Text(
@@ -457,9 +460,7 @@ class _ActivityCard3Day extends StatelessWidget {
                 label: const Text('Lihat Detail'),
                 style: TextButton.styleFrom(
                   foregroundColor: colors.primary,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s12.w,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.s12.w),
                   textStyle: typography.labelSmall,
                 ),
               ),
@@ -500,8 +501,18 @@ class _ActivityCard3Day extends StatelessWidget {
 
   String _formatShortDate(DateTime d) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
     return '${d.day} ${months[d.month - 1]}';
   }
@@ -509,7 +520,7 @@ class _ActivityCard3Day extends StatelessWidget {
   Widget _buildStatusChip(String status) {
     Color bg;
     Color fg;
-    
+
     if (status == 'Selesai') {
       bg = colors.success.withValues(alpha: 0.15);
       fg = colors.success;
@@ -517,9 +528,12 @@ class _ActivityCard3Day extends StatelessWidget {
       bg = colors.warning.withValues(alpha: 0.15);
       fg = colors.warning;
     }
-    
+
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.s8.w, vertical: AppSpacing.s4.h),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.s8.w,
+        vertical: AppSpacing.s4.h,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(AppRadius.r8),

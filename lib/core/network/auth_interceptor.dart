@@ -34,7 +34,7 @@ class AuthInterceptor extends Interceptor {
     // Tidak ada response → masalah koneksi
     if (response == null) {
       debugPrint('[AuthInterceptor] Connection error detail: ${err.message} | Error object: ${err.error} | Type: ${err.type}');
-      return handler.reject(
+      return handler.next(
         DioException(
           requestOptions: err.requestOptions,
           error: NetworkException('Tidak ada koneksi internet (${err.type.name})'),
@@ -53,7 +53,7 @@ class AuthInterceptor extends Interceptor {
           Get.offAll(() => const LoginPage());
         }
       });
-      return handler.reject(
+      return handler.next(
         DioException(
           requestOptions: err.requestOptions,
           response: response,
@@ -93,7 +93,7 @@ class AuthInterceptor extends Interceptor {
             errorCode: errorCode,
           );
 
-    handler.reject(
+    handler.next(
       DioException(
         requestOptions: err.requestOptions,
         response: response,

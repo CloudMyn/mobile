@@ -149,8 +149,8 @@ class _InfoBanner extends StatelessWidget {
 
     if (hasCheckedInToday) {
       icon = Icons.info_outline_rounded;
-      bgColor = colors.tertiaryContainer.withValues(alpha: 0.3);
-      iconColor = colors.tertiary;
+      bgColor = colors.warning.withValues(alpha: 0.15);
+      iconColor = colors.warning;
       message =
           'Anda sudah presensi masuk hari ini. Jika mengubah jadwal, perubahan akan berlaku mulai besok.';
     } else {

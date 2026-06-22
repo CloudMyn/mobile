@@ -41,7 +41,7 @@ class SubmissionController extends GetxController {
     if (submissionsMap.containsKey(typeId)) return;
     isLoadingList.value = true;
     try {
-      final result = await _service.fetchSubmissions(typeId);
+      final result = await _service.fetchSubmissions(typeId: typeId);
       submissionsMap[typeId] = result;
     } catch (e) {
       Get.snackbar('Error', 'Gagal memuat data: $e');
