@@ -382,9 +382,11 @@ class DashboardTpp {
       deductionAmount:
           double.tryParse(json['deduction_amount']?.toString() ?? '') ?? 0.0,
       disciplineScore:
-          double.tryParse(json['discipline_score']?.toString() ?? '') ?? 0.0,
+          (double.tryParse(json['discipline_score']?.toString() ?? '') ?? 0.0) /
+              100,
       activityScore:
-          double.tryParse(json['activity_score']?.toString() ?? '') ?? 0.0,
+          (double.tryParse(json['activity_score']?.toString() ?? '') ?? 0.0) /
+              100,
     );
   }
 }

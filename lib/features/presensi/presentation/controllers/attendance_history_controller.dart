@@ -52,16 +52,16 @@ class AttendanceHistoryController extends GetxController {
       final month = selectedMonth.value;
       final year = selectedYear.value;
 
-      final results = await Future.wait<dynamic>([
-        _repository.fetchMonthlyHistory(month: month, year: year),
-        _repository.fetchMonthlySummary(month: month, year: year),
-      ]);
+      final history = await _repository.fetchMonthlyHistory(month: month, year: year);
 
-      final history = results[0] as List<AttendanceHistoryItem>;
-      final monthlySummary = results[1] as AttendanceHistorySummary;
-
-      items.assignAll(_normalizeMonthItems(history));
-      summary.value = monthlySummary;
+      final normalizedItems = _normalizeMonthItems(history);
+      items.assignAll(normalizedItems);
+      
+      summary.value = AttendanceHistorySummary.fromItems(
+        month: month,
+        year: year,
+        items: normalizedItems,
+      );
     } catch (e) {
       errorMessage.value = 'Gagal memuat riwayat presensi: $e';
     } finally {
@@ -106,10 +106,10 @@ class AttendanceHistoryController extends GetxController {
         AttendanceHistoryItem(
           date: date,
           status: fallbackStatus,
-          label: _labelOf(fallbackStatus),
-          note: fallbackStatus == AttendanceDayStatus.weekend
-              ? 'Hari libur akhir pekan'
-              : 'Tidak ada jadwal shift',
+          label: AttendanceHistoryItem.getLabelForStatus(fallbackStatus),
+          note: fallbackStatus == AttendanceDayStatus.offday
+              ? 'Hari libur / tidak ada jadwal shift'
+              : 'Belum ada data',
         ),
       );
     }
@@ -119,20 +119,8 @@ class AttendanceHistoryController extends GetxController {
 
   AttendanceDayStatus _fallbackStatus(DateTime date) {
     if (date.weekday == DateTime.saturday || date.weekday == DateTime.sunday) {
-      return AttendanceDayStatus.weekend;
+      return AttendanceDayStatus.offday;
     }
-    return AttendanceDayStatus.noSchedule;
-  }
-
-  String _labelOf(AttendanceDayStatus status) {
-    return switch (status) {
-      AttendanceDayStatus.present => 'Hadir',
-      AttendanceDayStatus.absent => 'Alpha',
-      AttendanceDayStatus.weekend => 'Weekend',
-      AttendanceDayStatus.holiday => 'Libur',
-      AttendanceDayStatus.noSchedule => 'Tidak Ada Jadwal',
-      AttendanceDayStatus.permission => 'Izin',
-      AttendanceDayStatus.leave => 'Cuti',
-    };
+    return AttendanceDayStatus.workday;
   }
 }

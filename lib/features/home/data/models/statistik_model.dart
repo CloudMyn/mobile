@@ -86,8 +86,9 @@ class StatistikTpp {
       amountAfterDeduction:
           (json['amount_after_deduction'] as num?)?.toInt() ?? 0,
       deductionAmount: (json['deduction_amount'] as num?)?.toInt() ?? 0,
-      disciplineScore: (json['discipline_score'] as num?)?.toDouble() ?? 0,
-      activityScore: (json['activity_score'] as num?)?.toDouble() ?? 0,
+      disciplineScore:
+          ((json['discipline_score'] as num?)?.toDouble() ?? 0) / 100,
+      activityScore: ((json['activity_score'] as num?)?.toDouble() ?? 0) / 100,
     );
   }
 }

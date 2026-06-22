@@ -115,7 +115,7 @@ class AppBindings extends Bindings {
 
     Get.put<PresensiRepository>(PresensiRepositoryImpl(dio), permanent: true);
     Get.put<AttendanceHistoryRepository>(
-      MockAttendanceHistoryRepository(),
+      ApiAttendanceHistoryRepository(dio),
       permanent: true,
     );
 
