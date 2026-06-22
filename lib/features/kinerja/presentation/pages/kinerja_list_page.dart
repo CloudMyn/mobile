@@ -74,6 +74,7 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
             await Future.wait([
               _controller.loadActivities(),
               _controller.loadMonthlyStats(),
+              _controller.loadTodayAttendance(),
             ]);
           },
           child: SingleChildScrollView(
@@ -87,6 +88,61 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Alert Card Belum Absen Masuk ───────────
+                Obx(() {
+                  final hasClockedIn = _controller.todayClockInTime.value != null;
+                  if (hasClockedIn) return const SizedBox.shrink();
+
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: AppSpacing.s16.h),
+                    child: AppCard(
+                      outlined: true,
+                      padding: EdgeInsets.all(AppSpacing.s16.w),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(AppSpacing.s8.w),
+                            decoration: BoxDecoration(
+                              color: colors.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(AppRadius.r8),
+                            ),
+                            child: Icon(
+                              Icons.warning_amber_rounded,
+                              color: colors.error,
+                              size: 24,
+                            ),
+                          ),
+                          SizedBox(width: AppSpacing.s12.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Belum Absen Masuk',
+                                  style: typography.titleSmall.copyWith(
+                                    color: colors.error,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: AppSpacing.s4.h),
+                                Text(
+                                  'Anda belum melakukan absen masuk hari ini. Silakan absen masuk terlebih dahulu untuk dapat mencatat kinerja.',
+                                  style: typography.bodySmall.copyWith(
+                                    color: colors.onSurface.withValues(
+                                      alpha: 0.7,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+
                 // ── Status Bawahan Section ─────────────────
                 Obx(() {
                   final pendingCount = _bawahanController.pendingCount.value;
@@ -178,13 +234,16 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
                 if (threeDaysItems.isEmpty)
                   Padding(
                     padding: EdgeInsets.only(top: AppSpacing.s32.h),
-                    child: AppEmptyState(
-                      icon: Icons.assignment_outlined,
-                      title: 'Belum ada catatan kinerja',
-                      subtitle: 'Belum ada aktivitas dalam 3 hari terakhir',
-                      actionLabel: 'Buat Kinerja',
-                      onAction: () => _navigateToCreate(context),
-                    ),
+                    child: Obx(() {
+                      final hasClockedIn = _controller.todayClockInTime.value != null;
+                      return AppEmptyState(
+                        icon: Icons.assignment_outlined,
+                        title: 'Belum ada catatan kinerja',
+                        subtitle: 'Belum ada aktivitas dalam 3 hari terakhir',
+                        actionLabel: hasClockedIn ? 'Buat Kinerja' : null,
+                        onAction: hasClockedIn ? () => _navigateToCreate(context) : null,
+                      );
+                    }),
                   )
                 else
                   ...threeDaysItems.map(
@@ -202,7 +261,7 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
                   ),
 
                 // ── Lihat Selengkapnya Button ─────────────
-                if (threeDaysItems.isNotEmpty) ...[
+                if (_controller.activities.isNotEmpty) ...[
                   SizedBox(height: AppSpacing.s16.h),
                   SizedBox(
                     width: double.infinity,
@@ -219,12 +278,17 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
           ),
         );
       }),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToCreate(context),
-        backgroundColor: colors.primary,
-        foregroundColor: colors.onPrimary,
-        child: const Icon(Icons.add_rounded),
-      ),
+      floatingActionButton: Obx(() {
+        final hasClockedIn = _controller.todayClockInTime.value != null;
+        if (!hasClockedIn) return const SizedBox.shrink();
+
+        return FloatingActionButton(
+          onPressed: () => _navigateToCreate(context),
+          backgroundColor: colors.primary,
+          foregroundColor: colors.onPrimary,
+          child: const Icon(Icons.add_rounded),
+        );
+      }),
     );
   }
 

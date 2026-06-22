@@ -8,14 +8,14 @@ class AppConstants {
   // =========================================================================
 
   /// Nama aplikasi — digunakan di title bar, metadata, dll.
-  static const String appName = 'Massiddi';
+  static const String appName = 'Masseddi';
 
   /// Nama pendek untuk notifikasi atau konteks informal.
-  static const String appNameShort = 'Massiddi';
+  static const String appNameShort = 'Masseddi';
 
   /// Deskripsi lengkap aplikasi.
   static const String appDescription =
-      'E-Office Massiddi merupakan aplikasi presensi dan e-kinerja, Massiddi sendiri berasal dari Kalimat Manajemen Presensi Dan Disiplin';
+      'E-Office Masseddi merupakan aplikasi presensi dan e-kinerja, Masseddi sendiri berasal dari Kalimat Manajemen Presensi Dan Disiplin';
 
   /// Nama perusahaan/instansi.
   static const String appOrganization = 'Pemerintah Kabupaten Barru';

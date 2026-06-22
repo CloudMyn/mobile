@@ -5,26 +5,63 @@ import '../tokens/app_spacing.dart';
 import '../tokens/app_radius.dart';
 import 'app_button.dart';
 
+enum FeedbackType { success, warning, info, error }
+
 class AppFeedback {
   static void showSnackbar({
     required String title,
     required String message,
-    bool isError = false,
+    FeedbackType type = FeedbackType.info,
+    bool? isError,
   }) {
     final colors = Get.theme.extension<AppColors>()!;
     
+    FeedbackType resolvedType = type;
+    if (isError != null) {
+      resolvedType = isError ? FeedbackType.error : FeedbackType.info;
+    }
+
+    Color bgColor;
+    Color textColor;
+    IconData iconData;
+
+    switch (resolvedType) {
+      case FeedbackType.success:
+        bgColor = colors.success;
+        textColor = colors.onSuccess;
+        iconData = Icons.check_circle_outline_rounded;
+        break;
+      case FeedbackType.warning:
+        bgColor = colors.warning;
+        textColor = colors.onWarning;
+        iconData = Icons.warning_amber_rounded;
+        break;
+      case FeedbackType.error:
+        bgColor = colors.error;
+        textColor = colors.onError;
+        iconData = Icons.error_outline_rounded;
+        break;
+      case FeedbackType.info:
+        bgColor = const Color(0xFF1976D2); // Solid Blue
+        textColor = Colors.white;
+        iconData = Icons.info_outline_rounded;
+        break;
+    }
+
     Get.snackbar(
       title,
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError ? colors.error : colors.primary,
-      colorText: isError ? colors.onError : colors.onPrimary,
+      backgroundColor: bgColor,
+      colorText: textColor,
       margin: const EdgeInsets.all(AppSpacing.s16),
       borderRadius: AppRadius.r12,
       duration: const Duration(seconds: 3),
+      barBlur: 0, // Disable blur to ensure solid background
+      overlayBlur: 0,
       icon: Icon(
-        isError ? Icons.error_outline : Icons.check_circle_outline,
-        color: isError ? colors.onError : colors.onPrimary,
+        iconData,
+        color: textColor,
       ),
     );
   }

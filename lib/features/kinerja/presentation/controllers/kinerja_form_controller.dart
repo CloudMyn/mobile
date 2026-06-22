@@ -4,6 +4,7 @@ import '../../data/models/activity_item.dart';
 import '../../data/models/activity_type.dart';
 import '../../data/services/kinerja_service.dart';
 import '../../../../core/utils/image_compression_helper.dart';
+import '../../../../design_system/components/app_feedback.dart';
 import 'kinerja_controller.dart';
 
 class KinerjaFormController extends GetxController {
@@ -33,6 +34,7 @@ class KinerjaFormController extends GetxController {
   final types = <ActivityType>[].obs;
   final isLoadingTypes = false.obs;
   final errorTypes = Rx<String?>(null);
+  final clockInTime = Rxn<String>();
 
   // ── Edit Mode State ─────────────────────────────────────────
   final editingItem = Rx<ActivityItem?>(null);
@@ -60,16 +62,21 @@ class KinerjaFormController extends GetxController {
     ever(selectedType, (_) {});
   }
 
-  Future<void> _fetchAndSetStartTime(DateTime date) async {
+  Future<void> _fetchAndSetStartTime(DateTime date, {bool updateField = true}) async {
     final time = await _service.fetchAttendanceByDate(date);
+    clockInTime.value = time;
     if (time != null) {
-      startTimeCtrl.text = time;
+      if (updateField) {
+        startTimeCtrl.text = time;
+      }
     } else {
-      startTimeCtrl.text = '';
-      Get.snackbar(
-        'Info',
-        'Anda belum melakukan presensi masuk pada tanggal ini.',
-        snackPosition: SnackPosition.BOTTOM,
+      if (updateField) {
+        startTimeCtrl.text = '';
+      }
+      AppFeedback.showSnackbar(
+        title: 'Peringatan',
+        message: 'Anda belum melakukan presensi masuk pada tanggal ini. Kinerja tidak dapat dicatat.',
+        type: FeedbackType.warning,
       );
     }
   }
@@ -120,6 +127,8 @@ class KinerjaFormController extends GetxController {
     selectedDate.value = item.date;
     dateCtrl.text = '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}';
 
+    _fetchAndSetStartTime(item.date, updateField: false);
+
     // Set image if exists
     if (item.imageUrl != null) {
       originalImagePath.value = item.imageUrl;
@@ -153,17 +162,17 @@ class KinerjaFormController extends GetxController {
       if (compressed != null) {
         compressedImagePath.value = compressed;
       } else {
-        Get.snackbar(
-          'Gagal',
-          'Gagal mengompresi gambar. Coba lagi.',
-          snackPosition: SnackPosition.BOTTOM,
+        AppFeedback.showSnackbar(
+          title: 'Gagal',
+          message: 'Gagal mengompresi gambar. Coba lagi.',
+          type: FeedbackType.error,
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Terjadi kesalahan saat memproses gambar: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Terjadi kesalahan saat memproses gambar: $e',
+        type: FeedbackType.error,
       );
     } finally {
       isCompressing.value = false;
@@ -173,6 +182,55 @@ class KinerjaFormController extends GetxController {
   void removeImage() {
     originalImagePath.value = null;
     compressedImagePath.value = null;
+  }
+
+  int _timeToMinutes(String timeStr) {
+    final parts = timeStr.split(':');
+    if (parts.length != 2) return 0;
+    final hours = int.tryParse(parts[0]) ?? 0;
+    final minutes = int.tryParse(parts[1]) ?? 0;
+    return hours * 60 + minutes;
+  }
+
+  Future<void> selectStartTime(BuildContext context) async {
+    if (clockInTime.value == null) {
+      AppFeedback.showSnackbar(
+        title: 'Perhatian',
+        message: 'Anda belum memiliki presensi masuk pada tanggal ini.',
+        type: FeedbackType.warning,
+      );
+      return;
+    }
+
+    final parts = startTimeCtrl.text.split(':');
+    TimeOfDay initialTime = TimeOfDay.now();
+    if (parts.length == 2) {
+      initialTime = TimeOfDay(
+        hour: int.tryParse(parts[0]) ?? initialTime.hour,
+        minute: int.tryParse(parts[1]) ?? initialTime.minute,
+      );
+    }
+
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+
+    if (picked != null) {
+      final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+      final pickedMinutes = _timeToMinutes(formatted);
+      final clockInMinutes = _timeToMinutes(clockInTime.value!);
+
+      if (pickedMinutes < clockInMinutes) {
+        AppFeedback.showSnackbar(
+          title: 'Peringatan',
+          message: 'Jam mulai tidak boleh sebelum jam masuk (${clockInTime.value})',
+          type: FeedbackType.warning,
+        );
+      } else {
+        startTimeCtrl.text = formatted;
+      }
+    }
   }
 
   String? validateForm() {
@@ -185,6 +243,10 @@ class KinerjaFormController extends GetxController {
     if (selectedStatus.value == null) return 'Pilih status terlebih dahulu';
     if (dateCtrl.text.isEmpty) return 'Tanggal wajib diisi';
 
+    if (clockInTime.value == null) {
+      return 'Anda tidak memiliki data presensi masuk untuk tanggal ini. Kinerja tidak dapat dicatat.';
+    }
+
     try {
       final startParts = startTimeCtrl.text.split(':');
       final endParts = endTimeCtrl.text.split(':');
@@ -193,6 +255,11 @@ class KinerjaFormController extends GetxController {
         final endMinutes = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
         if (endMinutes < startMinutes) {
           return 'Jam selesai tidak boleh sebelum jam mulai';
+        }
+
+        final clockInMinutes = _timeToMinutes(clockInTime.value!);
+        if (startMinutes < clockInMinutes) {
+          return 'Jam mulai tidak boleh sebelum jam masuk (${clockInTime.value})';
         }
       }
     } catch (_) {
@@ -207,10 +274,10 @@ class KinerjaFormController extends GetxController {
 
     final extraError = validateForm();
     if (extraError != null) {
-      Get.snackbar(
-        'Perhatian',
-        extraError,
-        snackPosition: SnackPosition.BOTTOM,
+      AppFeedback.showSnackbar(
+        title: 'Perhatian',
+        message: extraError,
+        type: FeedbackType.warning,
       );
       return;
     }
@@ -237,10 +304,10 @@ class KinerjaFormController extends GetxController {
         }
 
         Get.back();
-        Get.snackbar(
-          'Berhasil',
-          'Kinerja berhasil diperbarui',
-          snackPosition: SnackPosition.BOTTOM,
+        AppFeedback.showSnackbar(
+          title: 'Berhasil',
+          message: 'Kinerja berhasil diperbarui',
+          type: FeedbackType.success,
         );
       } else {
         // ── Create Mode: create new activity ─────────────
@@ -259,17 +326,17 @@ class KinerjaFormController extends GetxController {
         }
 
         Get.back();
-        Get.snackbar(
-          'Berhasil',
-          'Kinerja berhasil dicatat',
-          snackPosition: SnackPosition.BOTTOM,
+        AppFeedback.showSnackbar(
+          title: 'Berhasil',
+          message: 'Kinerja berhasil dicatat',
+          type: FeedbackType.success,
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Gagal menyimpan kinerja: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Gagal menyimpan kinerja: $e',
+        type: FeedbackType.error,
       );
     } finally {
       isLoading.value = false;

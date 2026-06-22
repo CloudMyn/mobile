@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../../data/models/activity_item.dart';
 import '../../data/models/monthly_activity_stats.dart';
 import '../../data/services/kinerja_service.dart';
+import '../../../../design_system/components/app_feedback.dart';
 
 class KinerjaController extends GetxController {
   final KinerjaService _service;
@@ -17,6 +18,10 @@ class KinerjaController extends GetxController {
   final isLoadingStats = false.obs;
   final errorMessage = Rx<String?>(null);
 
+  // ── Today Attendance State ─────────────────────────────────
+  final todayClockInTime = Rxn<String>();
+  final isLoadingTodayAttendance = false.obs;
+
   // ── Detail Page (Full Page) State ──────────────────────────
   final allActivities = <ActivityItem>[].obs;
   final currentDetailMonth = DateTime.now().month.obs;
@@ -30,6 +35,7 @@ class KinerjaController extends GetxController {
     super.onInit();
     loadActivities();
     loadMonthlyStats();
+    loadTodayAttendance();
   }
 
   // ── Load Methods ───────────────────────────────────────────
@@ -45,7 +51,11 @@ class KinerjaController extends GetxController {
       activities.assignAll(result);
     } catch (e) {
       errorMessage.value = 'Gagal memuat data kinerja: $e';
-      Get.snackbar('Error', 'Gagal memuat data kinerja: $e');
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Gagal memuat data kinerja: $e',
+        type: FeedbackType.error,
+      );
     } finally {
       isLoadingActivities.value = false;
     }
@@ -63,6 +73,18 @@ class KinerjaController extends GetxController {
       // Non-blokir error untuk stats
     } finally {
       isLoadingStats.value = false;
+    }
+  }
+
+  Future<void> loadTodayAttendance() async {
+    isLoadingTodayAttendance.value = true;
+    try {
+      final time = await _service.fetchAttendanceByDate(DateTime.now());
+      todayClockInTime.value = time;
+    } catch (_) {
+      todayClockInTime.value = null;
+    } finally {
+      isLoadingTodayAttendance.value = false;
     }
   }
 
@@ -93,7 +115,11 @@ class KinerjaController extends GetxController {
       allActivities.addAll(result);
       detailPage.value++;
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memuat data: $e');
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Gagal memuat data: $e',
+        type: FeedbackType.error,
+      );
     } finally {
       isLoadingMore.value = false;
     }
@@ -139,16 +165,16 @@ class KinerjaController extends GetxController {
       activities.removeWhere((a) => a.id == id);
       allActivities.removeWhere((a) => a.id == id);
       loadMonthlyStats();
-      Get.snackbar(
-        'Berhasil',
-        'Kinerja berhasil dihapus',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Kinerja berhasil dihapus',
+        type: FeedbackType.success,
       );
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Gagal menghapus kinerja: $e',
-        snackPosition: SnackPosition.BOTTOM,
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Gagal menghapus kinerja: $e',
+        type: FeedbackType.error,
       );
     }
   }

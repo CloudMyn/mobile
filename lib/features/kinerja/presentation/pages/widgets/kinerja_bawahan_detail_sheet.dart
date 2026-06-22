@@ -9,6 +9,7 @@ import '../../../../../design_system/tokens/app_colors.dart';
 import '../../../../../design_system/tokens/app_radius.dart';
 import '../../../../../design_system/tokens/app_spacing.dart';
 import '../../../../../design_system/tokens/app_typography.dart';
+import '../../../../../design_system/components/app_feedback.dart';
 import '../../../data/models/subordinate_activity_item.dart';
 import '../../controllers/kinerja_bawahan_controller.dart';
 import 'reject_reason_dialog.dart';
@@ -299,7 +300,11 @@ class KinerjaBawahanDetailSheet extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      Get.snackbar('Error', 'Tidak dapat membuka file lampiran', snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Tidak dapat membuka file lampiran',
+        type: FeedbackType.error,
+      );
     }
   }
 

@@ -111,11 +111,10 @@ class _KinerjaDetailPageState extends State<KinerjaDetailPage> {
           final month = index + 1;
           final isSelected = month == currentMonth;
           final monthName = KinerjaController.shortMonthName(month);
-          final hasData = _controller.availableDetailMonths.contains(month);
           final isLast = index == maxMonth - 1;
 
           return GestureDetector(
-            onTap: hasData ? () => _controller.changeDetailMonth(month) : null,
+            onTap: () => _controller.changeDetailMonth(month),
             behavior: HitTestBehavior.opaque,
             child: SizedBox(
               height: 56.h,
@@ -146,9 +145,7 @@ class _KinerjaDetailPageState extends State<KinerjaDetailPage> {
                             shape: BoxShape.circle,
                             color: isSelected
                                 ? colors.primary
-                                : hasData
-                                    ? colors.onSurface.withValues(alpha: 0.5)
-                                    : colors.outline.withValues(alpha: 0.15),
+                                : colors.onSurface.withValues(alpha: 0.5),
                             border: isSelected
                                 ? Border.all(
                                     color: colors.primaryContainer,
@@ -183,9 +180,7 @@ class _KinerjaDetailPageState extends State<KinerjaDetailPage> {
                             isSelected ? FontWeight.w700 : FontWeight.w500,
                         color: isSelected
                             ? colors.primary
-                            : hasData
-                                ? colors.onSurface
-                                : colors.onSurface.withValues(alpha: 0.25),
+                            : colors.onSurface,
                       ),
                     ),
                   ),

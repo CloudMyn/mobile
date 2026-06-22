@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 import '../../data/models/monthly_activity_stats.dart';
 import '../../data/services/kinerja_service.dart';
 
+import '../../../../design_system/components/app_feedback.dart';
+
 class KinerjaStatistikController extends GetxController {
   final KinerjaService _service;
 
@@ -28,7 +30,11 @@ class KinerjaStatistikController extends GetxController {
       );
       stats.value = result;
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memuat statistik', snackPosition: SnackPosition.BOTTOM);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Gagal memuat statistik: $e',
+        type: FeedbackType.error,
+      );
     } finally {
       isLoading.value = false;
     }

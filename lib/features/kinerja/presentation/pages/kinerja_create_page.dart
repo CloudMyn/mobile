@@ -147,11 +147,11 @@ class KinerjaCreatePage extends StatelessWidget {
                   Expanded(
                     child: AppTextField(
                       label: 'Jam Mulai',
-                      hint: 'Terisi otomatis',
+                      hint: 'Pilih jam mulai',
                       controller: ctrl.startTimeCtrl,
                       readOnly: true,
-                      fillColor: colors.outline.withValues(alpha: 0.1),
-                      suffixIcon: const Icon(Icons.lock_outline_rounded),
+                      suffixIcon: const Icon(Icons.access_time_rounded),
+                      onTap: () => ctrl.selectStartTime(context),
                     ),
                   ),
                   SizedBox(width: AppSpacing.s16.w),
