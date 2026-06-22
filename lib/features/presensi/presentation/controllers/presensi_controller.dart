@@ -13,6 +13,9 @@ import '../pages/face_capture_page.dart';
 import '../pages/liveness_page.dart';
 import '../../../home/data/models/dashboard_model.dart';
 import '../../../home/data/services/dashboard_service.dart';
+import 'package:safe_device/safe_device.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/constants/app_constants.dart';
 
 enum PresensiStep {
   idle,
@@ -206,6 +209,36 @@ class PresensiController extends GetxController {
     debugPrint(
       '[PresensiController] checkLocation: Current position: Lat: ${pos.latitude}, Lng: ${pos.longitude}, Accuracy: ${pos.accuracy}m',
     );
+
+    // Cek skor keamanan perangkat dan lokasi (Scoring System)
+    final securityResult = await _evaluateSecurityScore(pos);
+    final score = securityResult['score'] as int;
+    final reasons = securityResult['reasons'] as List<String>;
+
+    if (score > 50) {
+      debugPrint('[PresensiController] Blocked: Security score $score > 50. Reasons: $reasons');
+      isInsideGeofence.value = false;
+      _setError(
+        PresensiErrorType.outsideGeofence,
+        'Presensi Diblokir!\nSkor Pelanggaran Keamanan: $score/100\n\nDetail:\n- ${reasons.join('\n- ')}\n\nMohon matikan aplikasi Fake GPS, kembalikan status Root, atau matikan Developer Options.',
+      );
+      step.value = PresensiStep.error;
+      return;
+    } else if (score > 0) {
+      debugPrint('[PresensiController] Warning: Security score $score <= 50. Reasons: $reasons');
+      // Berikan snackbar warning, tapi presensi tetap diizinkan jalan terus
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar(
+          'Peringatan Keamanan',
+          'Terdeteksi kondisi tidak wajar (Skor: $score):\n- ${reasons.join('\n- ')}',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.amber.shade900,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 7),
+          icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
+        );
+      });
+    }
 
     if (cfg.hasValidGeofence) {
       debugPrint(
@@ -458,6 +491,19 @@ class PresensiController extends GetxController {
         '[PresensiController] _submitPresensi: Submission SUCCESS! ID: ${response.id}, Status: ${response.status}, AttendedAt: ${response.attendedAt}',
       );
       step.value = PresensiStep.success;
+
+      // Simpan koordinat dan waktu presensi sukses ke SharedPreferences
+      if (pos != null) {
+        try {
+          final prefs = Get.find<SharedPreferences>();
+          await prefs.setDouble(AppConstants.prefLastSuccessLatitude, pos.latitude);
+          await prefs.setDouble(AppConstants.prefLastSuccessLongitude, pos.longitude);
+          await prefs.setInt(AppConstants.prefLastSuccessTimestamp, DateTime.now().millisecondsSinceEpoch);
+          debugPrint('[SecurityCheck] Lokasi presensi sukses disimpan ke SharedPreferences.');
+        } catch (e) {
+          debugPrint('[SecurityCheck] Gagal menyimpan lokasi sukses: $e');
+        }
+      }
     } on ApiException catch (e) {
       debugPrint(
         '[PresensiController] _submitPresensi: ApiException: ${e.statusCode} - ${e.errorCode} - ${e.message}',
@@ -571,4 +617,107 @@ class PresensiController extends GetxController {
     PresensiStep.success => 'Presensi berhasil!',
     PresensiStep.error => 'Terjadi kesalahan',
   };
+
+  /// Memeriksa perpindahan lokasi ekstrem (> 150 km/jam) dibanding presensi terakhir
+  Future<bool> _checkLocationJump(Position currentPos) async {
+    try {
+      final prefs = Get.find<SharedPreferences>();
+      final lastLat = prefs.getDouble(AppConstants.prefLastSuccessLatitude);
+      final lastLng = prefs.getDouble(AppConstants.prefLastSuccessLongitude);
+      final lastTimeMs = prefs.getInt(AppConstants.prefLastSuccessTimestamp);
+
+      if (lastLat == null || lastLng == null || lastTimeMs == null) {
+        return false;
+      }
+
+      final currentTimeMs = DateTime.now().millisecondsSinceEpoch;
+      final timeDiffSeconds = (currentTimeMs - lastTimeMs) / 1000.0;
+
+      // Durasi sangat singkat atau negatif (misal clock skew), abaikan
+      if (timeDiffSeconds <= 5) {
+        return false;
+      }
+
+      // Jangan check jika sudah lewat 24 jam (misal hari berikutnya)
+      if (timeDiffSeconds > 86400) {
+        return false;
+      }
+
+      // Hitung jarak
+      final distance = Geolocator.distanceBetween(
+        lastLat,
+        lastLng,
+        currentPos.latitude,
+        currentPos.longitude,
+      );
+
+      // Hitung kecepatan km/jam
+      final speedKmH = (distance / 1000.0) / (timeDiffSeconds / 3600.0);
+      debugPrint('[SecurityCheck] Perpindahan lokasi: ${distance.toStringAsFixed(1)}m dalam ${timeDiffSeconds.toStringAsFixed(1)}s (Kecepatan: ${speedKmH.toStringAsFixed(2)} km/jam)');
+
+      if (speedKmH > 150.0) {
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[SecurityCheck] Gagal menghitung kecepatan perpindahan lokasi: $e');
+    }
+    return false;
+  }
+
+  /// Mengevaluasi seluruh parameter keamanan perangkat dan lokasi (Scoring System)
+  Future<Map<String, dynamic>> _evaluateSecurityScore(Position position) async {
+    int totalScore = 0;
+    final List<String> reasons = [];
+
+    // 1. Mock location aktif (+100)
+    try {
+      final isMock = await SafeDevice.isMockLocation;
+      if (isMock) {
+        totalScore += 100;
+        reasons.add('Mock location (GPS Palsu) aktif (+100)');
+      }
+    } catch (e) {
+      debugPrint('[SecurityCheck] Gagal mengecek mock location: $e');
+    }
+
+    // 2. Device Root/Jailbreak (+50)
+    try {
+      final isRooted = await SafeDevice.isJailBroken;
+      if (isRooted) {
+        totalScore += 50;
+        reasons.add('Perangkat ter-Root / Jailbreak (+50)');
+      }
+    } catch (e) {
+      debugPrint('[SecurityCheck] Gagal mengecek root: $e');
+    }
+
+    // 3. Developer mode aktif (+20)
+    try {
+      final isDevMode = await SafeDevice.isDevelopmentModeEnable;
+      if (isDevMode) {
+        totalScore += 20;
+        reasons.add('Opsi Pengembang (Developer Options) aktif (+20)');
+      }
+    } catch (e) {
+      debugPrint('[SecurityCheck] Gagal mengecek developer mode: $e');
+    }
+
+    // 4. Akurasi buruk (> 100m) (+20)
+    if (position.accuracy > 100.0) {
+      totalScore += 20;
+      reasons.add('Akurasi GPS buruk (> 100m): ${position.accuracy.toStringAsFixed(1)}m (+20)');
+    }
+
+    // 5. Perpindahan lokasi tidak wajar (+40)
+    final isJump = await _checkLocationJump(position);
+    if (isJump) {
+      totalScore += 40;
+      reasons.add('Perpindahan lokasi ekstrem terdeteksi (+40)');
+    }
+
+    return {
+      'score': totalScore,
+      'reasons': reasons,
+    };
+  }
 }

@@ -11,7 +11,6 @@ import '../../data/repositories/attendance_history_repository.dart';
 import '../controllers/attendance_history_controller.dart';
 import '../widgets/attendance_day_tile.dart';
 import '../widgets/attendance_month_switcher.dart';
-import '../widgets/attendance_status_legend.dart';
 import '../widgets/attendance_summary_pie_chart.dart';
 
 class AttendanceHistoryPage extends StatefulWidget {
@@ -118,8 +117,6 @@ class _AttendanceHistoryPageState extends State<AttendanceHistoryPage> {
                   child: AttendanceDayTile(item: item),
                 ),
               ),
-              SizedBox(height: AppSpacing.s4.h),
-              const AttendanceStatusLegend(),
               SizedBox(height: AppSpacing.s12.h),
               if (summary != null) AttendanceSummaryPieChart(summary: summary),
             ],

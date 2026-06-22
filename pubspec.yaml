@@ -57,6 +57,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.3
   path: ^1.9.1
   fl_chart: ^1.2.0
+  safe_device: ^1.2.1
 
 dev_dependencies:
   flutter_test:

@@ -97,6 +97,15 @@ class AppConstants {
   /// Key untuk menyimpan status onboarding.
   static const String prefOnboardingDone = 'onboarding_done';
 
+  /// Key untuk menyimpan koordinat latitude terakhir presensi berhasil.
+  static const String prefLastSuccessLatitude = 'last_success_latitude';
+
+  /// Key untuk menyimpan koordinat longitude terakhir presensi berhasil.
+  static const String prefLastSuccessLongitude = 'last_success_longitude';
+
+  /// Key untuk menyimpan timestamp terakhir presensi berhasil.
+  static const String prefLastSuccessTimestamp = 'last_success_timestamp';
+
   // =========================================================================
   //  Jaringan (API)
   // =========================================================================
