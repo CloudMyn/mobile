@@ -19,6 +19,7 @@ class AppTextField extends StatelessWidget {
   final int? maxLines;
   final bool readOnly;
   final VoidCallback? onTap;
+  final Color? fillColor;
 
   const AppTextField({
     super.key,
@@ -37,6 +38,7 @@ class AppTextField extends StatelessWidget {
     this.maxLines = 1,
     this.readOnly = false,
     this.onTap,
+    this.fillColor,
   });
 
   @override
@@ -72,6 +74,8 @@ class AppTextField extends StatelessWidget {
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
             errorText: errorText,
+            fillColor: fillColor,
+            filled: fillColor != null,
           ),
         ),
       ],

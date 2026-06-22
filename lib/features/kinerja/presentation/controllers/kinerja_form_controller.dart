@@ -47,16 +47,31 @@ class KinerjaFormController extends GetxController {
     } else {
       isEditMode.value = false;
       final now = DateTime.now();
-      final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-      startTimeCtrl.text = timeStr;
-      endTimeCtrl.text = timeStr;
       selectedDate.value = now;
       dateCtrl.text = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+      _fetchAndSetStartTime(now);
+      
+      final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+      endTimeCtrl.text = timeStr;
     }
 
     loadTypes();
 
     ever(selectedType, (_) {});
+  }
+
+  Future<void> _fetchAndSetStartTime(DateTime date) async {
+    final time = await _service.fetchAttendanceByDate(date);
+    if (time != null) {
+      startTimeCtrl.text = time;
+    } else {
+      startTimeCtrl.text = '';
+      Get.snackbar(
+        'Info',
+        'Anda belum melakukan presensi masuk pada tanggal ini.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   Future<void> loadTypes() async {
@@ -123,6 +138,7 @@ class KinerjaFormController extends GetxController {
   void selectDate(DateTime date) {
     selectedDate.value = date;
     dateCtrl.text = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    _fetchAndSetStartTime(date);
   }
 
   Future<void> pickAndCompressImage(String sourcePath) async {

@@ -38,6 +38,7 @@ abstract class KinerjaService {
     DateTime? date,
   });
   Future<void> deleteActivity(String id);
+  Future<String?> fetchAttendanceByDate(DateTime date);
 }
 
 class MockKinerjaService implements KinerjaService {
@@ -417,6 +418,13 @@ class MockKinerjaService implements KinerjaService {
     await Future.delayed(_delay);
     _activities.removeWhere((a) => a.id == id);
   }
+
+  @override
+  Future<String?> fetchAttendanceByDate(DateTime date) async {
+    await Future.delayed(_delay);
+    // Mock clock in time
+    return '08:00';
+  }
 }
 
 class ApiKinerjaService implements KinerjaService {
@@ -613,6 +621,32 @@ class ApiKinerjaService implements KinerjaService {
       await _dio.delete<void>('/activities/$id');
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal menghapus kinerja');
+    }
+  }
+
+  @override
+  Future<String?> fetchAttendanceByDate(DateTime date) async {
+    try {
+      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final response = await _dio.get<Map<String, dynamic>>('/mobile/presensi/date/$dateStr');
+      final data = response.data?['data'];
+      
+      if (data != null && data['records'] != null) {
+        final records = data['records'] as List;
+        for (var record in records) {
+          if (record['status'] != 'pending' && record['status'] != 'absent') {
+            final attendedAt = record['attended_at'];
+            if (attendedAt != null) {
+              final dt = DateTime.parse(attendedAt.toString()).toLocal();
+              return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+            }
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      // Don't throw error, just return null if fail to fetch attendance
+      return null;
     }
   }
 

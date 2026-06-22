@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/components/app_button.dart';
 import '../../../../design_system/components/app_dropdown.dart';
+import '../../../../design_system/components/app_searchable_dropdown.dart';
 import '../../../../design_system/components/app_text_field.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
@@ -105,21 +106,16 @@ class KinerjaCreatePage extends StatelessWidget {
                   );
                 }
 
-                return AppDropdown<ActivityType>(
+                return AppSearchableDropdown<ActivityType>(
                   label: 'Jenis Kegiatan',
                   hint: isLoading ? 'Memuat jenis kegiatan...' : 'Pilih jenis kegiatan',
                   value: ctrl.selectedType.value,
-                  items: isLoading
-                      ? []
-                      : types
-                          .map((t) =>
-                              DropdownMenuItem(value: t, child: Text(t.name)))
-                          .toList(),
+                  items: isLoading ? [] : types,
+                  itemAsString: (ActivityType type) => type.name,
                   onChanged: isLoading ? null : (t) {
                     if (t != null) ctrl.selectType(t);
                   },
-                  validator: (_) =>
-                      ctrl.selectedType.value == null ? 'Wajib dipilih' : null,
+                  errorText: ctrl.selectedType.value == null ? 'Wajib dipilih' : null,
                 );
               }),
               SizedBox(height: AppSpacing.s16.h),
@@ -135,8 +131,8 @@ class KinerjaCreatePage extends StatelessWidget {
                   final picked = await showDatePicker(
                     context: context,
                     initialDate: ctrl.selectedDate.value,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2100),
+                    firstDate: DateTime.now().subtract(const Duration(days: 2)),
+                    lastDate: DateTime.now(),
                   );
                   if (picked != null) {
                     ctrl.selectDate(picked);
@@ -151,28 +147,11 @@ class KinerjaCreatePage extends StatelessWidget {
                   Expanded(
                     child: AppTextField(
                       label: 'Jam Mulai',
-                      hint: 'Pilih jam mulai',
+                      hint: 'Terisi otomatis',
                       controller: ctrl.startTimeCtrl,
                       readOnly: true,
-                      suffixIcon: const Icon(Icons.access_time_rounded),
-                      onTap: () async {
-                        final parts = ctrl.startTimeCtrl.text.split(':');
-                        TimeOfDay initialTime = TimeOfDay.now();
-                        if (parts.length == 2) {
-                          initialTime = TimeOfDay(
-                            hour: int.tryParse(parts[0]) ?? initialTime.hour,
-                            minute: int.tryParse(parts[1]) ?? initialTime.minute,
-                          );
-                        }
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: initialTime,
-                        );
-                        if (picked != null) {
-                          final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-                          ctrl.startTimeCtrl.text = formatted;
-                        }
-                      },
+                      fillColor: colors.outline.withValues(alpha: 0.1),
+                      suffixIcon: const Icon(Icons.lock_outline_rounded),
                     ),
                   ),
                   SizedBox(width: AppSpacing.s16.w),
