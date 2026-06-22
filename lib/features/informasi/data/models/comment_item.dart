@@ -8,6 +8,7 @@ class CommentItem {
   final DateTime? editedAt;
   final int depth; // 1=root, 2=reply, 3=deep reply (flat)
   final List<CommentItem> replies;
+  final bool isDeleted;
 
   const CommentItem({
     required this.id,
@@ -19,10 +20,12 @@ class CommentItem {
     this.editedAt,
     required this.depth,
     this.replies = const [],
+    this.isDeleted = false,
   });
 
   factory CommentItem.fromJson(Map<String, dynamic> json) {
     final author = json['author'] as Map<String, dynamic>?;
+    final deleted = json['is_deleted'] as bool? ?? false;
     return CommentItem(
       id: '${json['id']}',
       authorId: '${author?['id'] ?? ''}',
@@ -36,10 +39,16 @@ class CommentItem {
       replies: (json['replies'] as List<dynamic>? ?? [])
           .map((reply) => CommentItem.fromJson(reply as Map<String, dynamic>))
           .toList(),
+      isDeleted: deleted,
     );
   }
 
-  CommentItem copyWith({List<CommentItem>? replies, String? content, DateTime? editedAt}) {
+  CommentItem copyWith({
+    List<CommentItem>? replies,
+    String? content,
+    DateTime? editedAt,
+    bool? isDeleted,
+  }) {
     return CommentItem(
       id: id,
       authorId: authorId,
@@ -50,6 +59,7 @@ class CommentItem {
       editedAt: editedAt ?? this.editedAt,
       depth: depth,
       replies: replies ?? this.replies,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 

@@ -271,10 +271,15 @@ class InformasiController extends GetxController {
       );
       final index = currentComments.indexWhere((c) => c.id == commentId);
       if (index != -1) {
-        currentComments.removeAt(index);
+        // Soft-delete lokal: tandai sebagai terhapus, jangan remove dari list
+        // agar sub-komentar tetap tampil
+        currentComments[index] = currentComments[index].copyWith(
+          isDeleted: true,
+          content: '[Komentar ini telah dihapus]',
+        );
         commentsMap[articleId] = currentComments;
-        
-        // Recalculate total comments. Decrease by 1, plus any replies of this comment (if flat list, we might just decrease by 1 for now or rely on reload).
+
+        // Kurangi count hanya 1 (komentar ini saja, bukan replies)
         commentsTotalMap[articleId] = (commentsTotalMap[articleId] ?? 1) - 1;
         _decrementArticleCommentCount(articleId);
       }

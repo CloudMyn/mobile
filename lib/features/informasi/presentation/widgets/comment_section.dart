@@ -136,6 +136,15 @@ class _CommentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Jika komentar terhapus, tampilkan tile minimalis
+    if (comment.isDeleted) {
+      return _DeletedCommentTile(
+        comment: comment,
+        colors: colors,
+        typography: typography,
+      );
+    }
+
     final level = (comment.depth - 1).clamp(0, 2);
     final isRoot = comment.depth == 1;
     final calculatedIndent = level * 36.w;
@@ -465,6 +474,52 @@ class _CommentTile extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Tile minimalis untuk komentar yang sudah dihapus (tombstone).
+/// Hanya menampilkan satu baris teks "[Komentar ini telah dihapus]"
+/// dengan indentasi sesuai depth — sub-komentar tetap tampil normal.
+class _DeletedCommentTile extends StatelessWidget {
+  const _DeletedCommentTile({
+    required this.comment,
+    required this.colors,
+    required this.typography,
+  });
+
+  final CommentItem comment;
+  final AppColors colors;
+  final AppTypography typography;
+
+  @override
+  Widget build(BuildContext context) {
+    final level = (comment.depth - 1).clamp(0, 2);
+    final calculatedIndent = level * 36.w;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: calculatedIndent,
+        bottom: AppSpacing.s12.h,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.remove_circle_outline_rounded,
+            size: 16.sp,
+            color: colors.onSurface.withValues(alpha: 0.3),
+          ),
+          SizedBox(width: AppSpacing.s8.w),
+          Text(
+            '[Komentar ini telah dihapus]',
+            style: typography.bodySmall.copyWith(
+              color: colors.onSurface.withValues(alpha: 0.35),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

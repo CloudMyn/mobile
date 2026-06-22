@@ -229,7 +229,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                           ),
                           child: Image.asset(
                             'assets/images/logo_presensi.png',
-                            height: 64.h,
+                            height: 75.h,
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) =>
                                 const Icon(
