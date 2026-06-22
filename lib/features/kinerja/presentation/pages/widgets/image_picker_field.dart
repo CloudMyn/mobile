@@ -96,12 +96,34 @@ class ImagePickerField extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.r8),
-                  child: Image.file(
-                    File(imagePath!),
-                    width: 64.w,
-                    height: 64.w,
-                    fit: BoxFit.cover,
-                  ),
+                  child: imagePath!.startsWith('http')
+                      ? Image.network(
+                          imagePath!,
+                          width: 64.w,
+                          height: 64.w,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (_, child, progress) =>
+                              progress == null
+                                  ? child
+                                  : SizedBox(
+                                      width: 64.w,
+                                      height: 64.w,
+                                      child: const Center(
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2)),
+                                    ),
+                          errorBuilder: (_, _, _) => Icon(
+                            Icons.broken_image_outlined,
+                            size: 32,
+                            color: colors.outline,
+                          ),
+                        )
+                      : Image.file(
+                          File(imagePath!),
+                          width: 64.w,
+                          height: 64.w,
+                          fit: BoxFit.cover,
+                        ),
                 ),
                 SizedBox(width: AppSpacing.s12.w),
                 Expanded(
@@ -159,6 +181,7 @@ class ImagePickerField extends StatelessWidget {
   }
 
   String _getFileSize(String path) {
+    if (path.startsWith('http')) return 'Dari server';
     try {
       final file = File(path);
       final size = file.lengthSync();

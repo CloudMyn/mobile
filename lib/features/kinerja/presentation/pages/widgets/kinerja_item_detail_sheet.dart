@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../../design_system/components/app_button.dart';
+import '../../../../../design_system/components/app_image_viewer.dart';
 import '../../../../../design_system/tokens/app_colors.dart';
 import '../../../../../design_system/tokens/app_radius.dart';
 import '../../../../../design_system/tokens/app_spacing.dart';
@@ -56,21 +57,78 @@ class KinerjaItemDetailSheet extends StatelessWidget {
 
             // ── Image ──────────────────────────────────────
             if (hasImage) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.r12),
-                child: Image.file(
-                  File(item.imageUrl!),
-                  width: double.infinity,
-                  height: 200.h,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) => SizedBox(
-                    height: 200.h,
-                    child: Center(
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: colors.outline,
-                        size: 40,
-                      ),
+              GestureDetector(
+                onTap: () => AppImageViewer.show(
+                  context,
+                  imageUrl: item.imageUrl!,
+                  heroTag: 'kinerja_img_${item.id}',
+                ),
+                child: Hero(
+                  tag: 'kinerja_img_${item.id}',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.r12),
+                    child: Stack(
+                      children: [
+                        item.imageUrl!.startsWith('http')
+                            ? Image.network(
+                                item.imageUrl!,
+                                width: double.infinity,
+                                height: 200.h,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (_, child, progress) =>
+                                    progress == null
+                                        ? child
+                                        : SizedBox(
+                                            height: 200.h,
+                                            child: const Center(
+                                                child:
+                                                    CircularProgressIndicator()),
+                                          ),
+                                errorBuilder: (_, _, _) => SizedBox(
+                                  height: 200.h,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.broken_image_outlined,
+                                      color: colors.outline,
+                                      size: 40,
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Image.file(
+                                File(item.imageUrl!),
+                                width: double.infinity,
+                                height: 200.h,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => SizedBox(
+                                  height: 200.h,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.broken_image_outlined,
+                                      color: colors.outline,
+                                      size: 40,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                        // Hint ikon zoom di pojok kanan bawah
+                        Positioned(
+                          right: 8,
+                          bottom: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Icon(
+                              Icons.zoom_in_rounded,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

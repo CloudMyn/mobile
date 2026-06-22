@@ -148,14 +148,19 @@ class KinerjaController extends GetxController {
   }
 
   void addActivity(ActivityItem item) {
-    activities.insert(0, item);
-    activities.refresh();
+    // Hindari duplikat di activities
+    if (!activities.any((a) => a.id == item.id)) {
+      activities.insert(0, item);
+      activities.refresh();
+    }
     loadMonthlyStats();
-    // Juga tambahkan ke allActivities untuk halaman detail
+    // Juga tambahkan ke allActivities untuk halaman detail (hindari duplikat)
     if (item.date.month == currentDetailMonth.value &&
         item.date.year == currentDetailYear.value) {
-      allActivities.insert(0, item);
-      allActivities.refresh();
+      if (!allActivities.any((a) => a.id == item.id)) {
+        allActivities.insert(0, item);
+        allActivities.refresh();
+      }
     }
   }
 

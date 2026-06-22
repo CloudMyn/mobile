@@ -13,6 +13,7 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
+import '../../../../design_system/components/app_image_viewer.dart';
 import '../../data/models/activity_item.dart';
 import '../../data/services/kinerja_service.dart';
 import '../controllers/kinerja_controller.dart';
@@ -146,7 +147,6 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
                 // ── Status Bawahan Section ─────────────────
                 Obx(() {
                   final pendingCount = _bawahanController.pendingCount.value;
-                  if (pendingCount == 0) return const SizedBox.shrink();
 
                   return Padding(
                     padding: EdgeInsets.only(bottom: AppSpacing.s16.h),
@@ -181,7 +181,9 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
                                   ),
                                 ),
                                 Text(
-                                  '$pendingCount laporan menunggu persetujuan',
+                                  pendingCount > 0
+                                      ? '$pendingCount laporan menunggu persetujuan'
+                                      : 'Tidak ada laporan yang perlu disetujui',
                                   style: typography.bodySmall.copyWith(
                                     color: colors.onSurface.withValues(
                                       alpha: 0.7,
@@ -483,14 +485,58 @@ class _ActivityCard3Day extends StatelessWidget {
           // ── Image thumbnail ───────────────────────────────
           if (hasImage) ...[
             SizedBox(height: AppSpacing.s8.h),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.r8),
-              child: Image.file(
-                File(item.imageUrl!),
-                width: double.infinity,
-                height: 120.h,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            GestureDetector(
+              onTap: () => AppImageViewer.show(
+                context,
+                imageUrl: item.imageUrl!,
+                heroTag: 'list_img_${item.id}',
+              ),
+              child: Hero(
+                tag: 'list_img_${item.id}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.r8),
+                  child: Stack(
+                    children: [
+                      item.imageUrl!.startsWith('http')
+                          ? Image.network(
+                              item.imageUrl!,
+                              width: double.infinity,
+                              height: 120.h,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (_, child, progress) =>
+                                  progress == null
+                                      ? child
+                                      : const SizedBox.shrink(),
+                              errorBuilder: (_, _, _) =>
+                                  const SizedBox.shrink(),
+                            )
+                          : Image.file(
+                              File(item.imageUrl!),
+                              width: double.infinity,
+                              height: 120.h,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) =>
+                                  const SizedBox.shrink(),
+                            ),
+                      Positioned(
+                        right: 6,
+                        bottom: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: const Icon(
+                            Icons.zoom_in_rounded,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],

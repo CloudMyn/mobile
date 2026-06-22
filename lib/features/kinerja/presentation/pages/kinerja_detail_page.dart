@@ -30,7 +30,7 @@ class _KinerjaDetailPageState extends State<KinerjaDetailPage> {
   void initState() {
     super.initState();
     _controller = Get.find<KinerjaController>(tag: 'kinerja_list');
-    _controller.loadDetailActivities();
+    _controller.loadDetailActivities(refresh: true);
     _scrollCtrl.addListener(_onScroll);
   }
 
