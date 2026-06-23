@@ -57,16 +57,18 @@ class AppConstants {
   // =========================================================================
 
   /// Website resmi (jika ada).
-  static const String websiteUrl = 'https://barrukab.go.id';
+  static const String websiteUrl = 'https://masseddi.barrukab.go.id/';
 
   /// Kebijakan privasi (jika ada).
-  static const String privacyPolicyUrl = 'https://barrukab.go.id/privacy';
+  static const String privacyPolicyUrl =
+      'https://masseddi.barrukab.go.id/privacy';
 
   /// Syarat & ketentuan (jika ada).
-  static const String termsOfServiceUrl = 'https://barrukab.go.id/terms';
+  static const String termsOfServiceUrl =
+      'https://masseddi.barrukab.go.id/terms';
 
   /// Halaman FAQ aplikasi.
-  static const String faqUrl = 'https://barrukab.go.id/faq';
+  static const String faqUrl = 'https://masseddi.barrukab.go.id/faq';
 
   // =========================================================================
   //  Preferensi Penyimpanan (SharedPreferences keys)
@@ -111,7 +113,7 @@ class AppConstants {
   // =========================================================================
 
   /// Base URL API — sesuaikan dengan environment.
-  static const String apiBaseUrl = 'https://eoff-api.barrukab.go.id';
+  static const String apiBaseUrl = 'https://masseddi-api.barrukab.go.id';
 
   /// Default timeout untuk request HTTP (dalam detik).
   static const int apiTimeoutSeconds = 30;
