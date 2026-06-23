@@ -3,10 +3,18 @@ import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/token_storage.dart';
 import '../models/user_model.dart';
 
+class UpdateInfo {
+  const UpdateInfo({required this.version, required this.url, required this.changelog});
+  final String version;
+  final String url;
+  final String changelog;
+}
+
 class LoginResult {
-  const LoginResult({required this.accessToken, required this.user});
+  const LoginResult({required this.accessToken, required this.user, this.updateInfo});
   final String accessToken;
   final UserModel user;
+  final UpdateInfo? updateInfo;
 }
 
 /// Service autentikasi: login, me, logout.
@@ -44,8 +52,30 @@ class AuthService {
       final data = response.data!;
       final token = data['access_token'] as String;
       final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
-      return LoginResult(accessToken: token, user: user);
+      
+      UpdateInfo? updateInfo;
+      if (data['update_info'] != null) {
+        final info = data['update_info'] as Map<String, dynamic>;
+        updateInfo = UpdateInfo(
+          version: info['version'] as String? ?? '',
+          url: info['url'] as String? ?? '',
+          changelog: info['changelog'] as String? ?? '',
+        );
+      }
+      
+      return LoginResult(accessToken: token, user: user, updateInfo: updateInfo);
     } on DioException catch (e) {
+      if (e.response?.statusCode == 426) {
+        final data = e.response?.data;
+        if (data is Map<String, dynamic> && data['update_info'] != null) {
+           final info = data['update_info'] as Map<String, dynamic>;
+           throw UpdateRequiredException(
+             message: data['message'] ?? 'Versi aplikasi Anda sudah usang. Silakan perbarui.',
+             updateUrl: info['url'] as String? ?? '',
+             changelog: info['changelog'] as String? ?? '',
+           );
+        }
+      }
       throw _mapDioError(e);
     }
   }

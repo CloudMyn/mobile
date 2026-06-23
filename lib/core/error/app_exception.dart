@@ -44,3 +44,14 @@ class ValidationException extends ApiException {
 
   String? fieldError(String field) => errors[field]?.firstOrNull;
 }
+
+class UpdateRequiredException extends ApiException {
+  const UpdateRequiredException({
+    required super.message,
+    required this.updateUrl,
+    required this.changelog,
+  }) : super(statusCode: 426);
+
+  final String updateUrl;
+  final String changelog;
+}
