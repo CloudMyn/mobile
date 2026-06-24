@@ -46,7 +46,7 @@ class AuthController extends GetxController {
         password: passwordController.text.trim(),
         deviceUuid: deviceUuid,
         platform: _detectPlatform(),
-        appVersion: AppConstants.versionName,
+        appVersion: AppConstants.versionWithBuild,
       );
 
       await tokenStorage.saveToken(result.accessToken);

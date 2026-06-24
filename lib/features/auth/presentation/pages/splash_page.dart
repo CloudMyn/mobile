@@ -112,7 +112,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       final authService = Get.find<AuthService>();
       final platform = GetPlatform.isIOS ? 'ios' : 'android';
       final result = await authService.checkVersion(
-        version: AppConstants.versionName,
+        version: AppConstants.versionWithBuild,
         platform: platform,
       );
 

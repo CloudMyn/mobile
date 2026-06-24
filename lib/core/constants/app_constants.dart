@@ -33,6 +33,9 @@ class AppConstants {
   /// Versi lengkap untuk ditampilkan di UI (contoh: "v1.0.0+1").
   static String get fullVersion => 'v$versionName+$buildNumber';
 
+  /// Versi untuk perbandingan di API (contoh: "1.0.0+1").
+  static String get versionWithBuild => '$versionName+$buildNumber';
+
   /// Tahun rilis aplikasi.
   static const String releaseYear = '2026';
 
