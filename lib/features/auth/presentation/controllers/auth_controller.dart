@@ -134,7 +134,6 @@ class AuthController extends GetxController {
         isForced: isForced,
         onContinue: () {
           Get.back(); // Tutup bottom sheet
-          if (onContinue != null) onContinue();
         },
         onUpdate: () async {
           final uri = Uri.parse(url);
@@ -146,7 +145,11 @@ class AuthController extends GetxController {
       isDismissible: !isForced,
       enableDrag: !isForced,
       isScrollControlled: true,
-    );
+    ).whenComplete(() {
+      if (onContinue != null) {
+        onContinue();
+      }
+    });
   }
 }
 

@@ -1,7 +1,7 @@
-/// Typed exception hierarchy untuk semua error dari API dan network.
-///
-/// Controller menangkap [ApiException] dan switch pada [errorCode]
-/// untuk menampilkan pesan yang sesuai ke user.
+// Typed exception hierarchy untuk semua error dari API dan network.
+//
+// Controller menangkap [ApiException] dan switch pada [errorCode]
+// untuk menampilkan pesan yang sesuai ke user.
 
 class ApiException implements Exception {
   const ApiException({
@@ -29,8 +29,8 @@ class NetworkException implements Exception {
 }
 
 class UnauthorizedException extends ApiException {
-  const UnauthorizedException({String message = 'Sesi Anda telah berakhir'})
-      : super(statusCode: 401, message: message);
+  const UnauthorizedException({super.message = 'Sesi Anda telah berakhir'})
+      : super(statusCode: 401);
 }
 
 class ValidationException extends ApiException {

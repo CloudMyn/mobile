@@ -134,7 +134,9 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
             version: version,
             isForced: isForced,
             onContinue: () {
-              completer.complete();
+              if (!completer.isCompleted) {
+                completer.complete();
+              }
             },
           );
           
@@ -170,7 +172,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
         isForced: isForced,
         onContinue: () {
           Get.back(); // Tutup bottom sheet
-          if (onContinue != null) onContinue();
         },
         onUpdate: () async {
           final uri = Uri.parse(url);
@@ -182,7 +183,11 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       isDismissible: !isForced,
       enableDrag: !isForced,
       isScrollControlled: true,
-    );
+    ).whenComplete(() {
+      // Ensure onContinue fires regardless of how the sheet was dismissed
+      // (swipe down, back button, or "Nanti Saja" button)
+      if (onContinue != null) onContinue();
+    });
   }
 
   Future<Widget Function()> _resolveDestination() async {
