@@ -102,6 +102,26 @@ class AuthService {
     }
   }
 
+  /// Cek apakah versi aplikasi yang terpasang memerlukan pembaruan.
+  Future<Map<String, dynamic>?> checkVersion({
+    required String version,
+    required String platform,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/system/mobile-versions/check',
+        queryParameters: {
+          'version': version,
+          'platform': platform,
+        },
+      );
+      return response.data;
+    } on DioException {
+      // Biarkan null agar tidak memblokir user saat offline atau server down.
+      return null;
+    }
+  }
+
   Exception _mapDioError(DioException e) {
     final err = e.error;
     if (err is ApiException) return err;

@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/session_manager.dart';
 import '../../../../core/network/token_storage.dart';
@@ -88,6 +91,12 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   }
 
   Future<void> _checkSession() async {
+    final isUpdateHandled = await _performVersionCheck();
+    if (isUpdateHandled) {
+      // Jika forced update, jangan lanjut ke login/home!
+      return;
+    }
+
     // Tampilkan splash utama minimal 1.8 detik agar animasi terlihat stabil
     final futures = await Future.wait([
       _resolveDestination(),
@@ -95,6 +104,124 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     ]);
     final destination = futures[0] as Widget Function();
     Get.offAll(destination);
+  }
+
+  Future<bool> _performVersionCheck() async {
+    try {
+      final authService = Get.find<AuthService>();
+      final platform = GetPlatform.isIOS ? 'ios' : 'android';
+      final result = await authService.checkVersion(
+        version: AppConstants.versionName,
+        platform: platform,
+      );
+
+      if (result != null && result['update_required'] == true) {
+        final isForced = result['is_forced'] as bool? ?? false;
+        final info = result['update_info'] as Map<String, dynamic>?;
+        if (info != null) {
+          final url = info['url'] as String? ?? '';
+          final changelog = info['changelog'] as String? ?? '';
+          
+          final completer = Completer<void>();
+          
+          _showUpdateBottomSheet(
+            url,
+            changelog,
+            isForced: isForced,
+            onContinue: () {
+              completer.complete();
+            },
+          );
+          
+          if (isForced) {
+            return true; // Stop flow
+          } else {
+            // Wait for user to dismiss optional update before continuing
+            await completer.future;
+            return false;
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore version check error (e.g. offline/timeout) to avoid blocking app entry
+    }
+    return false;
+  }
+
+  void _showUpdateBottomSheet(String url, String changelog, {required bool isForced, VoidCallback? onContinue}) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Get.theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Icon(Icons.system_update, size: 64, color: Colors.blue),
+            const SizedBox(height: 16),
+            Text(
+              'Pembaruan Tersedia',
+              style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isForced
+                  ? 'Versi aplikasi Anda sudah usang dan tidak didukung lagi. Silakan perbarui aplikasi untuk melanjutkan.'
+                  : 'Versi baru aplikasi tersedia. Perbarui sekarang untuk mendapatkan fitur terbaru.',
+              style: Get.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            if (changelog.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Get.theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  changelog,
+                  style: Get.textTheme.bodySmall,
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Get.theme.colorScheme.primary,
+                foregroundColor: Get.theme.colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              onPressed: () async {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+              child: const Text('Update Sekarang', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            if (!isForced) ...[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () {
+                  Get.back(); // Tutup bottom sheet
+                  if (onContinue != null) onContinue();
+                },
+                child: const Text('Nanti Saja'),
+              ),
+            ],
+          ],
+        ),
+      ),
+      isDismissible: !isForced,
+      enableDrag: !isForced,
+    );
   }
 
   Future<Widget Function()> _resolveDestination() async {
