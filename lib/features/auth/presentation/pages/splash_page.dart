@@ -11,6 +11,7 @@ import '../../../../core/network/token_storage.dart';
 import '../../../../design_system/theme/app_theme.dart';
 import '../../data/services/auth_service.dart';
 import '../../../home/presentation/pages/home_page.dart';
+import '../widgets/app_update_sheet.dart';
 import 'login_page.dart';
 
 /// Halaman pertama yang ditampilkan saat app dibuka (Startup Splash Screen).
@@ -150,74 +151,20 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
   void _showUpdateBottomSheet(String url, String changelog, {required bool isForced, VoidCallback? onContinue}) {
     Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Get.theme.scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Icon(Icons.system_update, size: 64, color: Colors.blue),
-            const SizedBox(height: 16),
-            Text(
-              'Pembaruan Tersedia',
-              style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isForced
-                  ? 'Versi aplikasi Anda sudah usang dan tidak didukung lagi. Silakan perbarui aplikasi untuk melanjutkan.'
-                  : 'Versi baru aplikasi tersedia. Perbarui sekarang untuk mendapatkan fitur terbaru.',
-              style: Get.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            if (changelog.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Get.theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  changelog,
-                  style: Get.textTheme.bodySmall,
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-            const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Get.theme.colorScheme.primary,
-                foregroundColor: Get.theme.colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed: () async {
-                final uri = Uri.parse(url);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                }
-              },
-              child: const Text('Update Sekarang', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-            if (!isForced) ...[
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () {
-                  Get.back(); // Tutup bottom sheet
-                  if (onContinue != null) onContinue();
-                },
-                child: const Text('Nanti Saja'),
-              ),
-            ],
-          ],
-        ),
+      AppUpdateSheet(
+        url: url,
+        changelog: changelog,
+        isForced: isForced,
+        onContinue: () {
+          Get.back(); // Tutup bottom sheet
+          if (onContinue != null) onContinue();
+        },
+        onUpdate: () async {
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        },
       ),
       isDismissible: !isForced,
       enableDrag: !isForced,
