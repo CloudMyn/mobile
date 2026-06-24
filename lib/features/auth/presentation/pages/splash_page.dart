@@ -168,6 +168,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       ),
       isDismissible: !isForced,
       enableDrag: !isForced,
+      isScrollControlled: true,
     );
   }
 

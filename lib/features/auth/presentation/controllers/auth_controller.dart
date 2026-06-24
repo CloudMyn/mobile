@@ -128,6 +128,7 @@ class AuthController extends GetxController {
       ),
       isDismissible: !isForced,
       enableDrag: !isForced,
+      isScrollControlled: true,
     );
   }
 }
