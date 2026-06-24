@@ -8,7 +8,7 @@
 PRODUCT_NAME = presensi
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.barru.presensi.presensi
+PRODUCT_BUNDLE_IDENTIFIER = masseddi.barrukab.go.id
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.barru.presensi. All rights reserved.

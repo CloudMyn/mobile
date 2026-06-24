@@ -1,4 +1,4 @@
-package com.barru.presensi.presensi
+package masseddi.barrukab.go.id
 
 import io.flutter.embedding.android.FlutterActivity
 
