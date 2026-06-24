@@ -52,7 +52,7 @@ class AuthController extends GetxController {
       await tokenStorage.saveToken(result.accessToken);
       sessionManager.setUser(result.user);
 
-      if (Get.isRegistered<HomeController>()) {
+      if (Get.isRegistered<HomeController>() && !Get.isPrepared<HomeController>()) {
         Get.find<HomeController>().refreshData();
       }
 
@@ -61,8 +61,10 @@ class AuthController extends GetxController {
       if (result.updateInfo != null) {
         // Optional update
         _showUpdateBottomSheet(
-          result.updateInfo!.url, 
-          result.updateInfo!.changelog, 
+          url: result.updateInfo!.url,
+          changelog: result.updateInfo!.changelog,
+          name: result.updateInfo!.name,
+          version: result.updateInfo!.version,
           isForced: false,
           onContinue: () => Get.offAll(() => const LeaderSplashPage()),
         );
@@ -70,7 +72,13 @@ class AuthController extends GetxController {
         Get.offAll(() => const LeaderSplashPage());
       }
     } on UpdateRequiredException catch (e) {
-      _showUpdateBottomSheet(e.updateUrl, e.changelog, isForced: true);
+      _showUpdateBottomSheet(
+        url: e.updateUrl,
+        changelog: e.changelog,
+        name: e.name,
+        version: '',
+        isForced: true,
+      );
     } on ApiException catch (e) {
       _showError(_mapApiErrorMessage(e));
     } on NetworkException {
@@ -109,11 +117,20 @@ class AuthController extends GetxController {
     );
   }
 
-  void _showUpdateBottomSheet(String url, String changelog, {required bool isForced, VoidCallback? onContinue}) {
+  void _showUpdateBottomSheet({
+    required String url,
+    required String changelog,
+    required String name,
+    required String version,
+    required bool isForced,
+    VoidCallback? onContinue,
+  }) {
     Get.bottomSheet(
       AppUpdateSheet(
         url: url,
         changelog: changelog,
+        name: name,
+        version: version,
         isForced: isForced,
         onContinue: () {
           Get.back(); // Tutup bottom sheet
@@ -132,3 +149,4 @@ class AuthController extends GetxController {
     );
   }
 }
+

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../design_system/components/app_button.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
@@ -8,6 +10,8 @@ import '../../../../design_system/tokens/app_typography.dart';
 class AppUpdateSheet extends StatelessWidget {
   final String url;
   final String changelog;
+  final String name;
+  final String version;
   final bool isForced;
   final VoidCallback? onContinue;
   final VoidCallback onUpdate;
@@ -16,6 +20,8 @@ class AppUpdateSheet extends StatelessWidget {
     super.key,
     required this.url,
     required this.changelog,
+    required this.name,
+    required this.version,
     required this.isForced,
     this.onContinue,
     required this.onUpdate,
@@ -82,6 +88,21 @@ class AppUpdateSheet extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: AppSpacing.s4),
+
+              // Subtitle: name — version
+              if (name.isNotEmpty || version.isNotEmpty)
+                Text(
+                  [
+                    if (name.isNotEmpty) name,
+                    if (version.isNotEmpty) 'v$version',
+                  ].join(' — '),
+                  style: typography.bodyMedium.copyWith(
+                    color: colors.primary.withValues(alpha: 0.85),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               const SizedBox(height: AppSpacing.s8),
               
               // Description
@@ -95,7 +116,7 @@ class AppUpdateSheet extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               
-              // Changelog Box (if not empty)
+              // Changelog Box (if not empty) — rendered as markdown
               if (changelog.trim().isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.s20),
                 Align(
@@ -111,7 +132,6 @@ class AppUpdateSheet extends StatelessWidget {
                 const SizedBox(height: AppSpacing.s8),
                 Container(
                   width: double.infinity,
-                  constraints: const BoxConstraints(maxHeight: 120),
                   padding: const EdgeInsets.all(AppSpacing.s16),
                   decoration: BoxDecoration(
                     color: colors.background,
@@ -121,15 +141,19 @@ class AppUpdateSheet extends StatelessWidget {
                       width: 1,
                     ),
                   ),
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Text(
-                      changelog,
-                      style: typography.bodySmall.copyWith(
-                        color: colors.onSurface.withValues(alpha: 0.8),
-                        height: 1.4,
-                      ),
-                    ),
+                  child: MarkdownBody(
+                    data: changelog,
+                    selectable: true,
+                    shrinkWrap: true,
+                    onTapLink: (text, href, title) {
+                      if (href != null) {
+                        final uri = Uri.tryParse(href);
+                        if (uri != null) {
+                          launchUrl(uri, mode: LaunchMode.externalApplication);
+                        }
+                      }
+                    },
+                    styleSheet: _buildMarkdownStyleSheet(colors, typography),
                   ),
                 ),
               ],
@@ -159,6 +183,110 @@ class AppUpdateSheet extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  /// Build a MarkdownStyleSheet that matches the app's design system.
+  MarkdownStyleSheet _buildMarkdownStyleSheet(AppColors colors, AppTypography typography) {
+    final baseTextColor = colors.onSurface.withValues(alpha: 0.8);
+    final codeBackground = colors.outline.withValues(alpha: 0.08);
+
+    return MarkdownStyleSheet(
+      // Body / paragraph
+      p: typography.bodySmall.copyWith(
+        color: baseTextColor,
+        height: 1.5,
+      ),
+      // Headers
+      h1: typography.titleMedium.copyWith(
+        color: colors.onSurface,
+        fontWeight: FontWeight.bold,
+      ),
+      h2: typography.titleSmall.copyWith(
+        color: colors.onSurface,
+        fontWeight: FontWeight.bold,
+      ),
+      h3: typography.labelLarge.copyWith(
+        color: colors.onSurface,
+        fontWeight: FontWeight.w600,
+      ),
+      h4: typography.labelMedium.copyWith(
+        color: colors.onSurface,
+        fontWeight: FontWeight.w600,
+      ),
+      h5: typography.labelSmall.copyWith(
+        color: colors.onSurface,
+        fontWeight: FontWeight.w600,
+      ),
+      h6: typography.caption.copyWith(
+        color: colors.onSurface,
+        fontWeight: FontWeight.w600,
+      ),
+      // Bold / emphasis
+      strong: typography.bodySmall.copyWith(
+        color: colors.onSurface,
+        fontWeight: FontWeight.bold,
+      ),
+      em: typography.bodySmall.copyWith(
+        color: baseTextColor,
+        fontStyle: FontStyle.italic,
+      ),
+      // Links
+      a: typography.bodySmall.copyWith(
+        color: colors.primary,
+        decoration: TextDecoration.underline,
+        decorationColor: colors.primary.withValues(alpha: 0.4),
+      ),
+      // Inline code
+      code: typography.bodySmall.copyWith(
+        color: colors.primary,
+        backgroundColor: codeBackground,
+        fontFamily: 'monospace',
+        fontSize: 11,
+      ),
+      // Code blocks
+      codeblockDecoration: BoxDecoration(
+        color: codeBackground,
+        borderRadius: BorderRadius.circular(AppRadius.r8),
+        border: Border.all(
+          color: colors.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      codeblockPadding: const EdgeInsets.all(AppSpacing.s12),
+      // Blockquote
+      blockquote: typography.bodySmall.copyWith(
+        color: baseTextColor.withValues(alpha: 0.7),
+        fontStyle: FontStyle.italic,
+      ),
+      blockquoteDecoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(
+            color: colors.primary.withValues(alpha: 0.3),
+            width: 3,
+          ),
+        ),
+      ),
+      blockquotePadding: const EdgeInsets.only(left: AppSpacing.s12),
+      // Lists
+      listBullet: typography.bodySmall.copyWith(
+        color: colors.primary,
+      ),
+      listIndent: 16,
+      // Horizontal rule
+      horizontalRuleDecoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: colors.outline.withValues(alpha: 0.15),
+            width: 1,
+          ),
+        ),
+      ),
+      // Spacing
+      h1Padding: const EdgeInsets.only(top: 8, bottom: 4),
+      h2Padding: const EdgeInsets.only(top: 6, bottom: 4),
+      h3Padding: const EdgeInsets.only(top: 4, bottom: 2),
+      pPadding: const EdgeInsets.only(bottom: 4),
     );
   }
 }

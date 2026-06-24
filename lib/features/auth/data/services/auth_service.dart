@@ -4,7 +4,8 @@ import '../../../../core/network/token_storage.dart';
 import '../models/user_model.dart';
 
 class UpdateInfo {
-  const UpdateInfo({required this.version, required this.url, required this.changelog});
+  const UpdateInfo({required this.name, required this.version, required this.url, required this.changelog});
+  final String name;
   final String version;
   final String url;
   final String changelog;
@@ -57,6 +58,7 @@ class AuthService {
       if (data['update_info'] != null) {
         final info = data['update_info'] as Map<String, dynamic>;
         updateInfo = UpdateInfo(
+          name: info['name'] as String? ?? '',
           version: info['version'] as String? ?? '',
           url: info['url'] as String? ?? '',
           changelog: info['changelog'] as String? ?? '',
@@ -71,6 +73,7 @@ class AuthService {
            final info = data['update_info'] as Map<String, dynamic>;
            throw UpdateRequiredException(
              message: data['message'] ?? 'Versi aplikasi Anda sudah usang. Silakan perbarui.',
+             name: info['name'] as String? ?? '',
              updateUrl: info['url'] as String? ?? '',
              changelog: info['changelog'] as String? ?? '',
            );

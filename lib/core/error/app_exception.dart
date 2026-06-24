@@ -48,10 +48,12 @@ class ValidationException extends ApiException {
 class UpdateRequiredException extends ApiException {
   const UpdateRequiredException({
     required super.message,
+    required this.name,
     required this.updateUrl,
     required this.changelog,
   }) : super(statusCode: 426);
 
+  final String name;
   final String updateUrl;
   final String changelog;
 }

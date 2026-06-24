@@ -119,15 +119,15 @@ class AppBindings extends Bindings {
       permanent: true,
     );
 
-    Get.put<PresensiController>(
-      PresensiController(
+    Get.lazyPut<PresensiController>(
+      () => PresensiController(
         repository: Get.find<PresensiRepository>(),
         faceService: Get.find<FaceService>(),
         locationService: Get.find<LocationService>(),
         tokenStorage: tokenStorage,
         dashboardService: Get.find<DashboardService>(),
       ),
-      permanent: true,
+      fenix: true,
     );
 
     // ── Submission ────────────────────────────────────────────────────────────
@@ -137,26 +137,26 @@ class AppBindings extends Bindings {
       SubmissionLookupService(dio),
       permanent: true,
     );
-    Get.put<SubmissionController>(
-      SubmissionController(service: Get.find<SubmissionService>()),
-      permanent: true,
+    Get.lazyPut<SubmissionController>(
+      () => SubmissionController(service: Get.find<SubmissionService>()),
+      fenix: true,
     );
-    Get.put<SubordinateSubmissionController>(
-      SubordinateSubmissionController(service: Get.find<SubordinateSubmissionService>()),
-      permanent: true,
+    Get.lazyPut<SubordinateSubmissionController>(
+      () => SubordinateSubmissionController(service: Get.find<SubordinateSubmissionService>()),
+      fenix: true,
     );
 
     // ── Kinerja ───────────────────────────────────────────────────────────────
     Get.put<KinerjaService>(ApiKinerjaService(Get.find<Dio>()), permanent: true);
-    Get.put<KinerjaController>(
-      KinerjaController(service: Get.find<KinerjaService>()),
-      permanent: true,
+    Get.lazyPut<KinerjaController>(
+      () => KinerjaController(service: Get.find<KinerjaService>()),
+      fenix: true,
     );
 
     Get.put<KinerjaBawahanService>(ApiKinerjaBawahanService(Get.find<Dio>()), permanent: true);
-    Get.put<KinerjaBawahanController>(
-      KinerjaBawahanController(service: Get.find<KinerjaBawahanService>()),
-      permanent: true,
+    Get.lazyPut<KinerjaBawahanController>(
+      () => KinerjaBawahanController(service: Get.find<KinerjaBawahanService>()),
+      fenix: true,
     );
 
     Get.lazyPut<KinerjaStatistikController>(
@@ -165,9 +165,9 @@ class AppBindings extends Bindings {
     );
 
     // ── Home ──────────────────────────────────────────────────────────────────
-    Get.put<HomeController>(
-      HomeController(dashboardService: Get.find<DashboardService>()),
-      permanent: true,
+    Get.lazyPut<HomeController>(
+      () => HomeController(dashboardService: Get.find<DashboardService>()),
+      fenix: true,
     );
 
     Get.put<WorkCalendarService>(
@@ -175,9 +175,9 @@ class AppBindings extends Bindings {
       permanent: true,
     );
 
-    Get.put<WorkCalendarController>(
-      WorkCalendarController(service: Get.find<WorkCalendarService>()),
-      permanent: true,
+    Get.lazyPut<WorkCalendarController>(
+      () => WorkCalendarController(service: Get.find<WorkCalendarService>()),
+      fenix: true,
     );
 
     // StatistikController — lazy: dibuat saat StatistikPage pertama kali dibuka
@@ -195,7 +195,7 @@ class AppBindings extends Bindings {
 
     // ── Profile ───────────────────────────────────────────────────────────────
     Get.put<ProfileRepository>(ProfileRepositoryImpl(dio), permanent: true);
-    Get.put<ProfileController>(ProfileController(), permanent: true);
+    Get.lazyPut<ProfileController>(() => ProfileController(), fenix: true);
 
     // ── Theme ─────────────────────────────────────────────────────────────────
     Get.put<ThemeController>(ThemeController(), permanent: true);

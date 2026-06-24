@@ -122,12 +122,16 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
         if (info != null) {
           final url = info['url'] as String? ?? '';
           final changelog = info['changelog'] as String? ?? '';
+          final name = info['name'] as String? ?? '';
+          final version = info['version'] as String? ?? '';
           
           final completer = Completer<void>();
           
           _showUpdateBottomSheet(
-            url,
-            changelog,
+            url: url,
+            changelog: changelog,
+            name: name,
+            version: version,
             isForced: isForced,
             onContinue: () {
               completer.complete();
@@ -149,11 +153,20 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     return false;
   }
 
-  void _showUpdateBottomSheet(String url, String changelog, {required bool isForced, VoidCallback? onContinue}) {
+  void _showUpdateBottomSheet({
+    required String url,
+    required String changelog,
+    required String name,
+    required String version,
+    required bool isForced,
+    VoidCallback? onContinue,
+  }) {
     Get.bottomSheet(
       AppUpdateSheet(
         url: url,
         changelog: changelog,
+        name: name,
+        version: version,
         isForced: isForced,
         onContinue: () {
           Get.back(); // Tutup bottom sheet
