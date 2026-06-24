@@ -25,12 +25,8 @@ class LoginPage extends StatelessWidget {
       body: Stack(
         children: [
           // === FULL-SCREEN GRADIENT BACKGROUND ===
-          Positioned(
-            top: 0,
-            left: 0,
-            width: MediaQuery.sizeOf(context).width,
-            height: MediaQuery.sizeOf(context).height,
-            child: const RippleGradientBackground(),
+          const Positioned.fill(
+            child: RippleGradientBackground(),
           ),
 
           // === CONTENT DI ATAS BACKGROUND ===
