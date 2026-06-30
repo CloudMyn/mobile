@@ -33,7 +33,9 @@ import '../../features/presensi/data/services/face_service.dart';
 import '../../features/presensi/data/services/location_service.dart';
 import '../../features/presensi/presentation/controllers/presensi_controller.dart';
 import '../../features/profile/data/repositories/profile_repository.dart';
+import '../../features/profile/data/repositories/supervisor_request_repository.dart';
 import '../../features/profile/presentation/controllers/profile_controller.dart';
+import '../../features/profile/presentation/controllers/supervisor_request_controller.dart';
 import '../../features/profile/presentation/controllers/request_log_controller.dart';
 import '../../features/profile/presentation/controllers/theme_controller.dart';
 import '../../features/submission/data/services/submission_lookup_service.dart';
@@ -195,7 +197,9 @@ class AppBindings extends Bindings {
 
     // ── Profile ───────────────────────────────────────────────────────────────
     Get.put<ProfileRepository>(ProfileRepositoryImpl(dio), permanent: true);
+    Get.put<SupervisorRequestRepository>(SupervisorRequestRepositoryImpl(dio), permanent: true);
     Get.lazyPut<ProfileController>(() => ProfileController(), fenix: true);
+    Get.lazyPut<SupervisorRequestController>(() => SupervisorRequestController(repository: Get.find<SupervisorRequestRepository>()), fenix: true);
 
     // ── Theme ─────────────────────────────────────────────────────────────────
     Get.put<ThemeController>(ThemeController(), permanent: true);
