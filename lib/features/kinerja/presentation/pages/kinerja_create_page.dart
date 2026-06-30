@@ -55,71 +55,6 @@ class KinerjaCreatePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Jenis Kegiatan ─────────────────────────────
-              Obx(() {
-                final isLoading = ctrl.isLoadingTypes.value;
-                final types = ctrl.types;
-                final error = ctrl.errorTypes.value;
-
-                if (!isLoading && types.isEmpty) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Jenis Kegiatan',
-                        style: typography.bodyMedium.copyWith(
-                          color: colors.onSurface,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: AppSpacing.s8.h),
-                      Container(
-                        padding: EdgeInsets.all(AppSpacing.s12.w),
-                        decoration: BoxDecoration(
-                          color: colors.error.withValues(alpha: 0.1),
-                          border: Border.all(color: colors.error.withValues(alpha: 0.5)),
-                          borderRadius: BorderRadius.circular(AppRadius.r8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline_rounded, color: colors.error, size: 20),
-                            SizedBox(width: AppSpacing.s8.w),
-                            Expanded(
-                              child: Text(
-                                error ?? 'Gagal memuat jenis kegiatan atau data kosong.',
-                                style: typography.bodySmall.copyWith(color: colors.error),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => ctrl.loadTypes(),
-                              style: TextButton.styleFrom(
-                                foregroundColor: colors.primary,
-                                textStyle: typography.labelSmall.copyWith(fontWeight: FontWeight.bold),
-                                padding: EdgeInsets.symmetric(horizontal: AppSpacing.s8.w),
-                              ),
-                              child: const Text('Coba Lagi'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                }
-
-                return AppSearchableDropdown<ActivityType>(
-                  label: 'Jenis Kegiatan',
-                  hint: isLoading ? 'Memuat jenis kegiatan...' : 'Pilih jenis kegiatan',
-                  value: ctrl.selectedType.value,
-                  items: isLoading ? [] : types,
-                  itemAsString: (ActivityType type) => type.name,
-                  onChanged: isLoading ? null : (t) {
-                    if (t != null) ctrl.selectType(t);
-                  },
-                  errorText: ctrl.selectedType.value == null ? 'Wajib dipilih' : null,
-                );
-              }),
-              SizedBox(height: AppSpacing.s16.h),
-
               // ── Tanggal Kegiatan ───────────────────────────
               AppTextField(
                 label: 'Tanggal Kegiatan',
@@ -184,6 +119,71 @@ class KinerjaCreatePage extends StatelessWidget {
                   ),
                 ],
               ),
+              SizedBox(height: AppSpacing.s16.h),
+
+              // ── Jenis Kegiatan ─────────────────────────────
+              Obx(() {
+                final isLoading = ctrl.isLoadingTypes.value;
+                final types = ctrl.types;
+                final error = ctrl.errorTypes.value;
+
+                if (!isLoading && types.isEmpty) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Jenis Kegiatan',
+                        style: typography.bodyMedium.copyWith(
+                          color: colors.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: AppSpacing.s8.h),
+                      Container(
+                        padding: EdgeInsets.all(AppSpacing.s12.w),
+                        decoration: BoxDecoration(
+                          color: colors.error.withValues(alpha: 0.1),
+                          border: Border.all(color: colors.error.withValues(alpha: 0.5)),
+                          borderRadius: BorderRadius.circular(AppRadius.r8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline_rounded, color: colors.error, size: 20),
+                            SizedBox(width: AppSpacing.s8.w),
+                            Expanded(
+                              child: Text(
+                                error ?? 'Gagal memuat jenis kegiatan atau data kosong.',
+                                style: typography.bodySmall.copyWith(color: colors.error),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => ctrl.loadTypes(),
+                              style: TextButton.styleFrom(
+                                foregroundColor: colors.primary,
+                                textStyle: typography.labelSmall.copyWith(fontWeight: FontWeight.bold),
+                                padding: EdgeInsets.symmetric(horizontal: AppSpacing.s8.w),
+                              ),
+                              child: const Text('Coba Lagi'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                return AppSearchableDropdown<ActivityType>(
+                  label: 'Jenis Kegiatan',
+                  hint: isLoading ? 'Memuat jenis kegiatan...' : 'Pilih jenis kegiatan',
+                  value: ctrl.selectedType.value,
+                  items: isLoading ? [] : types,
+                  itemAsString: (ActivityType type) => type.name,
+                  onChanged: isLoading ? null : (t) {
+                    if (t != null) ctrl.selectType(t);
+                  },
+                  errorText: ctrl.selectedType.value == null ? 'Wajib dipilih' : null,
+                );
+              }),
               SizedBox(height: AppSpacing.s16.h),
 
               // ── Status Kegiatan ─────────────────────────────

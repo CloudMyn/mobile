@@ -94,6 +94,14 @@ class KinerjaFormController extends GetxController {
         if (match != null) {
           selectedType.value = match;
         }
+      } else if (!isEditMode.value && selectedType.value == null) {
+        // Default to "Lainnya" (case-insensitive match on name containing 'lainnya')
+        final match = types.firstWhereOrNull(
+          (t) => t.name.toLowerCase().contains('lainnya'),
+        );
+        if (match != null) {
+          selectedType.value = match;
+        }
       }
     } catch (e) {
       errorTypes.value = e.toString();

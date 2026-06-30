@@ -50,27 +50,25 @@ class ActivityItem {
       );
 
   factory ActivityItem.fromJson(Map<String, dynamic> json) {
+    String? parseTime(dynamic val) {
+      if (val == null) return null;
+      final str = val.toString();
+      final parsed = DateTime.tryParse(str);
+      if (parsed != null) {
+        return '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
+      }
+      final parts = str.split(':');
+      if (parts.length >= 2) {
+        return '${parts[0].trim().padLeft(2, '0')}:${parts[1].trim().padLeft(2, '0')}';
+      }
+      return str;
+    }
+
     String? startStr;
     String? endStr;
     if (json['time'] != null) {
-      final startAt = json['time']['start_at'];
-      final endAt = json['time']['end_at'];
-      if (startAt != null) {
-        final parsed = DateTime.tryParse(startAt);
-        if (parsed != null) {
-          startStr = '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
-        } else {
-          startStr = startAt.toString();
-        }
-      }
-      if (endAt != null) {
-        final parsed = DateTime.tryParse(endAt);
-        if (parsed != null) {
-          endStr = '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
-        } else {
-          endStr = endAt.toString();
-        }
-      }
+      startStr = parseTime(json['time']['start_at']);
+      endStr = parseTime(json['time']['end_at']);
     }
 
     String? imgUrl;

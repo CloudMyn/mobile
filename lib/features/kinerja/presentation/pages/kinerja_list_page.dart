@@ -471,7 +471,7 @@ class _ActivityCard3Day extends StatelessWidget {
                 ),
                 SizedBox(width: AppSpacing.s4.w),
                 Text(
-                  '${item.startTime} - ${item.endTime}',
+                  '${_format24h(item.startTime)} - ${_format24h(item.endTime)}',
                   style: typography.caption.copyWith(
                     color: colors.onSurface.withValues(alpha: 0.6),
                   ),
@@ -625,6 +625,17 @@ class _ActivityCard3Day extends StatelessWidget {
       'Des',
     ];
     return '${d.day} ${months[d.month - 1]}';
+  }
+
+  String _format24h(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) return '';
+    final parts = timeStr.split(':');
+    if (parts.length >= 2) {
+      final hour = parts[0].trim().padLeft(2, '0');
+      final minute = parts[1].trim().padLeft(2, '0');
+      return '$hour:$minute';
+    }
+    return timeStr;
   }
 
   Widget _buildStatusChip(String status) {
