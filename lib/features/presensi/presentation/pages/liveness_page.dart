@@ -40,6 +40,12 @@ class _LivenessPageState extends State<LivenessPage>
   int _failCount = 0;
   static const int _maxFails = 3;
 
+  // Liveness step tracking states
+  bool _blinkSuccess = false;
+  bool _smileSuccess = false;
+  bool _isStepAnimating = false;
+  bool _isPermissionChecking = false;
+
   // Cooldown agar state tidak berubah terlalu cepat
   DateTime _lastStepChange = DateTime.now();
   static const _stepCooldown = Duration(milliseconds: 1200);
@@ -91,20 +97,37 @@ class _LivenessPageState extends State<LivenessPage>
   }
 
   Future<void> _initAll() async {
+    if (_isPermissionChecking) return;
+    _isPermissionChecking = true;
+
     // Dispose controller lama jika masih ada (misal dari lifecycle inactive)
     await _safeStopImageStream();
     _camCtrl?.dispose();
     _camCtrl = null;
 
-    setState(() {
-      _isInitialized = false;
-      _initError = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isInitialized = false;
+        _initError = null;
+      });
+    }
 
     final granted = await PermissionHelper.requestCamera();
+    _isPermissionChecking = false;
+
     if (!granted) {
       if (mounted) {
-        setState(() => _initError = 'Izin kamera diperlukan. Aktifkan di Pengaturan.');
+        Get.snackbar(
+          'Izin Kamera Diperlukan',
+          'Akses kamera diperlukan untuk verifikasi wajah.',
+          duration: const Duration(seconds: 3),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.redAccent,
+          colorText: Colors.white,
+        );
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) _initAll();
+        });
       }
       return;
     }
@@ -172,9 +195,14 @@ class _LivenessPageState extends State<LivenessPage>
 
     final faces = await _detector!.processImage(inputImage);
     if (faces.isEmpty || !mounted) {
-      // Jika wajah tidak terdeteksi, reset progres kembali ke langkah awal (blink)
-      if (_step != _LivenessStep.blink && _step != _LivenessStep.done) {
-        _advanceTo(_LivenessStep.blink);
+      // Jika wajah tidak terdeteksi dan tidak sedang animasi, reset progres kembali ke langkah awal (blink)
+      if (!_isStepAnimating && _step != _LivenessStep.blink && _step != _LivenessStep.done) {
+        setState(() {
+          _blinkSuccess = false;
+          _smileSuccess = false;
+          _step = _LivenessStep.blink;
+          _lastStepChange = DateTime.now();
+        });
       }
       return;
     }
@@ -183,26 +211,59 @@ class _LivenessPageState extends State<LivenessPage>
 
     final now = DateTime.now();
     if (now.difference(_lastStepChange) < _stepCooldown) return;
+    if (_isStepAnimating) return;
 
     switch (_step) {
       case _LivenessStep.blink:
         final leftEye = face.leftEyeOpenProbability ?? 1.0;
         final rightEye = face.rightEyeOpenProbability ?? 1.0;
         if (leftEye < 0.2 && rightEye < 0.2) {
-          _advanceTo(_LivenessStep.smile);
+          _triggerStepSuccess(_LivenessStep.blink);
         }
+        break;
       case _LivenessStep.smile:
         final smile = face.smilingProbability ?? 0.0;
         if (smile > 0.7) {
-          _advanceTo(_LivenessStep.done);
-          await _onLivenessPassed();
+          _triggerStepSuccess(_LivenessStep.smile);
         }
+        break;
       case _LivenessStep.done:
         break;
     }
   }
 
-
+  void _triggerStepSuccess(_LivenessStep completedStep) async {
+    if (completedStep == _LivenessStep.blink) {
+      setState(() {
+        _blinkSuccess = true;
+        _isStepAnimating = true;
+      });
+      // Tampilkan animasi sukses untuk blink selama 1.5 detik
+      await Future.delayed(const Duration(milliseconds: 1500));
+      if (mounted) {
+        setState(() {
+          _step = _LivenessStep.smile;
+          _isStepAnimating = false;
+          _lastStepChange = DateTime.now();
+        });
+      }
+    } else if (completedStep == _LivenessStep.smile) {
+      setState(() {
+        _smileSuccess = true;
+        _isStepAnimating = true;
+      });
+      // Tampilkan animasi sukses untuk smile selama 1.5 detik
+      await Future.delayed(const Duration(milliseconds: 1500));
+      if (mounted) {
+        setState(() {
+          _step = _LivenessStep.done;
+          _isStepAnimating = false;
+          _lastStepChange = DateTime.now();
+        });
+        await _onLivenessPassed();
+      }
+    }
+  }
 
   InputImage? _toInputImage(CameraImage image) {
     if (_camCtrl == null) return null;
@@ -225,11 +286,6 @@ class _LivenessPageState extends State<LivenessPage>
         bytesPerRow: image.planes.first.bytesPerRow,
       ),
     );
-  }
-
-  void _advanceTo(_LivenessStep next) {
-    _lastStepChange = DateTime.now();
-    if (mounted) setState(() => _step = next);
   }
 
   Uint8List _convertNv21ToJpg(CameraImage image) {
@@ -336,7 +392,12 @@ class _LivenessPageState extends State<LivenessPage>
     if (_failCount >= _maxFails) {
       Get.back(result: null); // Return null instead of false to prevent TypeError
     } else {
-      setState(() => _step = _LivenessStep.blink);
+      setState(() {
+        _step = _LivenessStep.blink;
+        _blinkSuccess = false;
+        _smileSuccess = false;
+        _isStepAnimating = false;
+      });
       _lastStepChange = DateTime.now();
     }
   }
@@ -380,7 +441,15 @@ class _LivenessPageState extends State<LivenessPage>
           ),
         ),
 
-        // Instruksi + progress di bawah
+        // HUD overlay di tengah layar
+        _LivenessHudOverlay(
+          step: _step,
+          blinkSuccess: _blinkSuccess,
+          smileSuccess: _smileSuccess,
+          isStepAnimating: _isStepAnimating,
+        ),
+
+        // Progress dan Stepper di bawah
         Positioned(
           bottom: 0,
           left: 0,
@@ -410,19 +479,15 @@ class _LivenessPageState extends State<LivenessPage>
         mainAxisSize: MainAxisSize.min,
         children: [
           // Step indicators
-          _StepIndicatorRow(currentStep: _step, colors: colors),
+          _StepIndicatorRow(
+            currentStep: _step,
+            blinkSuccess: _blinkSuccess,
+            smileSuccess: _smileSuccess,
+            colors: colors,
+          ),
           SizedBox(height: AppSpacing.s16.h),
 
-          // Instruksi teks
-          Text(
-            _stepInstruction(_step),
-            textAlign: TextAlign.center,
-            style: typography.titleMedium.copyWith(
-              color: Colors.white,
-              shadows: [const Shadow(color: Colors.black54, blurRadius: 8)],
-            ),
-          ),
-          SizedBox(height: AppSpacing.s8.h),
+          // Percobaan info
           Text(
             'Percobaan: ${_failCount + 1} / $_maxFails',
             style: typography.bodySmall.copyWith(color: Colors.white54),
@@ -468,55 +533,296 @@ class _LivenessPageState extends State<LivenessPage>
       ),
     );
   }
-
-  String _stepInstruction(_LivenessStep s) => switch (s) {
-        _LivenessStep.blink => 'Kedipkan kedua mata Anda',
-        _LivenessStep.smile => 'Tersenyum ke kamera',
-        _LivenessStep.done => 'Verifikasi berhasil!',
-      };
 }
 
-
-
 // =============================================================================
-//  Step indicator row (tiga lingkaran kecil)
+//  HUD Style Central Overlay
 // =============================================================================
-class _StepIndicatorRow extends StatelessWidget {
-  final _LivenessStep currentStep;
-  final AppColors colors;
-  const _StepIndicatorRow(
-      {required this.currentStep, required this.colors});
+class _LivenessHudOverlay extends StatefulWidget {
+  final _LivenessStep step;
+  final bool blinkSuccess;
+  final bool smileSuccess;
+  final bool isStepAnimating;
+
+  const _LivenessHudOverlay({
+    required this.step,
+    required this.blinkSuccess,
+    required this.smileSuccess,
+    required this.isStepAnimating,
+  });
+
+  @override
+  State<_LivenessHudOverlay> createState() => _LivenessHudOverlayState();
+}
+
+class _LivenessHudOverlayState extends State<_LivenessHudOverlay>
+    with TickerProviderStateMixin {
+  late AnimationController _pulseCtrl;
+  late AnimationController _successCtrl;
+  late Animation<double> _pulseAnim;
+  late Animation<double> _successScale;
+  late Animation<double> _successRotate;
+  late Animation<double> _successFade;
+
+  @override
+  void initState() {
+    super.initState();
+    // Animasi denyut (pulse) untuk teks instruksi HUD
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    
+    _pulseAnim = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
+    );
+
+    // Animasi checklist sukses (scale, rotate, fade)
+    _successCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _successScale = CurvedAnimation(
+      parent: _successCtrl,
+      curve: Curves.elasticOut,
+    );
+
+    _successRotate = Tween<double>(begin: -0.15, end: 0.0).animate(
+      CurvedAnimation(parent: _successCtrl, curve: Curves.easeOutBack),
+    );
+
+    _successFade = CurvedAnimation(
+      parent: _successCtrl,
+      curve: Curves.easeIn,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _LivenessHudOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final justFinishedBlink = widget.blinkSuccess && !oldWidget.blinkSuccess;
+    final justFinishedSmile = widget.smileSuccess && !oldWidget.smileSuccess;
+    
+    if (justFinishedBlink || justFinishedSmile) {
+      _successCtrl.forward(from: 0.0);
+    } else if (!widget.blinkSuccess && !widget.smileSuccess) {
+      _successCtrl.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    _successCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final steps = [
-      (_LivenessStep.blink, Icons.remove_red_eye_rounded, 'Kedip'),
-      (_LivenessStep.smile, Icons.sentiment_satisfied_rounded, 'Senyum'),
-    ];
+    String text = '';
+    IconData? icon;
+    bool isStepSuccess = false;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      spacing: AppSpacing.s16,
-      children: steps.map((entry) {
-        final (step, icon, label) = entry;
-        final stepIndex = _LivenessStep.values.indexOf(step);
-        final currentIndex = _LivenessStep.values.indexOf(currentStep);
-        final isDone = currentIndex > stepIndex;
-        final isActive = currentIndex == stepIndex;
+    if (widget.blinkSuccess && widget.step == _LivenessStep.blink) {
+      text = 'KEDIP BERHASIL!';
+      icon = Icons.check_circle_rounded;
+      isStepSuccess = true;
+    } else if (widget.smileSuccess && widget.step == _LivenessStep.smile) {
+      text = 'SENYUM BERHASIL!';
+      icon = Icons.check_circle_rounded;
+      isStepSuccess = true;
+    } else {
+      switch (widget.step) {
+        case _LivenessStep.blink:
+          text = 'KEDIPKAN KEDUA MATA';
+          icon = Icons.remove_red_eye_rounded;
+          break;
+        case _LivenessStep.smile:
+          text = 'TERSENYUMLAH';
+          icon = Icons.sentiment_satisfied_rounded;
+          break;
+        case _LivenessStep.done:
+          text = 'SELESAI!';
+          icon = Icons.verified_rounded;
+          isStepSuccess = true;
+          break;
+      }
+    }
 
-        return _StepDot(
-          icon: icon,
-          label: label,
-          isDone: isDone,
-          isActive: isActive,
-          colors: colors,
-        );
-      }).toList(),
+    return Container(
+      alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Graphic HUD Lingkaran Tengah
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Ring HUD Luar
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 150.w,
+                height: 150.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isStepSuccess 
+                      ? Colors.green.withValues(alpha: 0.1) 
+                      : Colors.blue.withValues(alpha: 0.05),
+                  border: Border.all(
+                    color: isStepSuccess ? Colors.greenAccent : Colors.blueAccent.withValues(alpha: 0.6),
+                    width: 3.w,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isStepSuccess 
+                          ? Colors.greenAccent.withValues(alpha: 0.4) 
+                          : Colors.blueAccent.withValues(alpha: 0.2),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Garis denyut aktif (pulsing)
+              if (!isStepSuccess)
+                AnimatedBuilder(
+                  animation: _pulseAnim,
+                  builder: (context, child) {
+                    return Container(
+                      width: 120.w,
+                      height: 120.w,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.blueAccent.withValues(alpha: 0.3 * _pulseAnim.value),
+                          width: 2.w,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+              // Icon Sukses atau Icon Langkah Aktif
+              if (isStepSuccess)
+                FadeTransition(
+                  opacity: _successFade,
+                  child: ScaleTransition(
+                    scale: _successScale,
+                    child: RotationTransition(
+                      turns: _successRotate,
+                      child: Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.greenAccent,
+                        size: 80.w,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Icon(
+                  icon,
+                  color: Colors.white.withValues(alpha: 0.85),
+                  size: 60.w,
+                ),
+            ],
+          ),
+          
+          SizedBox(height: 36.h),
+
+          // Teks HUD Utama yang Berkedip
+          AnimatedBuilder(
+            animation: _pulseAnim,
+            builder: (context, child) {
+              return Opacity(
+                opacity: isStepSuccess ? 1.0 : _pulseAnim.value,
+                child: Transform.scale(
+                  scale: isStepSuccess ? 1.0 : 0.96 + 0.04 * _pulseAnim.value,
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isStepSuccess ? Colors.greenAccent : Colors.white,
+                fontSize: 22.sp,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2,
+                shadows: [
+                  Shadow(
+                    color: isStepSuccess 
+                        ? Colors.greenAccent.withValues(alpha: 0.5) 
+                        : Colors.black54,
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _StepDot extends StatelessWidget {
+// =============================================================================
+//  Step indicator row (dua lingkaran terhubung)
+// =============================================================================
+class _StepIndicatorRow extends StatelessWidget {
+  final _LivenessStep currentStep;
+  final bool blinkSuccess;
+  final bool smileSuccess;
+  final AppColors colors;
+  
+  const _StepIndicatorRow({
+    required this.currentStep,
+    required this.blinkSuccess,
+    required this.smileSuccess,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = [
+      (_LivenessStep.blink, Icons.remove_red_eye_rounded, 'Kedip', blinkSuccess),
+      (_LivenessStep.smile, Icons.sentiment_satisfied_rounded, 'Senyum', smileSuccess),
+    ];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (int i = 0; i < steps.length; i++) ...[
+          if (i > 0)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 50.w,
+              height: 3.h,
+              margin: EdgeInsets.symmetric(horizontal: 8.w),
+              decoration: BoxDecoration(
+                color: currentStep == _LivenessStep.smile || currentStep == _LivenessStep.done
+                    ? colors.success
+                    : Colors.white24,
+                borderRadius: BorderRadius.circular(1.5),
+              ),
+            ),
+          _StepDot(
+            icon: steps[i].$2,
+            label: steps[i].$3,
+            isDone: steps[i].$4,
+            isActive: currentStep == steps[i].$1,
+            colors: colors,
+          ),
+        ]
+      ],
+    );
+  }
+}
+
+class _StepDot extends StatefulWidget {
   final IconData icon;
   final String label;
   final bool isDone;
@@ -532,40 +838,101 @@ class _StepDot extends StatelessWidget {
   });
 
   @override
+  State<_StepDot> createState() => _StepDotState();
+}
+
+class _StepDotState extends State<_StepDot> with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    if (widget.isActive) {
+      _glowController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _StepDot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _glowController.repeat(reverse: true);
+    } else if (!widget.isActive) {
+      _glowController.stop();
+      _glowController.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final color = isDone
-        ? colors.success
-        : isActive
-            ? colors.primary
+    final color = widget.isDone
+        ? widget.colors.success
+        : widget.isActive
+            ? widget.colors.primary
             : Colors.white30;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      spacing: AppSpacing.s4,
       children: [
-        Container(
-          width: 40.w,
-          height: 40.w,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color.withValues(alpha: 0.15),
-            border: Border.all(color: color, width: 2),
-          ),
-          child: Icon(
-            isDone ? Icons.check_rounded : icon,
-            color: color,
-            size: 20.sp,
-          ),
+        AnimatedBuilder(
+          animation: _glowController,
+          builder: (context, child) {
+            final glowValue = widget.isActive ? _glowController.value : 0.0;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: widget.isActive ? 46.w : 40.w,
+              height: widget.isActive ? 46.w : 40.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color.withValues(alpha: widget.isActive ? 0.25 : 0.15),
+                border: Border.all(
+                  color: color, 
+                  width: widget.isActive ? 3 : 2
+                ),
+                boxShadow: widget.isActive 
+                    ? [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.4 * glowValue),
+                          blurRadius: 8 + 4 * glowValue,
+                          spreadRadius: 1 + glowValue,
+                        )
+                      ]
+                    : null,
+              ),
+              child: Center(
+                child: Icon(
+                  widget.isDone ? Icons.check_rounded : widget.icon,
+                  color: color,
+                  size: (widget.isActive ? 22 : 20).sp,
+                ),
+              ),
+            );
+          },
         ),
+        SizedBox(height: AppSpacing.s8.h),
         Text(
-          label,
+          widget.label,
           style: TextStyle(
             color: color,
-            fontSize: 10.sp,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            fontSize: 11.sp,
+            fontWeight: widget.isActive ? FontWeight.bold : widget.normalOrBold(),
           ),
         ),
       ],
     );
   }
+}
+
+extension _FontWeightHelper on _StepDot {
+  FontWeight normalOrBold() => isActive ? FontWeight.bold : FontWeight.normal;
 }

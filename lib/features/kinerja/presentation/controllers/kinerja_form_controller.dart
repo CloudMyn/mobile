@@ -48,7 +48,8 @@ class KinerjaFormController extends GetxController {
       loadFromItem(initialItem!);
     } else {
       isEditMode.value = false;
-      final now = DateTime.now();
+      final witaNow = DateTime.now().toUtc().add(const Duration(hours: 8));
+      final now = DateTime(witaNow.year, witaNow.month, witaNow.day, witaNow.hour, witaNow.minute);
       selectedDate.value = now;
       dateCtrl.text = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
       _fetchAndSetStartTime(now);

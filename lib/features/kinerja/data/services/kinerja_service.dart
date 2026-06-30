@@ -637,7 +637,7 @@ class ApiKinerjaService implements KinerjaService {
           if (record['status'] != 'pending' && record['status'] != 'absent') {
             final attendedAt = record['attended_at'];
             if (attendedAt != null) {
-              final dt = DateTime.parse(attendedAt.toString()).toLocal();
+              final dt = DateTime.parse(attendedAt.toString()).toUtc().add(const Duration(hours: 8));
               return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
             }
           }

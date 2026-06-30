@@ -53,8 +53,9 @@ class ActivityItem {
     String? parseTime(dynamic val) {
       if (val == null) return null;
       final str = val.toString();
-      final parsed = DateTime.tryParse(str);
+      var parsed = DateTime.tryParse(str);
       if (parsed != null) {
+        parsed = parsed.toUtc().add(const Duration(hours: 8));
         return '${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
       }
       final parts = str.split(':');
@@ -94,12 +95,12 @@ class ActivityItem {
       typeName: json['activity_type']?['name']?.toString() ?? '',
       description: json['description'] ?? '',
       date: json['activity_date'] != null
-          ? DateTime.parse(json['activity_date'])
-          : DateTime.now(),
+          ? DateTime.parse(json['activity_date']).toUtc().add(const Duration(hours: 8))
+          : DateTime.now().toUtc().add(const Duration(hours: 8)),
       imageUrl: imgUrl,
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
+          ? DateTime.parse(json['created_at']).toUtc().add(const Duration(hours: 8))
+          : DateTime.now().toUtc().add(const Duration(hours: 8)),
       startTime: startStr,
       endTime: endStr,
       status: mapStatus(json['status']),

@@ -91,7 +91,8 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
               children: [
                 // ── Alert Card Belum Absen Masuk ───────────
                 Obx(() {
-                  final hasClockedIn = _controller.todayClockInTime.value != null;
+                  final hasClockedIn =
+                      _controller.todayClockInTime.value != null;
                   if (hasClockedIn) return const SizedBox.shrink();
 
                   return Padding(
@@ -237,13 +238,16 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
                   Padding(
                     padding: EdgeInsets.only(top: AppSpacing.s32.h),
                     child: Obx(() {
-                      final hasClockedIn = _controller.todayClockInTime.value != null;
+                      final hasClockedIn =
+                          _controller.todayClockInTime.value != null;
                       return AppEmptyState(
                         icon: Icons.assignment_outlined,
                         title: 'Belum ada catatan kinerja',
                         subtitle: 'Belum ada aktivitas dalam 3 hari terakhir',
                         actionLabel: hasClockedIn ? 'Buat Kinerja' : null,
-                        onAction: hasClockedIn ? () => _navigateToCreate(context) : null,
+                        onAction: hasClockedIn
+                            ? () => _navigateToCreate(context)
+                            : null,
                       );
                     }),
                   )
@@ -505,8 +509,8 @@ class _ActivityCard3Day extends StatelessWidget {
                               fit: BoxFit.cover,
                               loadingBuilder: (_, child, progress) =>
                                   progress == null
-                                      ? child
-                                      : const SizedBox.shrink(),
+                                  ? child
+                                  : const SizedBox.shrink(),
                               errorBuilder: (_, _, _) =>
                                   const SizedBox.shrink(),
                             )
