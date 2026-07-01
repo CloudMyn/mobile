@@ -10,6 +10,7 @@ abstract class SupervisorRequestRepository {
   Future<SupervisorRequestModel> approveRequest(int requestId);
   Future<SupervisorRequestModel> rejectRequest({required int requestId, String? reason});
   Future<List<Map<String, dynamic>>> searchUsers(String query);
+  Future<void> deleteRequest(int requestId);
 }
 
 class SupervisorRequestRepositoryImpl implements SupervisorRequestRepository {
@@ -25,6 +26,15 @@ class SupervisorRequestRepositoryImpl implements SupervisorRequestRepository {
       statusCode: e.response?.statusCode ?? 0,
       message: e.message ?? fallbackMessage,
     );
+  }
+
+  @override
+  Future<void> deleteRequest(int requestId) async {
+    try {
+      await _dio.delete('/employee-data/supervisor-requests/$requestId');
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal menghapus pengajuan');
+    }
   }
 
   @override

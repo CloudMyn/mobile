@@ -141,6 +141,24 @@ class SupervisorRequestController extends GetxController {
     }
   }
 
+  Future<bool> deleteRequest(int requestId) async {
+    try {
+      await _repository.deleteRequest(requestId);
+      Get.snackbar('Sukses', 'Pengajuan berhasil dihapus.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white);
+      fetchHistory(refresh: true);
+      return true;
+    } catch (e) {
+      Get.snackbar('Error', e.toString(),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white);
+      return false;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> searchUsers(String query) async {
     if (query.isEmpty) return [];
     try {

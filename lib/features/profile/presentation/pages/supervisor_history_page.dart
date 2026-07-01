@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
+import '../../../../design_system/components/feedback/app_dialog.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 import '../controllers/supervisor_request_controller.dart';
@@ -75,8 +76,21 @@ class _HistoryTabState extends State<_HistoryTab> {
     super.dispose();
   }
 
+  void _confirmDelete(BuildContext context, int requestId) {
+    AppDialog.confirm(
+      title: 'Batalkan Pengajuan',
+      message: 'Apakah Anda yakin ingin membatalkan pengajuan atasan ini?',
+      confirmLabel: 'Ya, Batal',
+      cancelLabel: 'Kembali',
+      isDestructive: true,
+      onConfirm: () => _controller.deleteRequest(requestId),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColors>()!;
+
     return RefreshIndicator(
       onRefresh: () => _controller.fetchHistory(refresh: true),
       child: Obx(() {
@@ -131,6 +145,12 @@ class _HistoryTabState extends State<_HistoryTab> {
                   ],
                 ),
                 isThreeLine: item.reason != null,
+                trailing: item.status == 'pending'
+                    ? IconButton(
+                        icon: Icon(Icons.delete_outline, color: colors.error),
+                        onPressed: () => _confirmDelete(context, item.id),
+                      )
+                    : null,
               ),
             );
           },
