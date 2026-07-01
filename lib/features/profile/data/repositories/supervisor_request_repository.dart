@@ -31,7 +31,7 @@ class SupervisorRequestRepositoryImpl implements SupervisorRequestRepository {
   Future<ApiResponse<List<SupervisorRequestModel>>> getHistory({int page = 1, int perPage = 10}) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/employee-data/supervisor-requests',
+        '/employee-data/supervisor-requests',
         queryParameters: {'page': page, 'per_page': perPage},
       );
 
@@ -48,7 +48,7 @@ class SupervisorRequestRepositoryImpl implements SupervisorRequestRepository {
   Future<ApiResponse<List<SupervisorRequestModel>>> getApprovals({int page = 1, int perPage = 10}) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/employee-data/supervisor-requests/approvals',
+        '/employee-data/supervisor-requests/approvals',
         queryParameters: {'page': page, 'per_page': perPage},
       );
 
@@ -65,7 +65,7 @@ class SupervisorRequestRepositoryImpl implements SupervisorRequestRepository {
   Future<SupervisorRequestModel> submitRequest({required int supervisorId, String? reason}) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/employee-data/supervisor-requests',
+        '/employee-data/supervisor-requests',
         data: {
           'requested_supervisor_id': supervisorId,
           'reason': reason,
@@ -85,7 +85,7 @@ class SupervisorRequestRepositoryImpl implements SupervisorRequestRepository {
   Future<SupervisorRequestModel> approveRequest(int requestId) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/employee-data/supervisor-requests/$requestId/approve',
+        '/employee-data/supervisor-requests/$requestId/approve',
       );
 
       return ApiResponse.fromJson(
@@ -101,7 +101,7 @@ class SupervisorRequestRepositoryImpl implements SupervisorRequestRepository {
   Future<SupervisorRequestModel> rejectRequest({required int requestId, String? reason}) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/employee-data/supervisor-requests/$requestId/reject',
+        '/employee-data/supervisor-requests/$requestId/reject',
         data: {'reason': reason},
       );
 
@@ -118,7 +118,7 @@ class SupervisorRequestRepositoryImpl implements SupervisorRequestRepository {
   Future<List<Map<String, dynamic>>> searchUsers(String query) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/users/reference',
+        '/users/reference',
         queryParameters: {'search': query},
       );
 
