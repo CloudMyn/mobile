@@ -47,7 +47,7 @@ class _RequestSupervisorPageState extends State<RequestSupervisorPage> {
     return Scaffold(
       appBar: AppTopAppBar(
         title: 'Ajukan Atasan Baru',
-        variant: AppTopAppBarVariant.standard,
+        variant: AppTopAppBarVariant.withBack,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
