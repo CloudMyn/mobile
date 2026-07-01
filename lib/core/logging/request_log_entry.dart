@@ -130,6 +130,72 @@ class RequestLogEntry {
     return buffer.toString();
   }
 
+  /// Print log entry ke console/terminal dengan format dan ANSI warna.
+  void printColoredToConsole() {
+    const reset = '\x1B[0m';
+    const bold = '\x1B[1m';
+    const underline = '\x1B[4m';
+    
+    const blue = '\x1B[34m';
+
+    const boldRed = '\x1B[1;31m';
+    const boldGreen = '\x1B[1;32m';
+    const boldYellow = '\x1B[1;33m';
+    const boldBlue = '\x1B[1;34m';
+    const boldMagenta = '\x1B[1;35m';
+    const boldCyan = '\x1B[1;36m';
+
+    String methodColor = boldCyan;
+    switch (method.toUpperCase()) {
+      case 'GET':
+        methodColor = boldGreen;
+        break;
+      case 'POST':
+        methodColor = boldBlue;
+        break;
+      case 'PUT':
+        methodColor = boldYellow;
+        break;
+      case 'DELETE':
+        methodColor = boldRed;
+        break;
+    }
+
+    final statusColor = isError ? boldRed : boldGreen;
+
+    final buffer = StringBuffer();
+    buffer.writeln('$boldCyan═══════════════════════════════════ Request Log ═══════════════════════════════════$reset');
+    buffer.writeln('${bold}Method:$reset $methodColor$method$reset');
+    buffer.writeln('${bold}URL:$reset $underline$blue$url$reset');
+    buffer.writeln('${bold}Status:$reset $statusColor${statusCode ?? "N/A"}$reset');
+    buffer.writeln('${bold}Duration:$reset $boldYellow${durationMs}ms$reset');
+    buffer.writeln('${bold}Time:$reset ${timestamp.toLocal()}');
+    buffer.writeln('${bold}Request Size:$reset ${_formatBytes(requestSize)}');
+    buffer.writeln('${bold}Response Size:$reset ${_formatBytes(responseSize)}');
+    buffer.writeln();
+
+    if (requestHeaders != null && requestHeaders!.isNotEmpty) {
+      buffer.writeln('$boldMagenta── Request Headers ──$reset');
+      buffer.writeln(_prettyJson(requestHeaders!));
+      buffer.writeln();
+    }
+
+    if (requestBody != null && requestBody!.isNotEmpty) {
+      buffer.writeln('$boldYellow── Request Body ──$reset');
+      buffer.writeln(_prettyJson(requestBody!));
+      buffer.writeln();
+    }
+
+    if (responseBody != null && responseBody!.isNotEmpty) {
+      final responseHeaderColor = isError ? boldRed : boldGreen;
+      buffer.writeln('$responseHeaderColor── Response Body ──$reset');
+      buffer.writeln(_prettyJson(responseBody!));
+    }
+    buffer.writeln('$boldCyan══════════════════════════════════════════════════════════════════════════════════════════$reset');
+
+    print(buffer.toString());
+  }
+
   String _prettyJson(String jsonStr) {
     try {
       final decoded = jsonDecode(jsonStr);

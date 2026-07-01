@@ -151,6 +151,7 @@ class RequestLogController extends GetxController {
   /// Copy log entry ke clipboard.
   Future<void> copyLogToClipboard(RequestLogEntry entry) async {
     await Clipboard.setData(ClipboardData(text: entry.toReadableText()));
+    entry.printColoredToConsole();
     AppFeedback.showSnackbar(
       title: 'Disalin',
       message: 'Log berhasil disalin ke clipboard',

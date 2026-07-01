@@ -32,6 +32,7 @@ class _FaceCapturePageState extends State<FaceCapturePage>
   bool _isProcessing = false;
   String? _initError;
   Uint8List? _capturedBytes; // bytes setelah crop + compress
+  bool _isInitializing = false;
 
   @override
   void initState() {
@@ -60,49 +61,60 @@ class _FaceCapturePageState extends State<FaceCapturePage>
   }
 
   Future<void> _initCamera() async {
-    // Dispose controller lama jika masih ada (misal dari lifecycle inactive)
-    _controller?.dispose();
-    _controller = null;
-
-    setState(() {
-      _isInitialized = false;
-      _initError = null;
-    });
-
-    // Cek permission kamera
-    final granted = await PermissionHelper.requestCamera();
-    if (!granted) {
-      if (mounted) {
-        setState(() =>
-            _initError = 'Izin kamera diperlukan. Aktifkan di Pengaturan.');
-      }
-      return;
-    }
+    if (_isInitializing) return;
+    _isInitializing = true;
 
     try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) {
-        if (mounted) setState(() => _initError = 'Kamera tidak tersedia');
+      // Dispose controller lama jika masih ada (misal dari lifecycle inactive)
+      if (_controller != null) {
+        await _controller!.dispose();
+        _controller = null;
+      }
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = false;
+          _initError = null;
+        });
+      }
+
+      // Cek permission kamera
+      final granted = await PermissionHelper.requestCamera();
+      if (!granted) {
+        if (mounted) {
+          setState(() =>
+              _initError = 'Izin kamera diperlukan. Aktifkan di Pengaturan.');
+        }
         return;
       }
 
-      // Utamakan kamera depan
-      final frontCamera = cameras.firstWhereOrNull(
-            (c) => c.lensDirection == CameraLensDirection.front,
-          ) ??
-          cameras.first;
+      try {
+        final cameras = await availableCameras();
+        if (cameras.isEmpty) {
+          if (mounted) setState(() => _initError = 'Kamera tidak tersedia');
+          return;
+        }
 
-      _controller = CameraController(
-        frontCamera,
-        ResolutionPreset.medium,
-        enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
-      );
+        // Utamakan kamera depan
+        final frontCamera = cameras.firstWhereOrNull(
+              (c) => c.lensDirection == CameraLensDirection.front,
+            ) ??
+            cameras.first;
 
-      await _controller!.initialize();
-      if (mounted) setState(() => _isInitialized = true);
-    } catch (e) {
-      if (mounted) setState(() => _initError = 'Gagal membuka kamera: $e');
+        _controller = CameraController(
+          frontCamera,
+          ResolutionPreset.medium,
+          enableAudio: false,
+          imageFormatGroup: ImageFormatGroup.jpeg,
+        );
+
+        await _controller!.initialize();
+        if (mounted) setState(() => _isInitialized = true);
+      } catch (e) {
+        if (mounted) setState(() => _initError = 'Gagal membuka kamera: $e');
+      }
+    } finally {
+      _isInitializing = false;
     }
   }
 
