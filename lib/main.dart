@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/constants/app_constants.dart';
 import 'core/di/app_bindings.dart';
+import 'core/utils/restart_helper.dart';
 import 'design_system/theme/app_theme.dart';
 import 'features/auth/presentation/pages/splash_page.dart';
 
@@ -27,7 +28,11 @@ Future<void> main() async {
     ),
   );
 
-  runApp(MyApp(prefs: prefs, secureStorage: secureStorage));
+  runApp(
+    RestartWidget(
+      child: MyApp(prefs: prefs, secureStorage: secureStorage),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

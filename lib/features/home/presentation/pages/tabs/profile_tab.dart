@@ -23,6 +23,8 @@ import '../../../../profile/presentation/pages/request_log_page.dart';
 import '../../../../../core/network/session_manager.dart';
 import '../../../../auth/presentation/pages/leader_splash_page.dart';
 import '../../../../profile/presentation/pages/supervisor_history_page.dart';
+import '../../../../../design_system/components/app_button.dart';
+import '../../../../../core/utils/restart_helper.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -214,7 +216,14 @@ class ProfileTab extends StatelessWidget {
                   title: 'Leader Splash Page',
                   subtitle: 'Tampilkan Splash Pimpinan Daerah (Tanpa Auto Close)',
                   leading: const Icon(Icons.slideshow_rounded),
+                  showDivider: true,
                   onTap: () => Get.to(() => const LeaderSplashPage(autoClose: false)),
+                ),
+                AppListItem(
+                  title: 'Full Reload Aplikasi',
+                  subtitle: 'Muat ulang aplikasi seperti baru context',
+                  leading: const Icon(Icons.restart_alt_rounded),
+                  onTap: () => _showRestartConfirmation(context),
                 ),
               ],
             ),
@@ -238,6 +247,65 @@ class ProfileTab extends StatelessWidget {
         message: 'Tidak dapat membuka halaman FAQ',
         isError: true,
       );
+    }
+  }
+
+  Future<void> _showRestartConfirmation(BuildContext context) async {
+    final colors = Theme.of(context).extension<AppColors>()!;
+    final textTheme = Theme.of(context).textTheme;
+
+    final confirmed = await Get.dialog<bool>(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.r16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.s24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.restart_alt_rounded, size: 48, color: colors.primary),
+              const SizedBox(height: AppSpacing.s16),
+              Text(
+                'Reload Aplikasi',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.s8),
+              Text(
+                'Apakah Anda yakin ingin memuat ulang aplikasi?\nSemua state/koneksi akan diatur ulang.',
+                style: textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.s24),
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      label: 'Batal',
+                      style: AppButtonStyle.ghost,
+                      onPressed: () => Get.back(result: false),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s12),
+                  Expanded(
+                    child: AppButton(
+                      label: 'Reload',
+                      style: AppButtonStyle.filled,
+                      onPressed: () => Get.back(result: true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      RestartWidget.restartApp(context);
     }
   }
 }

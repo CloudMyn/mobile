@@ -136,14 +136,10 @@ class _CommentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Jika komentar terhapus, tampilkan tile minimalis
-    if (comment.isDeleted) {
-      return _DeletedCommentTile(
-        comment: comment,
-        colors: colors,
-        typography: typography,
-      );
-    }
+    final isDeleted = comment.isDeleted;
+    final displayAuthorName = isDeleted ? 'Anonim' : comment.authorName;
+    final displayInitials = isDeleted ? '?' : comment.initials;
+    final displayContent = isDeleted ? 'Pesan telah dihapus' : comment.content;
 
     final level = (comment.depth - 1).clamp(0, 2);
     final isRoot = comment.depth == 1;
@@ -171,21 +167,23 @@ class _CommentTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: isRoot ? 34.w : 28.w,
-            height: isRoot ? 34.w : 28.w,
-            decoration: BoxDecoration(
-              color: colors.primaryContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                comment.initials,
-                style: TextStyle(
-                  color: colors.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
-                  fontSize: isRoot ? 12.sp : 10.sp,
-                ),
+          GestureDetector(
+            onTap: () => _showUserProfile(context, comment),
+            child: Container(
+              width: isRoot ? 34.w : 28.w,
+              height: isRoot ? 34.w : 28.w,
+              decoration: BoxDecoration(
+                color: colors.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: ClipOval(
+                child: (!isDeleted && comment.avatarUrl != null)
+                    ? Image.network(
+                        comment.avatarUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildInitials(colors, displayInitials, isRoot ? 12.sp : 10.sp),
+                      )
+                    : _buildInitials(colors, displayInitials, isRoot ? 12.sp : 10.sp),
               ),
             ),
           ),
@@ -198,7 +196,7 @@ class _CommentTile extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        comment.authorName,
+                        displayAuthorName,
                         style: typography.bodySmall.copyWith(
                           color: colors.onSurface,
                           fontWeight: FontWeight.bold,
@@ -207,7 +205,7 @@ class _CommentTile extends StatelessWidget {
                     ),
                     SizedBox(width: AppSpacing.s8.w),
                     Text(
-                      comment.timeAgo + (comment.editedAt != null ? ' (Diedit)' : ''),
+                      comment.timeAgo + (!isDeleted && comment.editedAt != null ? ' (Diedit)' : ''),
                       style: typography.caption.copyWith(
                         color: colors.onSurface.withValues(alpha: 0.4),
                         fontSize: 10.sp,
@@ -260,9 +258,12 @@ class _CommentTile extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    comment.content,
+                    displayContent,
                     style: typography.bodySmall.copyWith(
-                      color: colors.onSurface.withValues(alpha: 0.85),
+                      color: isDeleted
+                          ? colors.onSurface.withValues(alpha: 0.5)
+                          : colors.onSurface.withValues(alpha: 0.85),
+                      fontStyle: isDeleted ? FontStyle.italic : null,
                       height: 1.4,
                     ),
                   ),
@@ -272,9 +273,9 @@ class _CommentTile extends StatelessWidget {
                   children: [
                     if (isCommentsEnabled)
                       InkWell(
-                        onTap: () => onReply(
+                        onTap: isDeleted ? null : () => onReply(
                           comment.id,
-                          comment.authorName,
+                          displayAuthorName,
                           comment.depth,
                           comment.parentId,
                         ),
@@ -290,13 +291,17 @@ class _CommentTile extends StatelessWidget {
                               Icon(
                                 Icons.reply_rounded,
                                 size: 13.sp,
-                                color: colors.primary.withValues(alpha: 0.7),
+                                color: isDeleted
+                                    ? colors.onSurface.withValues(alpha: 0.3)
+                                    : colors.primary.withValues(alpha: 0.7),
                               ),
                               SizedBox(width: 4.w),
                               Text(
                                 'Balas',
                                 style: typography.caption.copyWith(
-                                  color: colors.primary.withValues(alpha: 0.7),
+                                  color: isDeleted
+                                      ? colors.onSurface.withValues(alpha: 0.3)
+                                      : colors.primary.withValues(alpha: 0.7),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -304,7 +309,7 @@ class _CommentTile extends StatelessWidget {
                           ),
                         ),
                       ),
-                    if (currentUserId != null && currentUserId == comment.authorId) ...[
+                    if (!isDeleted && currentUserId != null && currentUserId == comment.authorId) ...[
                       if (isCommentsEnabled) SizedBox(width: AppSpacing.s12.w),
                       InkWell(
                         onTap: () => _showEditDialog(context, Get.find<InformasiController>()),
@@ -476,53 +481,170 @@ class _CommentTile extends StatelessWidget {
       },
     );
   }
-}
 
-/// Tile minimalis untuk komentar yang sudah dihapus (tombstone).
-/// Hanya menampilkan satu baris teks "[Komentar ini telah dihapus]"
-/// dengan indentasi sesuai depth — sub-komentar tetap tampil normal.
-class _DeletedCommentTile extends StatelessWidget {
-  const _DeletedCommentTile({
-    required this.comment,
-    required this.colors,
-    required this.typography,
-  });
+  void _showUserProfile(BuildContext context, CommentItem comment) {
+    if (comment.isDeleted) return; // Jangan tampilkan profil untuk komentar yang dihapus
+    
+    final colors = Theme.of(context).extension<AppColors>()!;
+    final typography = Theme.of(context).extension<AppTypography>()!;
 
-  final CommentItem comment;
-  final AppColors colors;
-  final AppTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    final level = (comment.depth - 1).clamp(0, 2);
-    final calculatedIndent = level * 36.w;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: calculatedIndent,
-        bottom: AppSpacing.s12.h,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.remove_circle_outline_rounded,
-            size: 16.sp,
-            color: colors.onSurface.withValues(alpha: 0.3),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.s16.w,
+            AppSpacing.s24.h,
+            AppSpacing.s16.w,
+            AppSpacing.s32.h,
           ),
-          SizedBox(width: AppSpacing.s8.w),
-          Text(
-            '[Komentar ini telah dihapus]',
-            style: typography.bodySmall.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.35),
-              fontStyle: FontStyle.italic,
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.r24),
             ),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48.w,
+                height: 4.h,
+                margin: EdgeInsets.only(bottom: AppSpacing.s24.h),
+                decoration: BoxDecoration(
+                  color: colors.outline.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(AppRadius.r2),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  if (comment.avatarUrl != null) {
+                    _showFullScreenImage(context, comment.avatarUrl!);
+                  }
+                },
+                child: Container(
+                  width: 100.w,
+                  height: 100.w,
+                  decoration: BoxDecoration(
+                    color: colors.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: ClipOval(
+                    child: comment.avatarUrl != null
+                        ? Image.network(
+                            comment.avatarUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _buildInitials(colors, comment.initials, 32.sp),
+                          )
+                        : _buildInitials(colors, comment.initials, 32.sp),
+                  ),
+                ),
+              ),
+              SizedBox(height: AppSpacing.s16.h),
+              Text(
+                comment.authorName,
+                style: typography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              if (comment.nip != null && comment.nip!.isNotEmpty) ...[
+                SizedBox(height: 4.h),
+                Text(
+                  'NIP. ${comment.nip}',
+                  style: typography.bodyMedium.copyWith(color: colors.onSurface.withValues(alpha: 0.6)),
+                ),
+              ],
+              SizedBox(height: AppSpacing.s24.h),
+              _buildInfoRow(Icons.business_rounded, 'Instansi', comment.instansi ?? '-', colors, typography),
+              SizedBox(height: AppSpacing.s12.h),
+              _buildInfoRow(Icons.work_outline_rounded, 'Jabatan', comment.jabatan ?? '-', colors, typography),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInitials(AppColors colors, String initials, double fontSize) {
+    return Center(
+      child: Text(
+        initials,
+        style: TextStyle(
+          color: colors.onPrimaryContainer,
+          fontWeight: FontWeight.bold,
+          fontSize: fontSize,
+        ),
       ),
     );
   }
+
+  Widget _buildInfoRow(IconData icon, String label, String value, AppColors colors, AppTypography typography) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20.sp, color: colors.primary),
+        SizedBox(width: AppSpacing.s12.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: typography.caption.copyWith(color: colors.onSurface.withValues(alpha: 0.5)),
+              ),
+              SizedBox(height: 2.h),
+              Text(
+                value,
+                style: typography.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: InteractiveViewer(
+                  panEnabled: true,
+                  boundaryMargin: const EdgeInsets.all(20),
+                  minScale: 0.5,
+                  maxScale: 4,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16.h,
+                right: 16.w,
+                child: IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 32),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
+
+
 
 class _CommentSkeleton extends StatelessWidget {
   const _CommentSkeleton();

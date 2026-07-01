@@ -85,16 +85,25 @@ class _InformasiPageState extends State<InformasiPage> {
             if (_ctrl.isLoading.value) {
               return const Center(child: CircularProgressIndicator());
             }
-            return AppEmptyState(
-              icon: Icons.newspaper_rounded,
-              title: 'Tidak ada informasi',
-              subtitle:
-                  _ctrl.errorMessage.value ??
-                  'Coba ubah filter atau periksa kembali nanti.',
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: AppEmptyState(
+                    icon: Icons.newspaper_rounded,
+                    title: 'Tidak ada informasi',
+                    subtitle:
+                        _ctrl.errorMessage.value ??
+                        'Coba ubah filter atau periksa kembali nanti.',
+                  ),
+                ),
+              ],
             );
           }
 
           return CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               if (pinned.isNotEmpty)
                 SliverToBoxAdapter(
@@ -207,7 +216,14 @@ class _InformasiPageState extends State<InformasiPage> {
                     ),
                   )
                 else
-                  const SliverToBoxAdapter(child: SizedBox.shrink())
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: AppEmptyState(
+                      icon: Icons.newspaper_rounded,
+                      title: 'Belum ada informasi',
+                      subtitle: 'Informasi lainnya akan tampil di sini.',
+                    ),
+                  )
               else
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(

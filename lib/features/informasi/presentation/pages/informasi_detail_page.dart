@@ -86,9 +86,17 @@ class _InformasiDetailPageState extends State<InformasiDetailPage> {
 
       return Scaffold(
         backgroundColor: colors.background,
-        body: CustomScrollView(
-          controller: _scrollCtrl,
-          slivers: [
+        body: RefreshIndicator(
+          onRefresh: () async {
+            await Future.wait([
+              _ctrl.loadDetail(widget.item.slug, widget.item.id),
+              _ctrl.loadComments(widget.item.slug, widget.item.id),
+            ]);
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            controller: _scrollCtrl,
+            slivers: [
             SliverAppBar(
               expandedHeight: 260.h,
               pinned: true,
@@ -331,6 +339,7 @@ class _InformasiDetailPageState extends State<InformasiDetailPage> {
               ),
             ),
           ],
+        ),
         ),
         floatingActionButton: article.isCommentsEnabled
             ? FloatingActionButton.extended(

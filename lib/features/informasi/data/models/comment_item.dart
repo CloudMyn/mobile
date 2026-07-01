@@ -2,6 +2,10 @@ class CommentItem {
   final String id;
   final String authorId;
   final String authorName;
+  final String? avatarUrl;
+  final String? nip;
+  final String? instansi;
+  final String? jabatan;
   final String content;
   final String? parentId;
   final DateTime createdAt;
@@ -14,6 +18,10 @@ class CommentItem {
     required this.id,
     required this.authorId,
     required this.authorName,
+    this.avatarUrl,
+    this.nip,
+    this.instansi,
+    this.jabatan,
     required this.content,
     this.parentId,
     required this.createdAt,
@@ -30,6 +38,10 @@ class CommentItem {
       id: '${json['id']}',
       authorId: '${author?['id'] ?? ''}',
       authorName: author?['name']?.toString() ?? 'User',
+      avatarUrl: author?['avatar_url']?.toString(),
+      nip: author?['nip']?.toString(),
+      instansi: author?['instansi']?.toString(),
+      jabatan: author?['jabatan']?.toString(),
       content: json['content']?.toString() ?? '',
       parentId: json['parent_id']?.toString(),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
@@ -53,6 +65,10 @@ class CommentItem {
       id: id,
       authorId: authorId,
       authorName: authorName,
+      avatarUrl: avatarUrl,
+      nip: nip,
+      instansi: instansi,
+      jabatan: jabatan,
       content: content ?? this.content,
       parentId: parentId,
       createdAt: createdAt,
