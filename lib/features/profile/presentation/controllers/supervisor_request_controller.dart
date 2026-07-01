@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../design_system/components/app_feedback.dart';
 import '../../data/models/supervisor_request_model.dart';
 import '../../data/repositories/supervisor_request_repository.dart';
 
@@ -49,10 +49,11 @@ class SupervisorRequestController extends GetxController {
         _historyPage++;
       }
     } catch (e) {
-      Get.snackbar('Error', e.toString(),
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: e.toString(),
+        type: FeedbackType.error,
+      );
     } finally {
       isLoadingHistory.value = false;
     }
@@ -79,10 +80,11 @@ class SupervisorRequestController extends GetxController {
         _approvalsPage++;
       }
     } catch (e) {
-      Get.snackbar('Error', e.toString(),
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: e.toString(),
+        type: FeedbackType.error,
+      );
     } finally {
       isLoadingApprovals.value = false;
     }
@@ -92,17 +94,19 @@ class SupervisorRequestController extends GetxController {
     isSubmitting.value = true;
     try {
       await _repository.submitRequest(supervisorId: supervisorId, reason: reason);
-      Get.snackbar('Sukses', 'Pengajuan atasan berhasil dikirim.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white);
+      AppFeedback.showSnackbar(
+        title: 'Sukses',
+        message: 'Pengajuan atasan berhasil dikirim.',
+        type: FeedbackType.success,
+      );
       fetchHistory(refresh: true);
       return true;
     } catch (e) {
-      Get.snackbar('Error', e.toString(),
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: e.toString(),
+        type: FeedbackType.error,
+      );
       return false;
     } finally {
       isSubmitting.value = false;
@@ -112,49 +116,55 @@ class SupervisorRequestController extends GetxController {
   Future<void> approveRequest(int requestId) async {
     try {
       await _repository.approveRequest(requestId);
-      Get.snackbar('Sukses', 'Pengajuan disetujui.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white);
+      AppFeedback.showSnackbar(
+        title: 'Sukses',
+        message: 'Pengajuan disetujui.',
+        type: FeedbackType.success,
+      );
       fetchApprovals(refresh: true);
     } catch (e) {
-      Get.snackbar('Error', e.toString(),
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: e.toString(),
+        type: FeedbackType.error,
+      );
     }
   }
 
   Future<void> rejectRequest(int requestId, String? reason) async {
     try {
       await _repository.rejectRequest(requestId: requestId, reason: reason);
-      Get.snackbar('Sukses', 'Pengajuan ditolak.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white);
+      AppFeedback.showSnackbar(
+        title: 'Sukses',
+        message: 'Pengajuan ditolak.',
+        type: FeedbackType.success,
+      );
       fetchApprovals(refresh: true);
     } catch (e) {
-      Get.snackbar('Error', e.toString(),
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: e.toString(),
+        type: FeedbackType.error,
+      );
     }
   }
 
   Future<bool> deleteRequest(int requestId) async {
     try {
       await _repository.deleteRequest(requestId);
-      Get.snackbar('Sukses', 'Pengajuan berhasil dihapus.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white);
+      AppFeedback.showSnackbar(
+        title: 'Sukses',
+        message: 'Pengajuan berhasil dihapus.',
+        type: FeedbackType.success,
+      );
       fetchHistory(refresh: true);
       return true;
     } catch (e) {
-      Get.snackbar('Error', e.toString(),
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: e.toString(),
+        type: FeedbackType.error,
+      );
       return false;
     }
   }

@@ -28,7 +28,7 @@ class AppConstants {
   static const String versionName = '1.1.1';
 
   /// Build number — dibaca dari pubspec.yaml (angka setelah '+').
-  static const int buildNumber = 1;
+  static const int buildNumber = 2;
 
   /// Versi lengkap untuk ditampilkan di UI (contoh: "v1.0.0+1").
   static String get fullVersion => 'v$versionName+$buildNumber';

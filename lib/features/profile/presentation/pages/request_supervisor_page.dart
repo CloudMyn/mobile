@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../design_system/components/app_feedback.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../controllers/supervisor_request_controller.dart';
@@ -25,8 +26,11 @@ class _RequestSupervisorPageState extends State<RequestSupervisorPage> {
 
   Future<void> _submit() async {
     if (_selectedSupervisor == null) {
-      Get.snackbar('Perhatian', 'Silakan pilih atasan terlebih dahulu',
-          backgroundColor: Colors.orange, colorText: Colors.white);
+      AppFeedback.showSnackbar(
+        title: 'Perhatian',
+        message: 'Silakan pilih atasan terlebih dahulu',
+        type: FeedbackType.warning,
+      );
       return;
     }
 
