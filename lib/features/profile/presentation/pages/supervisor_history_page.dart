@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/components/feedback/app_dialog.dart';
 import '../../../../design_system/tokens/app_colors.dart';
-import '../../../../design_system/tokens/app_typography.dart';
 import '../controllers/supervisor_request_controller.dart';
 import 'supervisor_approvals_tab.dart';
 import 'request_supervisor_page.dart';
