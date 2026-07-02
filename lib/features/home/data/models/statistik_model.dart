@@ -67,6 +67,7 @@ class StatistikTpp {
     required this.deductionAmount,
     required this.disciplineScore,
     required this.activityScore,
+    required this.dailyRecords,
   });
 
   final int id;
@@ -76,6 +77,7 @@ class StatistikTpp {
   final int deductionAmount;
   final double disciplineScore; // 0.0–1.0
   final double activityScore;   // 0.0–1.0
+  final List<StatistikTppDailyRecord> dailyRecords;
 
   factory StatistikTpp.fromJson(Map<String, dynamic> json) {
     return StatistikTpp(
@@ -89,6 +91,50 @@ class StatistikTpp {
       disciplineScore:
           ((json['discipline_score'] as num?)?.toDouble() ?? 0) / 100,
       activityScore: ((json['activity_score'] as num?)?.toDouble() ?? 0) / 100,
+      dailyRecords: (json['daily_records'] as List<dynamic>? ?? [])
+          .map((e) =>
+              StatistikTppDailyRecord.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+class StatistikTppDailyRecord {
+  const StatistikTppDailyRecord({
+    required this.id,
+    required this.recordDate,
+    required this.isWorkday,
+    required this.attendanceStatus,
+    required this.totalLateMinutes,
+    required this.totalEarlyLeaveMinutes,
+    required this.disciplineDeductionPct,
+    required this.hasApprovedActivity,
+    required this.activityDeductionPct,
+  });
+
+  final int id;
+  final String recordDate;
+  final bool isWorkday;
+  final String? attendanceStatus;
+  final int totalLateMinutes;
+  final int totalEarlyLeaveMinutes;
+  final double disciplineDeductionPct;
+  final bool hasApprovedActivity;
+  final double activityDeductionPct;
+
+  factory StatistikTppDailyRecord.fromJson(Map<String, dynamic> json) {
+    return StatistikTppDailyRecord(
+      id: json['id'] as int? ?? 0,
+      recordDate: json['record_date'] as String? ?? '',
+      isWorkday: json['is_workday'] as bool? ?? true,
+      attendanceStatus: json['attendance_status'] as String?,
+      totalLateMinutes: json['total_late_minutes'] as int? ?? 0,
+      totalEarlyLeaveMinutes: json['total_early_leave_minutes'] as int? ?? 0,
+      disciplineDeductionPct: (json['discipline_deduction_pct'] as num?)?.toDouble() ?? 0.0,
+      hasApprovedActivity: json['has_approved_activity'] as bool? ?? false,
+      activityDeductionPct: (json['activity_deduction_pct'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

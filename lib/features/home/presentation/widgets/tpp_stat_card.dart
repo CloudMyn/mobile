@@ -6,8 +6,8 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
-import '../../data/models/statistik_model.dart';
 import '../controllers/statistik_controller.dart';
+import '../pages/tpp_daily_detail_screen.dart';
 
 class TppStatCard extends StatelessWidget {
   const TppStatCard({super.key});
@@ -186,6 +186,29 @@ class TppStatCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            
+            SizedBox(height: AppSpacing.s16.h),
+            
+            // ── Tombol Detail Harian ───────────────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Get.to(() => TppDailyDetailScreen(tpp: tpp));
+                },
+                icon: Icon(Icons.calendar_month_rounded, size: 20.w),
+                label: const Text('Detail Potongan Harian'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colors.primary,
+                  side: BorderSide(color: colors.primary.withValues(alpha: 0.5)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.r8),
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s12.h),
+                  textStyle: typography.labelLarge.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
           ],
         ),

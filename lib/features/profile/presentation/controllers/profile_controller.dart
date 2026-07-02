@@ -695,7 +695,7 @@ class ProfileController extends GetxController {
 
   String get initials {
     final name = employee.value?.name ?? '';
-    final parts = name.trim().split(' ');
+    final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }

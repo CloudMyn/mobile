@@ -80,7 +80,7 @@ class CommentItem {
   }
 
   String get initials {
-    final parts = authorName.trim().split(' ');
+    final parts = authorName.trim().split(RegExp(r'\s+'));
     if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     if (parts.isNotEmpty && parts[0].isNotEmpty) return parts[0][0].toUpperCase();
     return '?';

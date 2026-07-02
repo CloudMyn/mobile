@@ -131,7 +131,7 @@ class SubordinateSubmissionItem {
     final subordinateName = userJson?['name'] as String? ?? '-';
     String avatar = 'UK'; // Unknown
     if (subordinateName.isNotEmpty && subordinateName != '-') {
-      final parts = subordinateName.split(' ');
+      final parts = subordinateName.trim().split(RegExp(r'\s+'));
       if (parts.length > 1) {
         avatar = '${parts[0][0]}${parts[1][0]}'.toUpperCase();
       } else {
