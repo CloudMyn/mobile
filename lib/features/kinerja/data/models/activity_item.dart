@@ -35,19 +35,18 @@ class ActivityItem {
     String? startTime,
     String? endTime,
     String? status,
-  }) =>
-      ActivityItem(
-        id: id,
-        typeId: typeId ?? this.typeId,
-        typeName: typeName ?? this.typeName,
-        description: description ?? this.description,
-        date: date ?? this.date,
-        imageUrl: imageUrl ?? this.imageUrl,
-        createdAt: createdAt,
-        startTime: startTime ?? this.startTime,
-        endTime: endTime ?? this.endTime,
-        status: status ?? this.status,
-      );
+  }) => ActivityItem(
+    id: id,
+    typeId: typeId ?? this.typeId,
+    typeName: typeName ?? this.typeName,
+    description: description ?? this.description,
+    date: date ?? this.date,
+    imageUrl: imageUrl ?? this.imageUrl,
+    createdAt: createdAt,
+    startTime: startTime ?? this.startTime,
+    endTime: endTime ?? this.endTime,
+    status: status ?? this.status,
+  );
 
   factory ActivityItem.fromJson(Map<String, dynamic> json) {
     String? parseTime(dynamic val) {
@@ -73,7 +72,8 @@ class ActivityItem {
     }
 
     String? imgUrl;
-    if (json['attachments'] != null && (json['attachments'] as List).isNotEmpty) {
+    if (json['attachments'] != null &&
+        (json['attachments'] as List).isNotEmpty) {
       imgUrl = json['attachments'][0]['url'];
     }
 
@@ -95,11 +95,15 @@ class ActivityItem {
       typeName: json['activity_type']?['name']?.toString() ?? '',
       description: json['description'] ?? '',
       date: json['activity_date'] != null
-          ? DateTime.parse(json['activity_date']).toUtc().add(const Duration(hours: 8))
+          ? DateTime.parse(
+              json['activity_date'],
+            ).toUtc().add(const Duration(hours: 8))
           : DateTime.now().toUtc().add(const Duration(hours: 8)),
       imageUrl: imgUrl,
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at']).toUtc().add(const Duration(hours: 8))
+          ? DateTime.parse(
+              json['created_at'],
+            ).toUtc().add(const Duration(hours: 8))
           : DateTime.now().toUtc().add(const Duration(hours: 8)),
       startTime: startStr,
       endTime: endStr,

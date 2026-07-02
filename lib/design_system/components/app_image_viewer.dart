@@ -232,16 +232,21 @@ class _ImageErrorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.broken_image_outlined, color: Colors.white38, size: 60),
-        SizedBox(height: 12),
-        Text(
-          'Gambar tidak dapat dimuat',
-          style: TextStyle(color: Colors.white54, fontSize: 13),
+    return const Center(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.broken_image_outlined, color: Colors.white38, size: 60),
+            SizedBox(height: 12),
+            Text(
+              'Gambar tidak dapat dimuat',
+              style: TextStyle(color: Colors.white54, fontSize: 13),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

@@ -89,6 +89,8 @@ class AttendanceConfig {
       }
     }
 
+    final hasNoRequiredLocation = record.requiredLocation == null && record.eventGeofence == null;
+
     return AttendanceConfig.fromRecord(
       record,
       resolvedLocations,
@@ -96,6 +98,10 @@ class AttendanceConfig {
       storedFaceData: dashboard.user.faceData,
       locationEventName: event?.name,
       geofenceMode: mode,
+    ).copyWith(
+      requiredLocation: hasNoRequiredLocation ? false : null,
+      geofenceEnabled: hasNoRequiredLocation ? false : null,
+      faceRecognition: dashboard.user.isBypassFermuk ? false : null,
     );
   }
 

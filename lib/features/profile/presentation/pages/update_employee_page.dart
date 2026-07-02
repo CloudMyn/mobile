@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import '../../../../core/network/session_manager.dart';
 import '../../../../design_system/components/app_button.dart';
 import '../../../../design_system/components/app_card.dart';
 import '../../../../design_system/components/app_text_field.dart';
@@ -9,6 +10,7 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 import '../../data/models/employee_enums.dart';
+import '../../data/models/reference_model.dart';
 import '../controllers/profile_controller.dart';
 
 class UpdateEmployeePage extends StatelessWidget {
@@ -80,8 +82,6 @@ class _PersonalTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final emp = ctrl.employee.value;
     final nipCtrl = TextEditingController(text: emp?.nip ?? '');
-    final jabatanCtrl = TextEditingController(text: emp?.position ?? '');
-    final unitCtrl = TextEditingController(text: emp?.unit ?? '');
     final isLocked = !ctrl.canEditHistoricalData;
 
     return SingleChildScrollView(
@@ -107,6 +107,39 @@ class _PersonalTab extends StatelessWidget {
             tint: isLocked ? colors.warning : colors.primary,
           ),
           SizedBox(height: AppSpacing.s16.h),
+          Obx(() {
+            final userSession = Get.find<SessionManager>().currentUser.value;
+            final hasJobTitle = userSession?.jobTitle != null || ctrl.selectedJobTitle.value != null;
+            final hasInstitution = userSession?.institution != null || userSession?.department != null || ctrl.selectedInstitution.value != null;
+            final hasMaritalStatus = ctrl.maritalStatus.value != null;
+            final hasReligion = ctrl.religion.value != null;
+            final hasGender = ctrl.gender.value != null;
+            final hasBirthDate = ctrl.birthDate.value != null;
+
+            final missingFields = <String>[];
+            if (!hasJobTitle) missingFields.add('Jabatan');
+            if (!hasInstitution) missingFields.add('Unit Kerja');
+            if (!hasMaritalStatus) missingFields.add('Status Perkawinan');
+            if (!hasReligion) missingFields.add('Agama');
+            if (!hasGender) missingFields.add('Jenis Kelamin');
+            if (!hasBirthDate) missingFields.add('Tanggal Lahir');
+
+            if (missingFields.isEmpty) return const SizedBox.shrink();
+
+            return Column(
+              children: [
+                _StatusCard(
+                  colors: colors,
+                  typography: typography,
+                  icon: Icons.warning_amber_rounded,
+                  title: 'Data Belum Lengkap',
+                  message: 'Harap lengkapi kolom berikut: ${missingFields.join(', ')}.',
+                  tint: colors.error,
+                ),
+                SizedBox(height: AppSpacing.s16.h),
+              ],
+            );
+          }),
           AppCard(
             outlined: true,
             child: Form(
@@ -197,48 +230,89 @@ class _PersonalTab extends StatelessWidget {
                     ],
                   ),
                   SizedBox(height: AppSpacing.s16.h),
-                  _buildDropdown<Gender>(
+                  Obx(() => _buildDropdown<Gender>(
                     label: 'Jenis Kelamin',
                     value: ctrl.gender.value,
                     items: Gender.values.map((e) => DropdownMenuItem(value: e, child: Text(e.label))).toList(),
                     onChanged: (v) => ctrl.gender.value = v,
                     colors: colors,
                     typography: typography,
-                  ),
+                  )),
                   SizedBox(height: AppSpacing.s16.h),
-                  _buildDropdown<Religion>(
+                  Obx(() => _buildDropdown<Religion>(
                     label: 'Agama',
                     value: ctrl.religion.value,
                     items: Religion.values.map((e) => DropdownMenuItem(value: e, child: Text(e.label))).toList(),
                     onChanged: (v) => ctrl.religion.value = v,
                     colors: colors,
                     typography: typography,
-                  ),
+                  )),
                   SizedBox(height: AppSpacing.s16.h),
-                  _buildDropdown<MaritalStatus>(
+                  Obx(() => _buildDropdown<MaritalStatus>(
                     label: 'Status Perkawinan',
                     value: ctrl.maritalStatus.value,
                     items: MaritalStatus.values.map((e) => DropdownMenuItem(value: e, child: Text(e.label))).toList(),
                     onChanged: (v) => ctrl.maritalStatus.value = v,
                     colors: colors,
                     typography: typography,
-                  ),
+                  )),
                   SizedBox(height: AppSpacing.s16.h),
-                  AppTextField(
-                    label: 'Jabatan',
-                    hint: 'Jabatan pegawai',
-                    controller: jabatanCtrl,
-                    readOnly: true,
-                    prefixIcon: const Icon(Icons.work_outline_rounded),
-                  ),
+                  Obx(() {
+                    final userSession = Get.find<SessionManager>().currentUser.value;
+                    final hasJobTitle = userSession?.jobTitle != null;
+
+                    if (hasJobTitle) {
+                      return AppTextField(
+                        label: 'Jabatan',
+                        hint: 'Jabatan pegawai',
+                        controller: TextEditingController(text: userSession?.jobTitle?.name ?? ''),
+                        readOnly: true,
+                        prefixIcon: const Icon(Icons.work_outline_rounded),
+                      );
+                    } else {
+                      return _buildDropdown<ReferenceItem>(
+                        label: 'Jabatan',
+                        value: ctrl.selectedJobTitle.value,
+                        items: ctrl.jobTitles.map((e) => DropdownMenuItem(value: e, child: Text(e.name))).toList(),
+                        onChanged: (v) => ctrl.selectedJobTitle.value = v,
+                        colors: colors,
+                        typography: typography,
+                        hint: Text(
+                          ctrl.isLoadingReferences.value ? 'Memuat jabatan...' : 'Pilih Jabatan',
+                          style: typography.bodyMedium.copyWith(color: colors.outline),
+                        ),
+                      );
+                    }
+                  }),
                   SizedBox(height: AppSpacing.s16.h),
-                  AppTextField(
-                    label: 'Unit Kerja',
-                    hint: 'Unit/OPD',
-                    controller: unitCtrl,
-                    readOnly: true,
-                    prefixIcon: const Icon(Icons.apartment_rounded),
-                  ),
+                  Obx(() {
+                    final userSession = Get.find<SessionManager>().currentUser.value;
+                    final hasInstitution = userSession?.institution != null || userSession?.department != null;
+
+                    if (hasInstitution) {
+                      final unitName = userSession?.institution?.name ?? userSession?.department?.name ?? '';
+                      return AppTextField(
+                        label: 'Unit Kerja',
+                        hint: 'Unit/OPD',
+                        controller: TextEditingController(text: unitName),
+                        readOnly: true,
+                        prefixIcon: const Icon(Icons.apartment_rounded),
+                      );
+                    } else {
+                      return _buildDropdown<ReferenceItem>(
+                        label: 'Unit Kerja',
+                        value: ctrl.selectedInstitution.value,
+                        items: ctrl.institutions.map((e) => DropdownMenuItem(value: e, child: Text(e.name))).toList(),
+                        onChanged: (v) => ctrl.selectedInstitution.value = v,
+                        colors: colors,
+                        typography: typography,
+                        hint: Text(
+                          ctrl.isLoadingReferences.value ? 'Memuat unit kerja...' : 'Pilih Unit Kerja',
+                          style: typography.bodyMedium.copyWith(color: colors.outline),
+                        ),
+                      );
+                    }
+                  }),
                   SizedBox(height: AppSpacing.s24.h),
                   Obx(
                     () => AppButton(
@@ -265,6 +339,7 @@ class _PersonalTab extends StatelessWidget {
     required ValueChanged<T?> onChanged,
     required AppColors colors,
     required AppTypography typography,
+    Widget? hint,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,7 +350,8 @@ class _PersonalTab extends StatelessWidget {
         ),
         SizedBox(height: AppSpacing.s8.h),
         DropdownButtonFormField<T>(
-          initialValue: value,
+          value: value,
+          hint: hint,
           items: items,
           onChanged: onChanged,
           decoration: InputDecoration(

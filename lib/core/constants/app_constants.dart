@@ -145,4 +145,27 @@ class AppConstants {
   /// Ukuran maksimum file gambar (dalam KB) — gambar akan dikompresi
   /// iteratif hingga di bawah batas ini.
   static const int maxUploadFileSizeKB = 50;
+
+  /// Memetakan domain pengembangan lokal (seperti minio-masseddi.test, localhost)
+  /// ke host dari apiBaseUrl agar dapat diakses dari emulator/perangkat fisik.
+  static String sanitizeImageUrl(String url) {
+    if (url.isEmpty) return url;
+
+    if (url.startsWith('http')) {
+      final uri = Uri.tryParse(url);
+      if (uri != null) {
+        final host = uri.host;
+        if (host == 'minio-masseddi.test' || host == 'localhost' || host == '127.0.0.1') {
+          final apiUri = Uri.tryParse(apiBaseUrl);
+          if (apiUri != null) {
+            final apiHost = apiUri.host;
+            if (apiHost != host) {
+              return url.replaceFirst(host, apiHost);
+            }
+          }
+        }
+      }
+    }
+    return url;
+  }
 }

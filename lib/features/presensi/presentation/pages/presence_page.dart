@@ -136,10 +136,45 @@ class _PresencePageState extends State<PresencePage> {
                               _buildCompactRequirements(colors, typography),
                               if (step == PresensiStep.error) ...[
                                 SizedBox(height: AppSpacing.s16.h),
-                                Text(
-                                  ctrl.errorMessage.value ?? 'Terjadi kesalahan',
-                                  style: typography.bodyMedium.copyWith(color: colors.error),
-                                  textAlign: TextAlign.center,
+                                Container(
+                                  padding: EdgeInsets.all(AppSpacing.s16.w),
+                                  decoration: BoxDecoration(
+                                    color: colors.error.withValues(alpha: 0.05),
+                                    border: Border.all(color: colors.error.withValues(alpha: 0.3)),
+                                    borderRadius: BorderRadius.circular(AppRadius.r16),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.gpp_bad_rounded,
+                                            color: colors.error,
+                                            size: 24.w,
+                                          ),
+                                          SizedBox(width: AppSpacing.s8.w),
+                                          Expanded(
+                                            child: Text(
+                                              'Presensi Diblokir',
+                                              style: typography.titleMedium.copyWith(
+                                                color: colors.error,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: AppSpacing.s12.h),
+                                      Text(
+                                        ctrl.errorMessage.value ?? 'Terjadi kesalahan keamanan.',
+                                        style: typography.bodyMedium.copyWith(
+                                          color: colors.onSurface,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ],
@@ -149,7 +184,7 @@ class _PresencePageState extends State<PresencePage> {
                       SizedBox(height: AppSpacing.s16.h),
                       AppButton(
                         label: 'Lanjutkan Presensi',
-                        onPressed: ctrl.isInsideGeofence.value ? ctrl.proceedPresensi : null,
+                        onPressed: (ctrl.isInsideGeofence.value && step != PresensiStep.error) ? ctrl.proceedPresensi : null,
                         isLoading: step == PresensiStep.submitting,
                         fullWidth: true,
                       ),
@@ -351,9 +386,11 @@ class _PresencePageState extends State<PresencePage> {
 
   Widget _buildLocationStatusCard(AppColors colors, AppTypography typography) {
     final cfg = ctrl.config.value!;
+    final record = ctrl.activeRecord.value;
     final isChecking = ctrl.step.value == PresensiStep.geofenceCheck;
 
-    if (!cfg.needsGeofenceCheck) {
+    // Hanya sembunyikan jika tipe presensi dasarnya memang tidak butuh lokasi
+    if (record != null && !record.attendanceType.requiresLocation) {
       return const SizedBox.shrink();
     }
 
@@ -361,18 +398,25 @@ class _PresencePageState extends State<PresencePage> {
     final dist = ctrl.distanceToFence.value;
     final locName = ctrl.closestLocationName.value;
     final hasEvent = cfg.locationEventName != null;
+    final isExempt = !cfg.needsGeofenceCheck;
 
     final statusColor = isChecking
         ? colors.primary
-        : (isInside ? colors.success : colors.error);
+        : (isExempt
+            ? colors.primary
+            : (isInside ? colors.success : colors.error));
 
     final statusIcon = isChecking
         ? Icons.sync_rounded
-        : (isInside ? Icons.check_circle_rounded : Icons.cancel_rounded);
+        : (isExempt
+            ? Icons.info_outline_rounded
+            : (isInside ? Icons.check_circle_rounded : Icons.cancel_rounded));
 
     final statusText = isChecking
         ? 'Memeriksa lokasi...'
-        : (isInside ? 'Di dalam area presensi' : 'Di luar area presensi');
+        : (isExempt
+            ? 'Bebas Validasi Lokasi'
+            : (isInside ? 'Di dalam area presensi' : 'Di luar area presensi'));
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.s12.w),

@@ -14,6 +14,7 @@ import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 import '../../../../design_system/components/app_image_viewer.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../data/models/activity_item.dart';
 import '../../data/services/kinerja_service.dart';
 import '../controllers/kinerja_controller.dart';
@@ -421,7 +422,8 @@ class _ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = item.imageUrl != null;
+    final imageUrl = item.imageUrl != null ? AppConstants.sanitizeImageUrl(item.imageUrl!) : null;
+    final hasImage = imageUrl != null;
 
     return AppCard(
       outlined: true,
@@ -492,7 +494,7 @@ class _ActivityCard extends StatelessWidget {
             GestureDetector(
               onTap: () => AppImageViewer.show(
                 context,
-                imageUrl: item.imageUrl!,
+                imageUrl: imageUrl,
                 heroTag: 'list_img_${item.id}',
               ),
               child: Hero(
@@ -501,27 +503,42 @@ class _ActivityCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.r8),
                   child: Stack(
                     children: [
-                      item.imageUrl!.startsWith('http')
+                      imageUrl.startsWith('http')
                           ? Image.network(
-                              item.imageUrl!,
+                              imageUrl,
                               width: double.infinity,
                               height: 120.h,
                               fit: BoxFit.cover,
                               loadingBuilder: (_, child, progress) =>
-                                  progress == null
-                                  ? child
-                                  : const SizedBox.shrink(),
-                              errorBuilder: (_, _, _) =>
-                                  const SizedBox.shrink(),
+                                  progress == null ? child : const SizedBox.shrink(),
+                              errorBuilder: (_, _, _) => SizedBox(
+                                height: 120.h,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    color: colors.outline,
+                                    size: 32,
+                                  ),
+                                ),
+                              ),
                             )
                           : Image.file(
-                              File(item.imageUrl!),
+                              File(imageUrl),
                               width: double.infinity,
                               height: 120.h,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) =>
-                                  const SizedBox.shrink(),
+                              errorBuilder: (_, _, _) => SizedBox(
+                                height: 120.h,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    color: colors.outline,
+                                    size: 32,
+                                  ),
+                                ),
+                              ),
                             ),
+
                       Positioned(
                         right: 6,
                         bottom: 6,

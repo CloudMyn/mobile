@@ -6,12 +6,20 @@ import '../../../auth/data/models/user_model.dart';
 import '../models/profile_employee_data_model.dart';
 import '../models/employee_enums.dart';
 import '../models/schedule_data_model.dart';
+import '../models/reference_model.dart';
 
 abstract class ProfileRepository {
   Future<UserModel> enrollFace(String faceDataBase64);
   Future<UserModel> deleteFace();
   Future<UserModel> updateProfilePhoto(File file);
-  Future<UserModel> updateProfile({String? name, String? fullName, String? phone});
+  Future<UserModel> updateProfile({
+    String? name,
+    String? fullName,
+    String? phone,
+    int? jobTitleId,
+    int? institutionId,
+  });
+  Future<List<ReferenceItem>> fetchReferences(String model);
   Future<ProfileEmployeeDataModel?> getEmployeeData();
   Future<ProfileEmployeeDataModel> upsertEmployeeData({
     String? fullName,
@@ -117,12 +125,16 @@ class ProfileRepositoryImpl implements ProfileRepository {
     String? name,
     String? fullName,
     String? phone,
+    int? jobTitleId,
+    int? institutionId,
   }) async {
     try {
       final payload = <String, dynamic>{};
       if (name != null) payload['name'] = name;
       if (fullName != null) payload['full_name'] = fullName;
       if (phone != null) payload['phone'] = phone;
+      if (jobTitleId != null) payload['job_title_id'] = jobTitleId.toString();
+      if (institutionId != null) payload['institution_id'] = institutionId.toString();
 
       final response = await _dio.put<Map<String, dynamic>>(
         '/mobile/profile',
@@ -135,6 +147,19 @@ class ProfileRepositoryImpl implements ProfileRepository {
       ).data!;
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal memperbarui profil');
+    }
+  }
+
+  @override
+  Future<List<ReferenceItem>> fetchReferences(String model) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/reference/$model');
+      return ApiResponse.fromJsonList(
+        response.data!,
+        (data) => ReferenceItem.fromJson(data),
+      ).data ?? [];
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memuat referensi $model');
     }
   }
 

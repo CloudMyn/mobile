@@ -17,8 +17,8 @@ import '../../../auth/presentation/pages/login_page.dart';
 import '../../data/models/employee_model.dart';
 import '../../data/models/profile_employee_data_model.dart';
 import '../../data/models/employee_enums.dart';
-import '../../data/models/schedule_data_model.dart';
 import '../../data/models/shift_model.dart';
+import '../../data/models/reference_model.dart';
 import '../../data/repositories/profile_repository.dart';
 
 class ProfileController extends GetxController {
@@ -31,6 +31,12 @@ class ProfileController extends GetxController {
   final canChooseSchedule = false.obs;
   final hasCheckedInToday = false.obs;
   final isLoadingSchedules = false.obs;
+  final isLoadingReferences = false.obs;
+
+  final jobTitles = <ReferenceItem>[].obs;
+  final institutions = <ReferenceItem>[].obs;
+  final selectedJobTitle = Rx<ReferenceItem?>(null);
+  final selectedInstitution = Rx<ReferenceItem?>(null);
 
   final isLoadingProfile = false.obs;
   final isLoadingEmployeeData = false.obs;
@@ -102,6 +108,7 @@ class ProfileController extends GetxController {
     loadProfile();
     loadEmployeeData();
     loadShifts();
+    loadReferences();
   }
 
   void _syncEmployeeState({UserModel? user}) {
@@ -126,6 +133,16 @@ class ProfileController extends GetxController {
       address: address,
       photoUrl: resolvedUser.profilePictureUrl,
     );
+
+    if (resolvedUser.jobTitle != null) {
+      selectedJobTitle.value = ReferenceItem(id: resolvedUser.jobTitle!.id, name: resolvedUser.jobTitle!.name);
+    }
+
+    if (resolvedUser.institution != null) {
+      selectedInstitution.value = ReferenceItem(id: resolvedUser.institution!.id, name: resolvedUser.institution!.name);
+    } else if (resolvedUser.department != null) {
+      selectedInstitution.value = ReferenceItem(id: resolvedUser.department!.id, name: resolvedUser.department!.name);
+    }
 
     namaCtrl.text = fullName;
     emailCtrl.text = resolvedUser.email;
@@ -240,6 +257,20 @@ class ProfileController extends GetxController {
       );
     } finally {
       isLoadingSchedules.value = false;
+    }
+  }
+
+  Future<void> loadReferences() async {
+    isLoadingReferences.value = true;
+    try {
+      final jobTitlesData = await Get.find<ProfileRepository>().fetchReferences('job-titles');
+      final institutionsData = await Get.find<ProfileRepository>().fetchReferences('institutions');
+      jobTitles.assignAll(jobTitlesData);
+      institutions.assignAll(institutionsData);
+    } catch (e) {
+      debugPrint('Error loading references: $e');
+    } finally {
+      isLoadingReferences.value = false;
     }
   }
 
@@ -400,6 +431,20 @@ class ProfileController extends GetxController {
         religion: religion.value,
         maritalStatus: maritalStatus.value,
       );
+
+      final user = Get.find<SessionManager>().currentUser.value;
+      final selectedJobId = selectedJobTitle.value?.id;
+      final selectedInstId = selectedInstitution.value?.id;
+
+      if ((selectedJobId != null && user?.jobTitle == null) ||
+          (selectedInstId != null && user?.institution == null)) {
+        final updatedUser = await Get.find<ProfileRepository>().updateProfile(
+          jobTitleId: user?.jobTitle == null ? selectedJobId : null,
+          institutionId: user?.institution == null ? selectedInstId : null,
+        );
+        Get.find<SessionManager>().setUser(updatedUser);
+      }
+
       _syncEmployeeState();
       FocusManager.instance.primaryFocus?.unfocus();
       AppFeedback.showSnackbar(

@@ -15,6 +15,7 @@ class UserModel {
     this.jobTitle,
     required this.roles,
     required this.permissions,
+    required this.isBypassFermuk,
   });
 
   final int id;
@@ -26,6 +27,7 @@ class UserModel {
   final String? phone;
   final String? profilePictureUrl;
   final String? faceData;
+  final bool isBypassFermuk;
   final UserOrgUnit? institution;
   final UserOrgUnit? department;
   final UserOrgUnit? jobTitle;
@@ -43,6 +45,7 @@ class UserModel {
       phone: json['phone'] as String?,
       profilePictureUrl: json['profile_picture_url'] as String?,
       faceData: json['face_data'] as String?,
+      isBypassFermuk: json['is_bypass_fermuk'] as bool? ?? false,
       institution: json['institution'] != null
           ? UserOrgUnit.fromJson(json['institution'] as Map<String, dynamic>)
           : null,
@@ -78,6 +81,7 @@ class UserModel {
     String? phone,
     String? profilePictureUrl,
     String? faceData,
+    bool? isBypassFermuk,
     UserOrgUnit? institution,
     UserOrgUnit? department,
     UserOrgUnit? jobTitle,
@@ -94,6 +98,7 @@ class UserModel {
       phone: phone ?? this.phone,
       profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
       faceData: faceData ?? this.faceData,
+      isBypassFermuk: isBypassFermuk ?? this.isBypassFermuk,
       institution: institution ?? this.institution,
       department: department ?? this.department,
       jobTitle: jobTitle ?? this.jobTitle,

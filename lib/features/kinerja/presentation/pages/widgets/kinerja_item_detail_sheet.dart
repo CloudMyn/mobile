@@ -9,6 +9,7 @@ import '../../../../../design_system/tokens/app_colors.dart';
 import '../../../../../design_system/tokens/app_radius.dart';
 import '../../../../../design_system/tokens/app_spacing.dart';
 import '../../../../../design_system/tokens/app_typography.dart';
+import '../../../../../core/constants/app_constants.dart';
 import '../../../data/models/activity_item.dart';
 import '../../controllers/kinerja_controller.dart';
 import '../kinerja_create_page.dart';
@@ -24,7 +25,8 @@ class KinerjaItemDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
-    final hasImage = item.imageUrl != null;
+    final imageUrl = item.imageUrl != null ? AppConstants.sanitizeImageUrl(item.imageUrl!) : null;
+    final hasImage = imageUrl != null;
 
     return DraggableScrollableSheet(
       initialChildSize: hasImage ? 0.7 : 0.5,
@@ -60,7 +62,7 @@ class KinerjaItemDetailSheet extends StatelessWidget {
               GestureDetector(
                 onTap: () => AppImageViewer.show(
                   context,
-                  imageUrl: item.imageUrl!,
+                  imageUrl: imageUrl,
                   heroTag: 'kinerja_img_${item.id}',
                 ),
                 child: Hero(
@@ -69,9 +71,9 @@ class KinerjaItemDetailSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.r12),
                     child: Stack(
                       children: [
-                        item.imageUrl!.startsWith('http')
+                        imageUrl.startsWith('http')
                             ? Image.network(
-                                item.imageUrl!,
+                                imageUrl,
                                 width: double.infinity,
                                 height: 200.h,
                                 fit: BoxFit.cover,
@@ -96,7 +98,7 @@ class KinerjaItemDetailSheet extends StatelessWidget {
                                 ),
                               )
                             : Image.file(
-                                File(item.imageUrl!),
+                                File(imageUrl),
                                 width: double.infinity,
                                 height: 200.h,
                                 fit: BoxFit.cover,

@@ -167,7 +167,29 @@ class PresensiController extends GetxController {
       try {
         final result = await _locationService.getCurrentPosition();
         if (result.isSuccess) {
-          currentPosition.value = result.position;
+          final pos = result.position!;
+          currentPosition.value = pos;
+
+          // Hitung jarak dan lokasi terdekat best-effort
+          if (cfg.hasValidGeofence) {
+            double minDistance = double.infinity;
+            String? closestName;
+
+            for (final loc in cfg.validLocations) {
+              final dist = _locationService.distanceToFence(
+                userLat: pos.latitude,
+                userLng: pos.longitude,
+                fenceLat: loc.latitude,
+                fenceLng: loc.longitude,
+              );
+              if (dist < minDistance) {
+                minDistance = dist;
+                closestName = loc.name;
+              }
+            }
+            distanceToFence.value = minDistance;
+            closestLocationName.value = closestName;
+          }
         }
       } catch (e) {
         debugPrint(
@@ -209,36 +231,6 @@ class PresensiController extends GetxController {
     debugPrint(
       '[PresensiController] checkLocation: Current position: Lat: ${pos.latitude}, Lng: ${pos.longitude}, Accuracy: ${pos.accuracy}m',
     );
-
-    // Cek skor keamanan perangkat dan lokasi (Scoring System)
-    final securityResult = await _evaluateSecurityScore(pos);
-    final score = securityResult['score'] as int;
-    final reasons = securityResult['reasons'] as List<String>;
-
-    if (score > 50) {
-      debugPrint('[PresensiController] Blocked: Security score $score > 50. Reasons: $reasons');
-      isInsideGeofence.value = false;
-      _setError(
-        PresensiErrorType.outsideGeofence,
-        'Presensi Diblokir!\nSkor Pelanggaran Keamanan: $score/100\n\nDetail:\n- ${reasons.join('\n- ')}\n\nMohon matikan aplikasi Fake GPS, kembalikan status Root, atau matikan Developer Options.',
-      );
-      step.value = PresensiStep.error;
-      return;
-    } else if (score > 0) {
-      debugPrint('[PresensiController] Warning: Security score $score <= 50. Reasons: $reasons');
-      // Berikan snackbar warning, tapi presensi tetap diizinkan jalan terus
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.snackbar(
-          'Peringatan Keamanan',
-          'Terdeteksi kondisi tidak wajar (Skor: $score):\n- ${reasons.join('\n- ')}',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.amber.shade900,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 7),
-          icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
-        );
-      });
-    }
 
     if (cfg.hasValidGeofence) {
       debugPrint(
@@ -293,6 +285,35 @@ class PresensiController extends GetxController {
       );
     }
 
+    // Cek skor keamanan perangkat dan lokasi (Scoring System)
+    final securityResult = await _evaluateSecurityScore(pos);
+    final score = securityResult['score'] as int;
+    final reasons = securityResult['reasons'] as List<String>;
+
+    if (score >= 100) {
+      debugPrint('[PresensiController] Blocked: Security score $score >= 100. Reasons: $reasons');
+      _setError(
+        PresensiErrorType.outsideGeofence,
+        'Presensi Diblokir!\nSkor Pelanggaran Keamanan: $score/100\n\nDetail:\n- ${reasons.join('\n- ')}\n\nMohon matikan aplikasi Fake GPS, kembalikan status Root, atau matikan Developer Options.',
+      );
+      step.value = PresensiStep.error;
+      return;
+    } else if (score > 0) {
+      debugPrint('[PresensiController] Warning: Security score $score < 100. Reasons: $reasons');
+      // Berikan snackbar warning, tapi presensi tetap diizinkan jalan terus
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar(
+          'Peringatan Keamanan',
+          'Terdeteksi kondisi tidak wajar (Skor: $score):\n- ${reasons.join('\n- ')}',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.amber.shade900,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 7),
+          icon: const Icon(Icons.warning_amber_rounded, color: Colors.white),
+        );
+      });
+    }
+
     step.value = PresensiStep.idle;
   }
 
@@ -310,6 +331,13 @@ class PresensiController extends GetxController {
     debugPrint(
       '[PresensiController] proceedPresensi: Proceeding. Active Code: ${activeCode.value}, FaceRecognition: ${cfg.faceRecognition}, FaceCapture: ${cfg.faceCapture}',
     );
+
+    if (step.value == PresensiStep.error) {
+      debugPrint(
+        '[PresensiController] proceedPresensi: Blocked. Step is in error state.',
+      );
+      return;
+    }
 
     if (cfg.needsGeofenceCheck && !isInsideGeofence.value) {
       debugPrint(
