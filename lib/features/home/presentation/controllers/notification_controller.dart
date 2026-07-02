@@ -205,9 +205,9 @@ class NotificationController extends GetxController {
       deductsLeaveBalance: false,
       approverName: '-',
       approverPosition: '-',
-      maxDays: submission.totalDays,
-      allowDateRange: submission.endDate != null,
-      allowTimeRange:
+      maxDaysPerRequest: submission.totalDays,
+      requiresDateRange: submission.endDate != null,
+      requiresTimeRange:
           submission.startTime != null || submission.endTime != null,
       defaultYearlyQuota: 0,
       allowCarryForward: false,

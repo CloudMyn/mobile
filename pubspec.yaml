@@ -59,6 +59,7 @@ dependencies:
   fl_chart: ^1.2.0
   safe_device: ^1.2.1
   intl: ^0.20.3
+  file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:

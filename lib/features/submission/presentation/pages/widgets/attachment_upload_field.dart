@@ -8,6 +8,8 @@ class AttachmentUploadField extends StatelessWidget {
   final String fieldName;
   final bool isRequired;
   final String? fileName;
+  final List<String> allowedExtensions;
+  final int? maxFileSizeKb;
   final VoidCallback onPick;
   final VoidCallback onRemove;
 
@@ -16,6 +18,8 @@ class AttachmentUploadField extends StatelessWidget {
     required this.fieldName,
     required this.isRequired,
     required this.fileName,
+    this.allowedExtensions = const [],
+    this.maxFileSizeKb,
     required this.onPick,
     required this.onRemove,
   });
@@ -25,6 +29,16 @@ class AttachmentUploadField extends StatelessWidget {
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
     final hasFile = fileName != null;
+    
+    String helperText = '';
+    if (allowedExtensions.isNotEmpty) {
+      helperText += allowedExtensions.map((e) => e.toUpperCase()).join(', ');
+    }
+    if (maxFileSizeKb != null) {
+      final mb = (maxFileSizeKb! / 1024).toStringAsFixed(1);
+      if (helperText.isNotEmpty) helperText += ' • ';
+      helperText += 'Maks $mb MB';
+    }
 
     return Container(
       padding: EdgeInsets.all(AppSpacing.s12.w),
@@ -71,6 +85,15 @@ class AttachmentUploadField extends StatelessWidget {
                         : [],
                   ),
                 ),
+                if (!hasFile && helperText.isNotEmpty) ...[
+                  SizedBox(height: 2.h),
+                  Text(
+                    helperText,
+                    style: typography.labelSmall.copyWith(
+                      color: colors.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ],
                 if (hasFile) ...[
                   SizedBox(height: 2.h),
                   Text(

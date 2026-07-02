@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/components/app_button.dart';
 import '../../../../design_system/components/app_dropdown.dart';
-import '../../../../design_system/components/app_selection_controls.dart';
 import '../../../../design_system/components/app_text_field.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
@@ -114,7 +113,7 @@ class SubmissionCreatePage extends StatelessWidget {
 
               // ── Seksi Waktu (muncul hanya jika tipe mengizinkan) ─────
               Obx(() {
-                if (!ctrl.showTimeSection) return const SizedBox.shrink();
+                if (!ctrl.requiresTimeRange) return const SizedBox.shrink();
                 return Column(
                   children: [
                     _TimeSection(
@@ -130,7 +129,7 @@ class SubmissionCreatePage extends StatelessWidget {
               // ── Info maks hari ───────────────────────────────────────
               Obx(() {
                 final type = ctrl.selectedType.value;
-                if (type == null) return const SizedBox.shrink();
+                if (type == null || type.maxDaysPerRequest == null || !type.requiresDateRange) return const SizedBox.shrink();
                 return Padding(
                   padding: EdgeInsets.only(bottom: AppSpacing.s20.h),
                   child: Row(
@@ -142,7 +141,7 @@ class SubmissionCreatePage extends StatelessWidget {
                       ),
                       SizedBox(width: AppSpacing.s4.w),
                       Text(
-                        'Maksimal ${type.maxDays} hari untuk jenis pengajuan ini',
+                        'Maksimal ${type.maxDaysPerRequest} hari untuk jenis pengajuan ini',
                         style: typography.bodySmall.copyWith(
                           color: colors.onSurface.withValues(alpha: 0.5),
                         ),
@@ -176,6 +175,8 @@ class SubmissionCreatePage extends StatelessWidget {
                           () => AttachmentUploadField(
                             fieldName: field.name,
                             isRequired: field.isRequired,
+                            allowedExtensions: field.allowedExtensions,
+                            maxFileSizeKb: field.maxFileSizeKb,
                             fileName: ctrl.attachments[field.id],
                             onPick: () => ctrl.pickFile(field.id),
                             onRemove: () => ctrl.removeFile(field.id),
@@ -237,46 +238,20 @@ class _DateSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final useDateRange = ctrl.useDateRange.value;
-      final showToggle = ctrl.showDateRangeToggle;
+      final requiresDateRange = ctrl.requiresDateRange;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Tanggal',
-                style: typography.titleSmall.copyWith(
-                  color: colors.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (showToggle)
-                Row(
-                  children: [
-                    Text(
-                      'Gunakan rentang',
-                      style: typography.bodySmall.copyWith(
-                        color: colors.onSurface.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    SizedBox(width: AppSpacing.s4.w),
-                    AppSwitch(
-                      value: useDateRange,
-                      onChanged: (v) {
-                        ctrl.useDateRange.value = v;
-                        ctrl.startDate.value = null;
-                        ctrl.endDate.value = null;
-                      },
-                    ),
-                  ],
-                ),
-            ],
+          Text(
+            'Tanggal',
+            style: typography.titleSmall.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           SizedBox(height: AppSpacing.s8.h),
-          if (!useDateRange)
+          if (!requiresDateRange)
             AppTextField(
               label: 'Tanggal Pengajuan',
               hint: 'Pilih tanggal',
@@ -352,45 +327,19 @@ class _TimeSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final useTimeRange = ctrl.useTimeRange.value;
+      final requiresTimeRange = ctrl.requiresTimeRange;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Waktu',
-                style: typography.titleSmall.copyWith(
-                  color: colors.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    'Gunakan rentang waktu',
-                    style: typography.bodySmall.copyWith(
-                      color: colors.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  SizedBox(width: AppSpacing.s4.w),
-                  AppSwitch(
-                    value: useTimeRange,
-                    onChanged: (v) {
-                      ctrl.useTimeRange.value = v;
-                      if (!v) {
-                        ctrl.startTime.value = null;
-                        ctrl.endTime.value = null;
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ],
+          Text(
+            'Waktu',
+            style: typography.titleSmall.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          if (useTimeRange) ...[
+          if (requiresTimeRange) ...[
             SizedBox(height: AppSpacing.s8.h),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,

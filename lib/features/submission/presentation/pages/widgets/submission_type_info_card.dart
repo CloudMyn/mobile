@@ -70,7 +70,7 @@ class SubmissionTypeInfoCard extends StatelessWidget {
           _InfoRow(
             icon: Icons.timer_outlined,
             label: 'Maksimal hari pengajuan',
-            value: '${type.maxDays} hari',
+            value: '${type.maxDaysPerRequest} hari',
             valueColor: colors.onSurface,
             colors: colors,
             typography: typography,

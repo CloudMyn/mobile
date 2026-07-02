@@ -8,9 +8,9 @@ class SubmissionType {
   final bool deductsLeaveBalance;
   final String? approverName;
   final String? approverPosition;
-  final int? maxDays;
-  final bool allowDateRange;
-  final bool allowTimeRange;
+  final int? maxDaysPerRequest;
+  final bool requiresDateRange;
+  final bool requiresTimeRange;
   final List<AttachmentFieldConfig> attachmentFields;
   final double defaultYearlyQuota;
   final bool allowCarryForward;
@@ -25,9 +25,9 @@ class SubmissionType {
     this.deductsLeaveBalance = false,
     this.approverName,
     this.approverPosition,
-    this.maxDays,
-    this.allowDateRange = false,
-    this.allowTimeRange = false,
+    this.maxDaysPerRequest,
+    this.requiresDateRange = false,
+    this.requiresTimeRange = false,
     this.attachmentFields = const [],
     required this.defaultYearlyQuota,
     required this.allowCarryForward,
@@ -41,17 +41,23 @@ class SubmissionType {
       code: json['code'] as String? ?? '',
       name: json['name'] as String? ?? '',
       description: json['description'] as String?,
-      deductsLeaveBalance: json['deducts_leave_balance'] as bool? ?? false,
+      deductsLeaveBalance: json['uses_leave_balance'] as bool? ?? false,
       approverName: json['approver_name'] as String?,
       approverPosition: json['approver_position'] as String?,
-      maxDays: json['max_days'] as int?,
-      allowDateRange: json['allow_date_range'] as bool? ?? false,
-      allowTimeRange: json['allow_time_range'] as bool? ?? false,
-      attachmentFields: (json['attachment_fields'] as List?)
+      maxDaysPerRequest: json['max_days_per_request'] as int?,
+      requiresDateRange: json['requires_date_range'] as bool? ?? false,
+      requiresTimeRange: json['requires_time_range'] as bool? ?? false,
+      attachmentFields: (json['documents'] as List?)
               ?.map((e) => AttachmentFieldConfig(
-                    id: e['id'] as String? ?? '',
+                    id: e['id'].toString(),
                     name: e['name'] as String? ?? '',
+                    description: e['description'] as String?,
                     isRequired: e['is_required'] as bool? ?? false,
+                    allowedExtensions: (e['allowed_extensions'] as List?)
+                            ?.map((ext) => ext.toString())
+                            .toList() ??
+                        [],
+                    maxFileSizeKb: e['max_file_size_kb'] as int?,
                   ))
               .toList() ??
           const [],
@@ -67,12 +73,11 @@ class SubmissionType {
   bool get hasQuota => defaultYearlyQuota > 0;
 
   IconData get icon => switch (code) {
-        'annual_leave' => Icons.beach_access_rounded,
-        'sick_leave' => Icons.local_hospital_rounded,
-        'maternity_leave' => Icons.pregnant_woman_rounded,
-        'paternity_leave' => Icons.family_restroom_rounded,
-        'official_trip' || 'dinas_luar' => Icons.flight_rounded,
-        'permission' || 'izin' => Icons.event_busy_rounded,
+        'CUTI' => Icons.beach_access_rounded,
+        'IZIN_SAKIT' => Icons.local_hospital_rounded,
+        'WFH' || 'WFA' => Icons.laptop_mac_rounded,
+        'DINAS_LUAR' || 'DINAS_DALAM' => Icons.flight_rounded,
+        'ERROR_DEVICE' => Icons.warning_amber_rounded,
         _ => Icons.description_rounded,
       };
 }
@@ -80,11 +85,17 @@ class SubmissionType {
 class AttachmentFieldConfig {
   final String id;
   final String name;
+  final String? description;
   final bool isRequired;
+  final List<String> allowedExtensions;
+  final int? maxFileSizeKb;
 
   const AttachmentFieldConfig({
     required this.id,
     required this.name,
+    this.description,
     this.isRequired = false,
+    this.allowedExtensions = const [],
+    this.maxFileSizeKb,
   });
 }

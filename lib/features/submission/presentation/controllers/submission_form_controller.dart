@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../data/models/submission_type.dart';
@@ -20,17 +21,15 @@ class SubmissionFormController extends GetxController {
   final endTimeDisplayCtrl = TextEditingController();
 
   final selectedType = Rx<SubmissionType?>(null);
-  final useDateRange = false.obs;
   final startDate = Rx<DateTime?>(null);
   final endDate = Rx<DateTime?>(null);
-  final useTimeRange = false.obs;
   final startTime = Rx<TimeOfDay?>(null);
   final endTime = Rx<TimeOfDay?>(null);
   final attachments = <String, String?>{}.obs;
   final isLoading = false.obs;
 
-  bool get showDateRangeToggle => selectedType.value?.allowDateRange ?? false;
-  bool get showTimeSection => selectedType.value?.allowTimeRange ?? false;
+  bool get requiresDateRange => selectedType.value?.requiresDateRange ?? false;
+  bool get requiresTimeRange => selectedType.value?.requiresTimeRange ?? false;
 
   @override
   void onInit() {
@@ -43,8 +42,6 @@ class SubmissionFormController extends GetxController {
 
   void selectType(SubmissionType type) {
     selectedType.value = type;
-    useDateRange.value = false;
-    useTimeRange.value = false;
     startDate.value = null;
     endDate.value = null;
     startTime.value = null;
@@ -56,7 +53,7 @@ class SubmissionFormController extends GetxController {
   }
 
   Future<void> pickDate(BuildContext context, {required bool isStart}) async {
-    if (useDateRange.value) {
+    if (requiresDateRange) {
       final range = await showDateRangePicker(
         context: context,
         firstDate: DateTime.now(),
@@ -97,9 +94,45 @@ class SubmissionFormController extends GetxController {
     }
   }
 
-  void pickFile(String fieldId) {
-    attachments[fieldId] = 'dokumen_${fieldId}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-    attachments.refresh();
+  Future<void> pickFile(String fieldId) async {
+    final type = selectedType.value;
+    if (type == null) return;
+    
+    final field = type.attachmentFields.firstWhereOrNull((f) => f.id == fieldId);
+    if (field == null) return;
+
+    try {
+      FileType fileType = FileType.any;
+      List<String>? allowedExts;
+      
+      if (field.allowedExtensions.isNotEmpty) {
+        fileType = FileType.custom;
+        allowedExts = field.allowedExtensions.map((e) => e.toLowerCase().replaceAll('.', '')).toList();
+      }
+
+      final result = await FilePicker.pickFiles(
+        type: fileType,
+        allowedExtensions: allowedExts,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        
+        if (field.maxFileSizeKb != null) {
+          final sizeKb = file.size / 1024;
+          if (sizeKb > field.maxFileSizeKb!) {
+            final mb = (field.maxFileSizeKb! / 1024).toStringAsFixed(1);
+            Get.snackbar('File Terlalu Besar', 'Maksimal ukuran file adalah $mb MB', snackPosition: SnackPosition.BOTTOM);
+            return;
+          }
+        }
+        
+        attachments[fieldId] = file.path;
+        attachments.refresh();
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal memilih file: $e', snackPosition: SnackPosition.BOTTOM);
+    }
   }
 
   void removeFile(String fieldId) {
@@ -110,12 +143,22 @@ class SubmissionFormController extends GetxController {
   String? validateForm() {
     if (selectedType.value == null) return 'Pilih jenis pengajuan terlebih dahulu';
     if (startDate.value == null) return 'Tanggal pengajuan harus diisi';
-    if (useDateRange.value && endDate.value == null) return 'Tanggal akhir harus diisi';
-    if (useTimeRange.value) {
+    if (requiresDateRange && endDate.value == null) return 'Tanggal akhir harus diisi';
+    if (requiresTimeRange) {
       if (startTime.value == null) return 'Waktu mulai harus diisi';
       if (endTime.value == null) return 'Waktu selesai harus diisi';
     }
+    
     final type = selectedType.value!;
+    
+    // Validasi max days
+    if (requiresDateRange && type.maxDaysPerRequest != null && startDate.value != null && endDate.value != null) {
+      final diff = endDate.value!.difference(startDate.value!).inDays + 1;
+      if (diff > type.maxDaysPerRequest!) {
+        return 'Maksimal pengajuan ${type.maxDaysPerRequest} hari';
+      }
+    }
+    
     for (final field in type.attachmentFields) {
       if (field.isRequired && attachments[field.id] == null) {
         return '${field.name} wajib dilampirkan';
@@ -139,9 +182,9 @@ class SubmissionFormController extends GetxController {
         title: titleCtrl.text.trim(),
         description: descCtrl.text.trim(),
         startDate: startDate.value!,
-        endDate: useDateRange.value ? endDate.value : null,
-        startTime: useTimeRange.value && startTime.value != null ? _formatTime(startTime.value!) : null,
-        endTime: useTimeRange.value && endTime.value != null ? _formatTime(endTime.value!) : null,
+        endDate: requiresDateRange ? endDate.value : null,
+        startTime: requiresTimeRange && startTime.value != null ? _formatTime(startTime.value!) : null,
+        endTime: requiresTimeRange && endTime.value != null ? _formatTime(endTime.value!) : null,
         attachments: Map.from(attachments),
         autoSubmit: autoSubmit,
       );
