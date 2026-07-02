@@ -25,7 +25,7 @@ class AppConstants {
   // =========================================================================
 
   /// Semantic version (major.minor.patch) — dibaca dari pubspec.yaml.
-  static const String versionName = '1.1.2';
+  static const String versionName = '1.1.3';
 
   /// Build number — dibaca dari pubspec.yaml (angka setelah '+').
   static const int buildNumber = 2;
@@ -155,7 +155,9 @@ class AppConstants {
       final uri = Uri.tryParse(url);
       if (uri != null) {
         final host = uri.host;
-        if (host == 'minio-masseddi.test' || host == 'localhost' || host == '127.0.0.1') {
+        if (host == 'minio-masseddi.test' ||
+            host == 'localhost' ||
+            host == '127.0.0.1') {
           final apiUri = Uri.tryParse(apiBaseUrl);
           if (apiUri != null) {
             final apiHost = apiUri.host;
