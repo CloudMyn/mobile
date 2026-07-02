@@ -68,7 +68,7 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
           return _buildErrorState();
         }
 
-        final threeDaysItems = _controller.last3DaysActivities;
+        final recentItems = _controller.recentActivities;
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -216,9 +216,9 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
                   );
                 }),
 
-                // ── 3 Hari Terakhir Header ────────────────
+                // ── Kinerja Terbaru Header ────────────────
                 Text(
-                  '3 Hari Terakhir',
+                  'Kinerja Terbaru',
                   style: typography.titleMedium.copyWith(
                     color: colors.onSurface,
                     fontWeight: FontWeight.bold,
@@ -226,15 +226,15 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
                 ),
                 SizedBox(height: AppSpacing.s4.h),
                 Text(
-                  'Kinerja yang dicatat dalam 3 hari terakhir',
+                  '5 kinerja terakhir yang dicatat',
                   style: typography.bodySmall.copyWith(
                     color: colors.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
                 SizedBox(height: AppSpacing.s16.h),
 
-                // ── 3-Day Content ─────────────────────────
-                if (threeDaysItems.isEmpty)
+                // ── Kinerja Terbaru Content ───────────────
+                if (recentItems.isEmpty)
                   Padding(
                     padding: EdgeInsets.only(top: AppSpacing.s32.h),
                     child: Obx(() {
@@ -243,7 +243,7 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
                       return AppEmptyState(
                         icon: Icons.assignment_outlined,
                         title: 'Belum ada catatan kinerja',
-                        subtitle: 'Belum ada aktivitas dalam 3 hari terakhir',
+                        subtitle: 'Belum ada catatan kinerja',
                         actionLabel: hasClockedIn ? 'Buat Kinerja' : null,
                         onAction: hasClockedIn
                             ? () => _navigateToCreate(context)
@@ -252,10 +252,10 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
                     }),
                   )
                 else
-                  ...threeDaysItems.map(
+                  ...recentItems.map(
                     (item) => Padding(
                       padding: EdgeInsets.only(bottom: AppSpacing.s12.h),
-                      child: _ActivityCard3Day(
+                      child: _ActivityCard(
                         item: item,
                         colors: colors,
                         typography: typography,
@@ -402,16 +402,16 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
   }
 }
 
-// ── 3-Day Activity Card ─────────────────────────────────────────
+// ── Activity Card ───────────────────────────────────────────────
 
-class _ActivityCard3Day extends StatelessWidget {
+class _ActivityCard extends StatelessWidget {
   final ActivityItem item;
   final AppColors colors;
   final AppTypography typography;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const _ActivityCard3Day({
+  const _ActivityCard({
     required this.item,
     required this.colors,
     required this.typography,

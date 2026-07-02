@@ -237,16 +237,11 @@ class KinerjaController extends GetxController {
     return months;
   }
 
-  /// Filter aktivitas untuk 3 hari terakhir
-  List<ActivityItem> get last3DaysActivities {
-    final now = DateTime.now();
-    final threeDaysAgo = DateTime(now.year, now.month, now.day - 3);
-    return activities
-        .where((item) =>
-            item.date.isAfter(threeDaysAgo.subtract(const Duration(days: 1))) &&
-            item.date.isBefore(now.add(const Duration(days: 1))))
-        .toList()
+  /// Mendapatkan 5 kinerja terbaru tanpa batasan hari
+  List<ActivityItem> get recentActivities {
+    final sortedList = List<ActivityItem>.from(activities)
       ..sort((a, b) => b.date.compareTo(a.date));
+    return sortedList.take(5).toList();
   }
 
   /// Group activities by date (untuk main page).
