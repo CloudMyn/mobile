@@ -38,7 +38,7 @@ class CommentItem {
       id: '${json['id']}',
       authorId: '${author?['id'] ?? ''}',
       authorName: author?['name']?.toString() ?? 'User',
-      avatarUrl: author?['avatar_url']?.toString(),
+      avatarUrl: (author?['profile_picture_url'] ?? author?['avatar_url'])?.toString(),
       nip: author?['nip']?.toString(),
       instansi: author?['instansi']?.toString(),
       jabatan: author?['jabatan']?.toString(),

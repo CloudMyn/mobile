@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import '../../../../design_system/components/app_card.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
@@ -28,21 +29,194 @@ class TppDailyDetailScreen extends StatelessWidget {
         elevation: 0,
         iconTheme: IconThemeData(color: colors.onSurface),
       ),
-      body: tpp.dailyRecords.isEmpty
-          ? _EmptyState(colors: colors, typography: typography)
-          : ListView.separated(
-              padding: EdgeInsets.all(AppSpacing.s16.w),
-              itemCount: tpp.dailyRecords.length,
-              separatorBuilder: (_, __) => SizedBox(height: AppSpacing.s12.h),
-              itemBuilder: (context, index) {
-                final record = tpp.dailyRecords[index];
-                return _DailyRecordCard(
-                  record: record,
-                  colors: colors,
-                  typography: typography,
-                );
-              },
+      body: Column(
+        children: [
+          _TppSummaryHeader(tpp: tpp, colors: colors, typography: typography),
+          Expanded(
+            child: tpp.dailyRecords.isEmpty
+                ? _EmptyState(colors: colors, typography: typography)
+                : ListView.separated(
+                    padding: EdgeInsets.fromLTRB(AppSpacing.s16.w, 0, AppSpacing.s16.w, AppSpacing.s16.h),
+                    itemCount: tpp.dailyRecords.length,
+                    separatorBuilder: (_, __) => SizedBox(height: AppSpacing.s8.h),
+                    itemBuilder: (context, index) {
+                      final record = tpp.dailyRecords[index];
+                      return _DailyRecordCard(
+                        record: record,
+                        colors: colors,
+                        typography: typography,
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TppSummaryHeader extends StatelessWidget {
+  final StatistikTpp tpp;
+  final AppColors colors;
+  final AppTypography typography;
+
+  const _TppSummaryHeader({
+    required this.tpp,
+    required this.colors,
+    required this.typography,
+  });
+
+  String _formatRupiah(num val) {
+    final format = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    return format.format(val);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(AppSpacing.s16.w, AppSpacing.s16.h, AppSpacing.s16.w, AppSpacing.s8.h),
+      child: AppCard(
+        outlined: true,
+        padding: EdgeInsets.all(AppSpacing.s16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Rangkuman Potongan TPP',
+              style: typography.titleSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colors.onSurface,
+              ),
             ),
+            SizedBox(height: AppSpacing.s12.h),
+
+            // Nominal info row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildNominalTile(
+                  label: 'TPP Kotor',
+                  value: _formatRupiah(tpp.amountBeforeDeduction),
+                  valueColor: colors.onSurface,
+                ),
+                _buildNominalTile(
+                  label: 'Potongan',
+                  value: '-${_formatRupiah(tpp.deductionAmount)}',
+                  valueColor: colors.error,
+                ),
+                _buildNominalTile(
+                  label: 'Diterima',
+                  value: _formatRupiah(tpp.amountAfterDeduction),
+                  valueColor: colors.success,
+                  isBold: true,
+                ),
+              ],
+            ),
+            SizedBox(height: AppSpacing.s16.h),
+            Divider(color: colors.outline.withValues(alpha: 0.1), height: 1),
+            SizedBox(height: AppSpacing.s16.h),
+
+            // Capaian Bobot Perbub
+            Text(
+              'Capaian Penilaian (Perbub No. 2026)',
+              style: typography.labelSmall.copyWith(
+                color: colors.outline,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: AppSpacing.s10.h),
+
+            // Disiplin Kerja progress
+            _buildScoreProgress(
+              label: 'Disiplin Kerja',
+              weightLabel: 'Bobot 40%',
+              scorePct: tpp.disciplineScore * 100,
+              color: colors.success,
+            ),
+            SizedBox(height: AppSpacing.s10.h),
+
+            // Produktivitas progress
+            _buildScoreProgress(
+              label: 'Produktivitas Kerja',
+              weightLabel: 'Bobot 60%',
+              scorePct: tpp.activityScore * 100,
+              color: colors.primary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNominalTile({
+    required String label,
+    required String value,
+    required Color valueColor,
+    bool isBold = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: typography.caption.copyWith(
+            color: colors.onSurface.withValues(alpha: 0.5),
+            fontSize: 10.sp,
+          ),
+        ),
+        SizedBox(height: 2.h),
+        Text(
+          value,
+          style: typography.bodyMedium.copyWith(
+            color: valueColor,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+            fontSize: 13.sp,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScoreProgress({
+    required String label,
+    required String weightLabel,
+    required double scorePct,
+    required Color color,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '$label ($weightLabel)',
+              style: typography.caption.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              '${scorePct.toStringAsFixed(1)}%',
+              style: typography.labelSmall.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppSpacing.s4.h),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(99),
+          child: LinearProgressIndicator(
+            value: scorePct / 100,
+            backgroundColor: color.withValues(alpha: 0.1),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+            minHeight: 6.h,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -110,6 +284,24 @@ class _DailyRecordCard extends StatelessWidget {
   final AppColors colors;
   final AppTypography typography;
 
+  Widget _buildMiniBadge(String text, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.s8.w, vertical: AppSpacing.s2.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.r4),
+      ),
+      child: Text(
+        text,
+        style: typography.caption.copyWith(
+          color: color,
+          fontSize: 9.sp,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateObj = DateTime.tryParse(record.recordDate);
@@ -118,173 +310,93 @@ class _DailyRecordCard extends StatelessWidget {
         : record.recordDate;
 
     final isOffday = !record.isWorkday;
-    final hasDisciplineDeduction = record.disciplineDeductionPct > 0;
-    final hasActivityDeduction = record.activityDeductionPct > 0;
-    final noDeduction = !hasDisciplineDeduction && !hasActivityDeduction;
+    final totalDeduction = record.disciplineDeductionPct + record.activityDeductionPct;
 
-    Color statusColor = colors.success;
-    if (isOffday) {
-      statusColor = colors.outline;
-    } else if (hasDisciplineDeduction || hasActivityDeduction) {
-      statusColor = colors.error;
-    }
-
-    return Container(
-      padding: EdgeInsets.all(AppSpacing.s16.w),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.r12),
-        border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return AppCard(
+      outlined: true,
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.s16.w, vertical: AppSpacing.s12.h),
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                dateStr,
-                style: typography.labelLarge.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colors.onSurface,
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s8.w,
-                  vertical: AppSpacing.s4.h,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppRadius.r8),
-                ),
-                child: Text(
-                  isOffday
-                      ? 'Hari Libur'
-                      : (noDeduction ? 'Aman' : 'Ada Potongan'),
-                  style: typography.caption.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.w600,
+          // Left Side: Date and Day
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  dateStr,
+                  style: typography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.onSurface,
                   ),
                 ),
-              ),
-            ],
-          ),
-          if (!isOffday) ...[
-            SizedBox(height: AppSpacing.s12.h),
-            Divider(color: colors.outline.withValues(alpha: 0.1), height: 1),
-            SizedBox(height: AppSpacing.s12.h),
-
-            // Discipline Info
-            _buildInfoRow(
-              icon: Icons.access_time_filled_rounded,
-              label: 'Disiplin',
-              value: record.attendanceStatus ?? '-',
-              deduction: record.disciplineDeductionPct,
-              deductionLabel: 'Potongan Disiplin',
+                SizedBox(height: AppSpacing.s4.h),
+                Row(
+                  children: [
+                    _buildMiniBadge(
+                      isOffday ? 'Hari Libur' : (totalDeduction > 0 ? 'Ada Potongan' : 'Kinerja Aman'),
+                      isOffday ? colors.outline : (totalDeduction > 0 ? colors.error : colors.success),
+                    ),
+                    if (!isOffday && (record.totalLateMinutes > 0 || record.totalEarlyLeaveMinutes > 0)) ...[
+                      SizedBox(width: AppSpacing.s8.w),
+                      Text(
+                        'T:${record.totalLateMinutes}m | PC:${record.totalEarlyLeaveMinutes}m',
+                        style: typography.caption.copyWith(
+                          color: colors.onSurface.withValues(alpha: 0.5),
+                          fontSize: 10.sp,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
             ),
-
-            if (record.totalLateMinutes > 0 ||
-                record.totalEarlyLeaveMinutes > 0)
-              Padding(
-                padding: EdgeInsets.only(left: 28.w, top: 4.h, bottom: 8.h),
-                child: Text(
-                  'Telat: ${record.totalLateMinutes}m, Pulang Cepat: ${record.totalEarlyLeaveMinutes}m',
-                  style: typography.caption.copyWith(
-                    color: colors.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-              ),
-
-            SizedBox(height: AppSpacing.s8.h),
-
-            // Activity Info
-            _buildInfoRow(
-              icon: Icons.assignment_turned_in_rounded,
-              label: 'Kinerja',
-              value: record.hasApprovedActivity
-                  ? 'Telah Input & Disetujui'
-                  : 'Belum Input / Tidak Disetujui',
-              deduction: record.activityDeductionPct,
-              deductionLabel: 'Potongan Kinerja',
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required double deduction,
-    required String deductionLabel,
-  }) {
-    final hasDeduction = deduction > 0;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20.w, color: colors.primary.withValues(alpha: 0.7)),
-        SizedBox(width: AppSpacing.s8.w),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: typography.caption.copyWith(
-                  color: colors.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-              SizedBox(height: 2.h),
-              Text(
-                value,
-                style: typography.bodyMedium.copyWith(
-                  color: colors.onSurface,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
           ),
-        ),
-        if (hasDeduction)
+          
+          // Right Side: Deductions Summary
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                '-${deduction.toStringAsFixed(2)}%',
-                style: typography.labelLarge.copyWith(
-                  color: colors.error,
-                  fontWeight: FontWeight.bold,
+              if (isOffday)
+                Text(
+                  '0%',
+                  style: typography.bodyMedium.copyWith(
+                    color: colors.outline,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              else ...[
+                Row(
+                  children: [
+                    Icon(Icons.access_time_filled_rounded, size: 12.w, color: record.disciplineDeductionPct > 0 ? colors.error : colors.success),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'D: ${record.disciplineDeductionPct > 0 ? "-${record.disciplineDeductionPct.toStringAsFixed(1)}%" : "0%"}',
+                      style: typography.labelSmall.copyWith(
+                        color: record.disciplineDeductionPct > 0 ? colors.error : colors.success,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              Text(
-                deductionLabel,
-                style: typography.caption.copyWith(
-                  color: colors.error.withValues(alpha: 0.8),
-                  fontSize: 10.sp,
+                SizedBox(height: 2.h),
+                Row(
+                  children: [
+                    Icon(Icons.assignment_turned_in_rounded, size: 12.w, color: record.activityDeductionPct > 0 ? colors.error : colors.success),
+                    SizedBox(width: 4.w),
+                    Text(
+                      'K: ${record.activityDeductionPct > 0 ? "-${record.activityDeductionPct.toStringAsFixed(1)}%" : "0%"}',
+                      style: typography.labelSmall.copyWith(
+                        color: record.activityDeductionPct > 0 ? colors.error : colors.success,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+              ],
             ],
-          )
-        else
-          Text(
-            '0%',
-            style: typography.labelLarge.copyWith(
-              color: colors.success,
-              fontWeight: FontWeight.bold,
-            ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }

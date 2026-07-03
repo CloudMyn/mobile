@@ -6,6 +6,7 @@ import '../../data/models/comment_item.dart';
 import '../../data/models/informasi_category.dart';
 import '../../data/models/informasi_item.dart';
 import '../../data/services/informasi_service.dart';
+import '../../../auth/data/models/user_model.dart';
 
 class InformasiController extends GetxController {
   InformasiController({required InformasiService service}) : _service = service;
@@ -29,6 +30,8 @@ class InformasiController extends GetxController {
   final isCommentsLoadingMoreMap = <String, bool>{}.obs;
   final isCommentSubmittingMap = <String, bool>{}.obs;
   final isDetailLoadingMap = <String, bool>{}.obs;
+  final publicProfiles = <String, UserModel>{}.obs;
+  final isLoadingPublicProfile = <String, bool>{}.obs;
 
   @override
   void onInit() {
@@ -402,6 +405,38 @@ class InformasiController extends GetxController {
         commentCount: items[listIndex].commentCount - 1,
       );
       items.refresh();
+    }
+  }
+
+  Future<UserModel?> getPublicProfile(String userId) async {
+    if (publicProfiles.containsKey(userId)) {
+      return publicProfiles[userId];
+    }
+    if (isLoadingPublicProfile[userId] == true) {
+      return null;
+    }
+
+    isLoadingPublicProfile[userId] = true;
+    try {
+      final user = await _service.fetchPublicProfile(userId);
+      publicProfiles[userId] = user;
+      return user;
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal memuat profil',
+        message: e.message,
+        isError: true,
+      );
+      return null;
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal memuat profil',
+        message: e.message,
+        isError: true,
+      );
+      return null;
+    } finally {
+      isLoadingPublicProfile[userId] = false;
     }
   }
 }

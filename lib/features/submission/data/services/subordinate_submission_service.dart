@@ -34,9 +34,12 @@ class ApiSubordinateSubmissionService implements SubordinateSubmissionService {
 
       final envelope = ApiResponse.fromJson(
         response.data!,
-        (data) => (data as List)
-            .map((e) => SubordinateSubmissionItem.fromJson(e as Map<String, dynamic>))
-            .toList(),
+        (data) {
+          final items = data is Map ? data['data'] as List : data as List;
+          return items
+              .map((e) => SubordinateSubmissionItem.fromJson(e as Map<String, dynamic>))
+              .toList();
+        },
       );
 
       return envelope.data ?? [];

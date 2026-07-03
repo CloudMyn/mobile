@@ -216,20 +216,28 @@ class ProfileTab extends StatelessWidget {
                   title: 'Leader Splash Page',
                   subtitle: 'Tampilkan Splash Pimpinan Daerah (Tanpa Auto Close)',
                   leading: const Icon(Icons.slideshow_rounded),
-                  showDivider: true,
                   onTap: () => Get.to(() => const LeaderSplashPage(autoClose: false)),
-                ),
-                AppListItem(
-                  title: 'Full Reload Aplikasi',
-                  subtitle: 'Muat ulang aplikasi seperti baru context',
-                  leading: const Icon(Icons.restart_alt_rounded),
-                  onTap: () => _showRestartConfirmation(context),
                 ),
               ],
             ),
           ),
           SizedBox(height: AppSpacing.s32.h),
+          _ReloadButton(
+            colors: colors,
+            typography: typography,
+            onPressed: () => _showRestartConfirmation(context),
+          ),
+          SizedBox(height: AppSpacing.s12.h),
           _LogoutButton(ctrl: ctrl, colors: colors, typography: typography),
+          SizedBox(height: AppSpacing.s16.h),
+          Center(
+            child: Text(
+              'Versi ${AppConstants.versionName} (${AppConstants.buildNumber})',
+              style: typography.bodySmall.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.4),
+              ),
+            ),
+          ),
           SizedBox(height: AppSpacing.s32.h),
         ],
       ),
@@ -402,6 +410,41 @@ class _ProfileHeader extends StatelessWidget {
         ),
         SizedBox(height: AppSpacing.s8.h),
       ],
+    );
+  }
+}
+
+class _ReloadButton extends StatelessWidget {
+  final AppColors colors;
+  final AppTypography typography;
+  final VoidCallback onPressed;
+
+  const _ReloadButton({
+    required this.colors,
+    required this.typography,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(Icons.restart_alt_rounded, color: colors.primary),
+      label: Text(
+        'Muat Ulang Aplikasi',
+        style: typography.labelLarge.copyWith(
+          color: colors.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: colors.primary),
+        minimumSize: Size(double.infinity, 48.h),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.s12.h),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.r8),
+        ),
+      ),
     );
   }
 }

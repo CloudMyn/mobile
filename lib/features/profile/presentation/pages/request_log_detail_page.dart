@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/logging/request_log_entry.dart';
+import '../../../../design_system/components/app_card.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
@@ -111,114 +112,71 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
+    return AppCard(
+      outlined: true,
       padding: EdgeInsets.all(AppSpacing.s16.w),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.r12),
-        border: Border.all(
-          color: entry.isError
-              ? colors.error.withValues(alpha: 0.3)
-              : colors.outline.withValues(alpha: 0.15),
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Method + Status Code
+          // Row 1: Method, Status, Duration & Status Icon
           Row(
             children: [
               _buildMethodTag(),
               SizedBox(width: AppSpacing.s8.w),
               _buildStatusTag(),
+              SizedBox(width: AppSpacing.s8.w),
+              _buildDurationTag(),
               const Spacer(),
-              // Duration
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s8.w,
-                  vertical: AppSpacing.s4.h,
-                ),
-                decoration: BoxDecoration(
-                  color: _durationColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppRadius.r4),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.timer_outlined, size: 14, color: _durationColor),
-                    SizedBox(width: AppSpacing.s4.w),
-                    Text(
-                      '${entry.durationMs}ms',
-                      style: typography.labelSmall.copyWith(
-                        color: _durationColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+              Icon(
+                entry.isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+                color: entry.isError ? colors.error : colors.success,
+                size: 20.w,
               ),
             ],
           ),
           SizedBox(height: AppSpacing.s12.h),
 
-          // URL
-          Text(
-            'URL',
-            style: typography.labelSmall.copyWith(
-              color: colors.outline,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: AppSpacing.s4.h),
+          // Row 2: URL
           Container(
             width: double.infinity,
-            padding: EdgeInsets.all(AppSpacing.s10.w),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.s10.w, vertical: AppSpacing.s8.h),
             decoration: BoxDecoration(
               color: colors.background,
               borderRadius: BorderRadius.circular(AppRadius.r8),
+              border: Border.all(
+                color: colors.outline.withValues(alpha: 0.05),
+              ),
             ),
             child: SelectableText(
               entry.url,
               style: typography.bodySmall.copyWith(
                 color: colors.onSurface,
                 fontFamily: 'monospace',
+                fontSize: 11.sp,
               ),
             ),
           ),
           SizedBox(height: AppSpacing.s12.h),
 
-          // Info grid
+          // Row 3: Metadata (Compact horizontal row)
           Row(
             children: [
-              Expanded(
-                child: _InfoTile(
-                  label: 'Timestamp',
-                  value: _formatDateTime(entry.timestamp),
-                  icon: Icons.access_time,
-                  colors: colors,
-                  typography: typography,
-                ),
+              // Timestamp
+              _buildMetaItem(
+                icon: Icons.access_time_rounded,
+                value: _formatDateTime(entry.timestamp),
               ),
-              SizedBox(width: AppSpacing.s8.w),
-              Expanded(
-                child: _InfoTile(
-                  label: 'Request Size',
-                  value: RequestLogEntry.formatBytes(entry.requestSize),
-                  icon: Icons.arrow_upward_rounded,
-                  colors: colors,
-                  typography: typography,
-                ),
+              const Spacer(),
+              // Request Size
+              _buildMetaItem(
+                icon: Icons.arrow_upward_rounded,
+                value: RequestLogEntry.formatBytes(entry.requestSize),
               ),
-              SizedBox(width: AppSpacing.s8.w),
-              Expanded(
-                child: _InfoTile(
-                  label: 'Response Size',
-                  value: RequestLogEntry.formatBytes(entry.responseSize),
-                  icon: Icons.arrow_downward_rounded,
-                  colors: colors,
-                  typography: typography,
-                ),
+              SizedBox(width: AppSpacing.s12.w),
+              // Response Size
+              _buildMetaItem(
+                icon: Icons.arrow_downward_rounded,
+                value: RequestLogEntry.formatBytes(entry.responseSize),
               ),
             ],
           ),
@@ -248,17 +206,16 @@ class _SummaryCard extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.s10.w,
-        vertical: AppSpacing.s4.h,
+        horizontal: AppSpacing.s8.w,
+        vertical: AppSpacing.s2.h,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.r4),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         entry.method,
-        style: typography.labelMedium.copyWith(
+        style: typography.labelSmall.copyWith(
           color: color,
           fontWeight: FontWeight.bold,
         ),
@@ -272,21 +229,65 @@ class _SummaryCard extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.s10.w,
-        vertical: AppSpacing.s4.h,
+        horizontal: AppSpacing.s8.w,
+        vertical: AppSpacing.s2.h,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.r4),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         code,
-        style: typography.labelMedium.copyWith(
+        style: typography.labelSmall.copyWith(
           color: color,
           fontWeight: FontWeight.bold,
         ),
       ),
+    );
+  }
+
+  Widget _buildDurationTag() {
+    final color = _durationColor;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.s8.w,
+        vertical: AppSpacing.s2.h,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.r4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.timer_outlined, size: 12.w, color: color),
+          SizedBox(width: AppSpacing.s4.w),
+          Text(
+            '${entry.durationMs}ms',
+            style: typography.labelSmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetaItem({required IconData icon, required String value}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12.w, color: colors.outline),
+        SizedBox(width: AppSpacing.s4.w),
+        Text(
+          value,
+          style: typography.labelSmall.copyWith(
+            color: colors.onSurface.withValues(alpha: 0.6),
+            fontSize: 10.sp,
+          ),
+        ),
+      ],
     );
   }
 
@@ -302,66 +303,6 @@ class _SummaryCard extends StatelessWidget {
         '${local.hour.toString().padLeft(2, '0')}:'
         '${local.minute.toString().padLeft(2, '0')}:'
         '${local.second.toString().padLeft(2, '0')}';
-  }
-}
-
-class _InfoTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final AppColors colors;
-  final AppTypography typography;
-
-  const _InfoTile({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.colors,
-    required this.typography,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(AppSpacing.s8.w),
-      decoration: BoxDecoration(
-        color: colors.background,
-        borderRadius: BorderRadius.circular(AppRadius.r8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 12, color: colors.outline),
-              SizedBox(width: AppSpacing.s4.w),
-              Flexible(
-                child: Text(
-                  label,
-                  style: typography.labelSmall.copyWith(
-                    color: colors.outline,
-                    fontSize: 9,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppSpacing.s2.h),
-          Text(
-            value,
-            style: typography.labelSmall.copyWith(
-              color: colors.onSurface,
-              fontWeight: FontWeight.w600,
-              fontSize: 11,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
   }
 }
 

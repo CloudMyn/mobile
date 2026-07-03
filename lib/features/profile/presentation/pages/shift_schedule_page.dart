@@ -7,6 +7,7 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
+import '../../../../design_system/components/app_feedback.dart';
 import '../../data/models/shift_model.dart';
 import '../controllers/profile_controller.dart';
 
@@ -97,8 +98,17 @@ class ShiftSchedulePage extends StatelessWidget {
                                       shift: shift,
                                       isSelected:
                                           ctrl.selectedShiftId.value == shift.id,
-                                      isCurrent: ctrl.selectedShiftId.value == shift.id,
-                                      onTap: () => ctrl.selectShift(shift.id),
+                                      isCurrent: ctrl.currentShiftId.value == shift.id,
+                                      onTap: () {
+                                        if (ctrl.hasCheckedInToday.value) {
+                                          AppFeedback.showSnackbar(
+                                            title: 'Perhatian',
+                                            message: 'Anda sudah presensi masuk. Perubahan jadwal akan berlaku mulai besok.',
+                                            type: FeedbackType.warning,
+                                          );
+                                        }
+                                        ctrl.selectShift(shift.id);
+                                      },
                                     ),
                                   ))
                               .toList(),
@@ -205,40 +215,52 @@ class _ShiftCard extends StatelessWidget {
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
 
+    final borderColor = isCurrent 
+        ? colors.success 
+        : (isSelected ? colors.primary : colors.outline.withValues(alpha: 0.2));
+        
+    final bgColor = isCurrent 
+        ? colors.success.withValues(alpha: 0.05)
+        : colors.surface;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: bgColor,
         border: Border.all(
-          color: isSelected
-              ? colors.primary
-              : colors.outline.withValues(alpha: 0.2),
-          width: isSelected ? 2 : 1,
+          color: borderColor,
+          width: isSelected || isCurrent ? 2 : 1,
         ),
         borderRadius: BorderRadius.circular(AppRadius.r12),
       ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.r12),
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.s16.w),
-          child: Row(
-            children: [
-              Container(
-                width: 44.w,
-                height: 44.w,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? colors.primaryContainer
-                      : colors.outline.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  _shiftIcon,
-                  size: 22,
-                  color: isSelected ? colors.primary : colors.outline,
-                ),
-              ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: EdgeInsets.all(AppSpacing.s16.w),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44.w,
+                    height: 44.w,
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? colors.success.withValues(alpha: 0.15)
+                          : (isSelected
+                              ? colors.primaryContainer
+                              : colors.outline.withValues(alpha: 0.08)),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _shiftIcon,
+                      size: 22,
+                      color: isCurrent 
+                          ? colors.success 
+                          : (isSelected ? colors.primary : colors.outline),
+                    ),
+                  ),
               SizedBox(width: AppSpacing.s12.w),
               Expanded(
                 child: Column(
@@ -304,14 +326,39 @@ class _ShiftCard extends StatelessWidget {
                 isSelected
                     ? Icons.radio_button_checked_rounded
                     : Icons.radio_button_unchecked_rounded,
-                color: isSelected ? colors.primary : colors.outline,
+                color: isSelected ? colors.primary : colors.outline.withValues(alpha: 0.5),
                 size: 22,
               ),
             ],
           ),
         ),
-      ),
-    );
+        if (isCurrent)
+          Positioned(
+            top: 0,
+            right: 0,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                color: colors.success,
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(AppRadius.r12 - 2),
+                  bottomLeft: Radius.circular(AppRadius.r12),
+                ),
+              ),
+              child: Text(
+                'Aktif Saat Ini',
+                style: typography.labelSmall.copyWith(
+                  color: colors.onSuccess,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  ),
+);
   }
 
   IconData get _shiftIcon {

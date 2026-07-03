@@ -245,6 +245,7 @@ class _LeaderSplashPageState extends State<LeaderSplashPage>
     required Animation<double> opacityAnim,
     required Animation<Offset> slideAnim,
     required Animation<double> scaleAnim,
+    BoxFit imageFit = BoxFit.cover,
   }) {
     return AnimatedBuilder(
       animation: _controller,
@@ -287,7 +288,7 @@ class _LeaderSplashPageState extends State<LeaderSplashPage>
                       color: const Color(0xFFF0F4F1),
                       child: Image.asset(
                         imagePath,
-                        fit: BoxFit.cover,
+                        fit: imageFit,
                         errorBuilder: (context, error, stackTrace) => Center(
                           child: Icon(
                             Icons.person,
@@ -429,6 +430,7 @@ class _LeaderSplashPageState extends State<LeaderSplashPage>
               opacityAnim: _sekdaOpacity,
               slideAnim: const AlwaysStoppedAnimation(Offset.zero),
               scaleAnim: _sekdaScale,
+              imageFit: BoxFit.contain,
             ),
           ],
         );

@@ -138,7 +138,7 @@ class SubordinateSubmissionDetailPage extends StatelessWidget {
             // ── Informasi Ketentuan Jenis Pengajuan ──────────────────
             if (type != null) ...[
               SizedBox(height: AppSpacing.s12.h),
-              SubmissionTypeInfoCard(type: type),
+              SubmissionTypeInfoCard(type: type, showApprover: false),
             ],
           ],
         ),

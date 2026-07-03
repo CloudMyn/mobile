@@ -5,6 +5,7 @@ import '../models/comment_item.dart';
 import '../models/informasi_category.dart';
 import '../models/informasi_item.dart';
 import '../models/paginated_comment_result.dart';
+import '../../../auth/data/models/user_model.dart';
 
 class InformasiFeedResult {
   const InformasiFeedResult({
@@ -177,6 +178,21 @@ class InformasiService {
       await _dio.delete<dynamic>('/mobile/information/comments/$commentId');
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal menghapus komentar');
+    }
+  }
+
+  Future<UserModel> fetchPublicProfile(String userId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/mobile/users/$userId',
+      );
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => UserModel.fromJson(data as Map<String, dynamic>),
+      );
+      return envelope.data!;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal memuat profil pengguna');
     }
   }
 

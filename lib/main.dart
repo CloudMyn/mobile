@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/constants/app_constants.dart';
 import 'core/di/app_bindings.dart';
@@ -10,8 +13,23 @@ import 'core/utils/restart_helper.dart';
 import 'design_system/theme/app_theme.dart';
 import 'features/auth/presentation/pages/splash_page.dart';
 
+class AppHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        if (host.endsWith('barrukab.go.id')) {
+          return true;
+        }
+        return false;
+      };
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = AppHttpOverrides();
+  await initializeDateFormatting('id_ID', null);
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

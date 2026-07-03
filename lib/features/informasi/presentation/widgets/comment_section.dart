@@ -10,6 +10,7 @@ import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 import '../../data/models/comment_item.dart';
 import '../controllers/informasi_controller.dart';
+import '../../../auth/data/models/user_model.dart';
 
 class CommentSection extends StatelessWidget {
   const CommentSection({
@@ -487,81 +488,156 @@ class _CommentTile extends StatelessWidget {
     
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
+    final ctrl = Get.find<InformasiController>();
+
+    // Trigger the fetch
+    ctrl.getPublicProfile(comment.authorId);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.s16.w,
-            AppSpacing.s24.h,
-            AppSpacing.s16.w,
-            AppSpacing.s32.h,
-          ),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.r24),
+        return Obx(() {
+          final isLoading = ctrl.isLoadingPublicProfile[comment.authorId] ?? false;
+          final UserModel? user = ctrl.publicProfiles[comment.authorId];
+
+          return Container(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.s16.w,
+              AppSpacing.s24.h,
+              AppSpacing.s16.w,
+              AppSpacing.s32.h,
             ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 48.w,
-                height: 4.h,
-                margin: EdgeInsets.only(bottom: AppSpacing.s24.h),
-                decoration: BoxDecoration(
-                  color: colors.outline.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(AppRadius.r2),
-                ),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.r24),
               ),
-              GestureDetector(
-                onTap: () {
-                  if (comment.avatarUrl != null) {
-                    _showFullScreenImage(context, comment.avatarUrl!);
-                  }
-                },
-                child: Container(
-                  width: 100.w,
-                  height: 100.w,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 48.w,
+                  height: 4.h,
+                  margin: EdgeInsets.only(bottom: AppSpacing.s24.h),
                   decoration: BoxDecoration(
-                    color: colors.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: ClipOval(
-                    child: comment.avatarUrl != null
-                        ? Image.network(
-                            comment.avatarUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildInitials(colors, comment.initials, 32.sp),
-                          )
-                        : _buildInitials(colors, comment.initials, 32.sp),
+                    color: colors.outline.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(AppRadius.r2),
                   ),
                 ),
-              ),
-              SizedBox(height: AppSpacing.s16.h),
-              Text(
-                comment.authorName,
-                style: typography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              if (comment.nip != null && comment.nip!.isNotEmpty) ...[
-                SizedBox(height: 4.h),
-                Text(
-                  'NIP. ${comment.nip}',
-                  style: typography.bodyMedium.copyWith(color: colors.onSurface.withValues(alpha: 0.6)),
-                ),
+                if (isLoading && user == null) ...[
+                  // Loading State (Skeleton)
+                  AppSkeleton.circle(size: 100.w),
+                  SizedBox(height: AppSpacing.s16.h),
+                  AppSkeleton(width: 180.w, height: 20.h),
+                  SizedBox(height: 8.h),
+                  AppSkeleton(width: 120.w, height: 14.h),
+                  SizedBox(height: AppSpacing.s24.h),
+                  _buildInfoRowSkeleton(Icons.business_rounded, 'Instansi', colors),
+                  SizedBox(height: AppSpacing.s12.h),
+                  _buildInfoRowSkeleton(Icons.work_outline_rounded, 'Jabatan', colors),
+                  SizedBox(height: AppSpacing.s12.h),
+                  _buildInfoRowSkeleton(Icons.military_tech_rounded, 'Pangkat/Golongan', colors),
+                ] else if (user != null) ...[
+                  // Loaded State
+                  GestureDetector(
+                    onTap: () {
+                      if (user.profilePictureUrl != null) {
+                        _showFullScreenImage(context, user.profilePictureUrl!);
+                      }
+                    },
+                    child: Container(
+                      width: 100.w,
+                      height: 100.w,
+                      decoration: BoxDecoration(
+                        color: colors.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: ClipOval(
+                        child: user.profilePictureUrl != null
+                            ? Image.network(
+                                user.profilePictureUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _buildInitials(colors, user.initials, 32.sp),
+                              )
+                            : _buildInitials(colors, user.initials, 32.sp),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  Text(
+                    user.fullName.isNotEmpty ? user.fullName : user.name,
+                    style: typography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (user.nip.isNotEmpty) ...[
+                    SizedBox(height: 4.h),
+                    Text(
+                      'NIP. ${user.nip}',
+                      style: typography.bodyMedium.copyWith(color: colors.onSurface.withValues(alpha: 0.6)),
+                    ),
+                  ],
+                  SizedBox(height: AppSpacing.s24.h),
+                  _buildInfoRow(Icons.business_rounded, 'Instansi', user.institution?.name ?? '-', colors, typography),
+                  SizedBox(height: AppSpacing.s12.h),
+                  _buildInfoRow(Icons.work_outline_rounded, 'Jabatan', user.jobTitle?.name ?? '-', colors, typography),
+                  SizedBox(height: AppSpacing.s12.h),
+                  _buildInfoRow(Icons.military_tech_rounded, 'Pangkat/Golongan', user.rank?.displayLabel ?? '-', colors, typography),
+                ] else ...[
+                  // Error Fallback
+                  GestureDetector(
+                    onTap: () {
+                      if (comment.avatarUrl != null) {
+                        _showFullScreenImage(context, comment.avatarUrl!);
+                      }
+                    },
+                    child: Container(
+                      width: 100.w,
+                      height: 100.w,
+                      decoration: BoxDecoration(
+                        color: colors.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: ClipOval(
+                        child: comment.avatarUrl != null
+                            ? Image.network(
+                                comment.avatarUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _buildInitials(colors, comment.initials, 32.sp),
+                              )
+                            : _buildInitials(colors, comment.initials, 32.sp),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: AppSpacing.s16.h),
+                  Text(
+                    comment.authorName,
+                    style: typography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (comment.nip != null && comment.nip!.isNotEmpty) ...[
+                    SizedBox(height: 4.h),
+                    Text(
+                      'NIP. ${comment.nip}',
+                      style: typography.bodyMedium.copyWith(color: colors.onSurface.withValues(alpha: 0.6)),
+                    ),
+                  ],
+                  SizedBox(height: AppSpacing.s24.h),
+                  _buildInfoRow(Icons.business_rounded, 'Instansi', comment.instansi ?? '-', colors, typography),
+                  SizedBox(height: AppSpacing.s12.h),
+                  _buildInfoRow(Icons.work_outline_rounded, 'Jabatan', comment.jabatan ?? '-', colors, typography),
+                  SizedBox(height: AppSpacing.s16.h),
+                  TextButton(
+                    onPressed: () => ctrl.getPublicProfile(comment.authorId),
+                    child: const Text('Coba Lagi'),
+                  ),
+                ]
               ],
-              SizedBox(height: AppSpacing.s24.h),
-              _buildInfoRow(Icons.business_rounded, 'Instansi', comment.instansi ?? '-', colors, typography),
-              SizedBox(height: AppSpacing.s12.h),
-              _buildInfoRow(Icons.work_outline_rounded, 'Jabatan', comment.jabatan ?? '-', colors, typography),
-            ],
-          ),
-        );
+            ),
+          );
+        });
       },
     );
   }
@@ -576,6 +652,33 @@ class _CommentTile extends StatelessWidget {
           fontSize: fontSize,
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoRowSkeleton(IconData icon, String label, AppColors colors) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20.sp, color: colors.primary.withValues(alpha: 0.4)),
+        SizedBox(width: AppSpacing.s12.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: typography.caption.copyWith(color: colors.onSurface.withValues(alpha: 0.4)),
+              ),
+              SizedBox(height: 4.h),
+              AppSkeleton(
+                width: 150.w,
+                height: 16.h,
+                borderRadius: AppRadius.r4,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

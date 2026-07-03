@@ -153,13 +153,13 @@ class SubordinateSubmissionItem {
       endDate: dateRange?['end_date'] != null
           ? DateTime.parse(dateRange!['end_date'] as String)
           : null,
-      totalDays: dateRange?['total_days'] != null 
-          ? (dateRange!['total_days'] as num).toInt() 
+      totalDays: dateRange?['total_days'] != null
+          ? double.tryParse(dateRange!['total_days'].toString())?.toInt()
           : null,
       startTime: timeRange?['start_time'] as String?,
       endTime: timeRange?['end_time'] as String?,
-      totalHours: timeRange?['total_hours'] != null 
-          ? (timeRange!['total_hours'] as num).toInt() 
+      totalHours: timeRange?['total_hours'] != null
+          ? double.tryParse(timeRange!['total_hours'].toString())?.toInt()
           : null,
       status: _parseStatus(json['status'] as String?),
       createdAt: json['created_at'] != null

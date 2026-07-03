@@ -26,6 +26,7 @@ class ProfileController extends GetxController {
   final employeeData = Rx<ProfileEmployeeDataModel?>(null);
   final shifts = <ShiftModel>[].obs;
   final selectedShiftId = Rx<int?>(null);
+  final currentShiftId = Rx<int?>(null);
   final photoFile = Rx<File?>(null);
 
   final canChooseSchedule = false.obs;
@@ -242,6 +243,7 @@ class ProfileController extends GetxController {
       canChooseSchedule.value = data.canChooseSchedule;
       hasCheckedInToday.value = data.hasCheckedInToday;
       shifts.assignAll(data.availableSchedules);
+      currentShiftId.value = data.currentScheduleId;
       selectedShiftId.value = data.currentScheduleId;
     } on ApiException catch (e) {
       AppFeedback.showSnackbar(
@@ -585,10 +587,12 @@ class ProfileController extends GetxController {
     try {
       final result = await Get.find<ProfileRepository>()
           .updateSchedule(selectedShiftId.value!);
+      currentShiftId.value = selectedShiftId.value;
       final message = result['message'] as String? ?? 'Jadwal berhasil disimpan';
       AppFeedback.showSnackbar(
         title: 'Berhasil',
         message: message,
+        type: FeedbackType.success,
       );
       Get.back();
     } on ValidationException catch (e) {

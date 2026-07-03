@@ -9,8 +9,13 @@ import '../../../data/models/submission_type.dart';
 
 class SubmissionTypeInfoCard extends StatelessWidget {
   final SubmissionType type;
+  final bool showApprover;
 
-  const SubmissionTypeInfoCard({super.key, required this.type});
+  const SubmissionTypeInfoCard({
+    super.key,
+    required this.type,
+    this.showApprover = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +141,7 @@ class SubmissionTypeInfoCard extends StatelessWidget {
                   ? '${sizeMb.toStringAsFixed(sizeMb == sizeMb.toInt() ? 0 : 1)} MB'
                   : '${doc.maxFileSizeKb} KB';
               final extensions = doc.allowedExtensions.map((e) => e.toUpperCase()).join(', ');
-
+ 
               return Padding(
                 padding: EdgeInsets.only(bottom: AppSpacing.s8.h),
                 child: Container(
@@ -215,43 +220,45 @@ class SubmissionTypeInfoCard extends StatelessWidget {
               );
             }),
           ],
-          Divider(height: AppSpacing.s24.h, color: colors.outline.withValues(alpha: 0.2)),
-          Text(
-            'Disetujui oleh',
-            style: typography.labelSmall.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.5),
+          if (showApprover) ...[
+            Divider(height: AppSpacing.s24.h, color: colors.outline.withValues(alpha: 0.2)),
+            Text(
+              'Disetujui oleh',
+              style: typography.labelSmall.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.5),
+              ),
             ),
-          ),
-          SizedBox(height: AppSpacing.s8.h),
-          Row(
-            children: [
-              AppAvatar(
-                initials: _initials(type.approverName ?? '-'),
-                size: 36,
-              ),
-              SizedBox(width: AppSpacing.s8.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      type.approverName ?? '-',
-                      style: typography.bodySmall.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colors.onSurface,
-                      ),
-                    ),
-                    Text(
-                      type.approverPosition ?? '-',
-                      style: typography.labelSmall.copyWith(
-                        color: colors.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
+            SizedBox(height: AppSpacing.s8.h),
+            Row(
+              children: [
+                AppAvatar(
+                  initials: _initials(type.approverName ?? '-'),
+                  size: 36,
                 ),
-              ),
-            ],
-          ),
+                SizedBox(width: AppSpacing.s8.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        type.approverName ?? '-',
+                        style: typography.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                      Text(
+                        type.approverPosition ?? '-',
+                        style: typography.labelSmall.copyWith(
+                          color: colors.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

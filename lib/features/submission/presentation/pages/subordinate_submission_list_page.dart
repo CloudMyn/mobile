@@ -9,6 +9,7 @@ import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 import '../../../../design_system/components/molecules/app_search_bar.dart';
+import '../../../../design_system/components/molecules/app_error_state.dart';
 import '../../data/models/subordinate_submission_item.dart';
 import '../../data/models/submission_item.dart';
 import '../controllers/subordinate_submission_controller.dart';
@@ -223,6 +224,13 @@ class _SubordinateSubmissionListPageState extends State<SubordinateSubmissionLis
   ) {
     if (_controller.isLoading.value) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_controller.errorMessage.value != null) {
+      return AppErrorState(
+        message: _controller.errorMessage.value!,
+        onRetry: _controller.loadAllData,
+      );
     }
 
     if (list.isEmpty) {

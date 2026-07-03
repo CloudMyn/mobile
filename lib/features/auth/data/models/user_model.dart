@@ -13,6 +13,7 @@ class UserModel {
     this.institution,
     this.department,
     this.jobTitle,
+    this.rank,
     required this.roles,
     required this.permissions,
     required this.isBypassFermuk,
@@ -31,6 +32,7 @@ class UserModel {
   final UserOrgUnit? institution;
   final UserOrgUnit? department;
   final UserOrgUnit? jobTitle;
+  final UserRank? rank;
   final List<String> roles;
   final List<String> permissions;
 
@@ -54,6 +56,9 @@ class UserModel {
           : null,
       jobTitle: json['job_title'] != null
           ? UserOrgUnit.fromJson(json['job_title'] as Map<String, dynamic>)
+          : null,
+      rank: json['rank'] != null
+          ? UserRank.fromJson(json['rank'] as Map<String, dynamic>)
           : null,
       roles:
           (json['roles'] as List<dynamic>?)
@@ -85,6 +90,7 @@ class UserModel {
     UserOrgUnit? institution,
     UserOrgUnit? department,
     UserOrgUnit? jobTitle,
+    UserRank? rank,
     List<String>? roles,
     List<String>? permissions,
   }) {
@@ -102,6 +108,7 @@ class UserModel {
       institution: institution ?? this.institution,
       department: department ?? this.department,
       jobTitle: jobTitle ?? this.jobTitle,
+      rank: rank ?? this.rank,
       roles: roles ?? this.roles,
       permissions: permissions ?? this.permissions,
     );
@@ -116,6 +123,35 @@ class UserModel {
       return parts[0][0].toUpperCase();
     }
     return '?';
+  }
+}
+
+class UserRank {
+  const UserRank({
+    required this.id,
+    required this.group,
+    required this.space,
+    required this.name,
+    required this.fullLabel,
+    required this.displayLabel,
+  });
+
+  final int id;
+  final String group;
+  final String space;
+  final String name;
+  final String fullLabel;
+  final String displayLabel;
+
+  factory UserRank.fromJson(Map<String, dynamic> json) {
+    return UserRank(
+      id: json['id'] as int? ?? 0,
+      group: json['group'] as String? ?? '',
+      space: json['space'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      fullLabel: json['full_label'] as String? ?? '',
+      displayLabel: json['display_label'] as String? ?? '',
+    );
   }
 }
 

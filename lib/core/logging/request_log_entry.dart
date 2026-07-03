@@ -193,7 +193,10 @@ class RequestLogEntry {
     }
     buffer.writeln('$boldCyan══════════════════════════════════════════════════════════════════════════════════════════$reset');
 
-    print(buffer.toString());
+    final lines = buffer.toString().split('\n');
+    for (final line in lines) {
+      print(line);
+    }
   }
 
   String _prettyJson(String jsonStr) {
