@@ -43,6 +43,7 @@ class SubmissionItem {
   final DateTime? rejectedAt;
   final DateTime? cancelledAt;
   final String? approvalNote;
+  final bool isWfhFromHome;
   final List<SubmissionAttachment> attachments;
 
   const SubmissionItem({
@@ -66,6 +67,7 @@ class SubmissionItem {
     this.rejectedAt,
     this.cancelledAt,
     this.approvalNote,
+    this.isWfhFromHome = false,
     this.attachments = const [],
   });
 
@@ -115,6 +117,7 @@ class SubmissionItem {
           ? DateTime.tryParse(tracking['cancelled_at'] as String)
           : null,
       approvalNote: json['approval_note'] as String?,
+      isWfhFromHome: json['is_wfh_from_home'] as bool? ?? false,
       attachments: rawAttachments
           .map((e) => SubmissionAttachment.fromJson(e as Map<String, dynamic>))
           .toList(),

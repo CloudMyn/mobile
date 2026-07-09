@@ -618,6 +618,42 @@ class ProfileController extends GetxController {
     }
   }
 
+  Future<void> saveHomeLocation({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final updatedUser = await Get.find<ProfileRepository>()
+          .updateHomeLocation(latitude: latitude, longitude: longitude);
+      final session = Get.find<SessionManager>();
+      final currentUser = session.currentUser.value;
+      if (currentUser != null) {
+        session.setUser(currentUser.copyWith(
+          homeLatitude: updatedUser.homeLatitude,
+          homeLongitude: updatedUser.homeLongitude,
+        ));
+      } else {
+        session.setUser(updatedUser);
+      }
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Lokasi rumah berhasil disimpan',
+      );
+    } on ApiException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    } on NetworkException catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: e.message,
+        isError: true,
+      );
+    }
+  }
+
   Future<void> logout() async {
     final colors = Get.theme.extension<AppColors>()!;
     final textTheme = Get.textTheme;

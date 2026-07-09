@@ -27,6 +27,7 @@ class SubmissionFormController extends GetxController {
   final endTime = Rx<TimeOfDay?>(null);
   final attachments = <String, String?>{}.obs;
   final isLoading = false.obs;
+  final isWfhFromHome = false.obs;
 
   bool get requiresDateRange => selectedType.value?.requiresDateRange ?? false;
   bool get requiresTimeRange => selectedType.value?.requiresTimeRange ?? false;
@@ -47,6 +48,7 @@ class SubmissionFormController extends GetxController {
     startTime.value = null;
     endTime.value = null;
     attachments.clear();
+    isWfhFromHome.value = false;
     for (final field in type.attachmentFields) {
       attachments[field.id] = null;
     }
@@ -187,6 +189,7 @@ class SubmissionFormController extends GetxController {
         endTime: requiresTimeRange && endTime.value != null ? _formatTime(endTime.value!) : null,
         attachments: Map.from(attachments),
         autoSubmit: autoSubmit,
+        isWfhFromHome: isWfhFromHome.value,
       );
 
       if (Get.isRegistered<SubmissionController>()) {

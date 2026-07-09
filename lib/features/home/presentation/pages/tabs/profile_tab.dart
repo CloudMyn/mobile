@@ -20,6 +20,7 @@ import '../../../../profile/presentation/pages/update_employee_page.dart';
 import '../../../../profile/presentation/pages/update_password_page.dart';
 import '../../../../profile/presentation/pages/update_photo_page.dart';
 import '../../../../profile/presentation/pages/request_log_page.dart';
+import '../../../../profile/presentation/pages/set_home_location_page.dart';
 import '../../../../../core/network/session_manager.dart';
 import '../../../../auth/presentation/pages/leader_splash_page.dart';
 import '../../../../profile/presentation/pages/supervisor_history_page.dart';
@@ -107,6 +108,26 @@ class ProfileTab extends StatelessWidget {
                     leading: const Icon(Icons.face_retouching_natural_rounded),
                     showDivider: true,
                     onTap: () => Get.to(() => const FaceEnrollmentPage()),
+                  );
+                }),
+                Obx(() {
+                  final session = Get.find<SessionManager>();
+                  final user = session.currentUser.value;
+                  final hasHomeLocation = user?.homeLatitude != null && user?.homeLongitude != null;
+                  return AppListItem(
+                    title: 'Lokasi Rumah',
+                    subtitle: hasHomeLocation
+                        ? 'Terdaftar: ${user!.homeLatitude!.toStringAsFixed(5)}, ${user.homeLongitude!.toStringAsFixed(5)}'
+                        : 'Belum diatur – diperlukan untuk WFH dari rumah',
+                    leading: Icon(
+                      Icons.home_work_rounded,
+                      color: hasHomeLocation ? null : colors.error,
+                    ),
+                    trailing: hasHomeLocation
+                        ? Icon(Icons.check_circle_rounded, color: colors.success, size: 18)
+                        : Icon(Icons.warning_amber_rounded, color: colors.error, size: 18),
+                    showDivider: true,
+                    onTap: () => Get.to(() => const SetHomeLocationPage()),
                   );
                 }),
                 AppListItem(

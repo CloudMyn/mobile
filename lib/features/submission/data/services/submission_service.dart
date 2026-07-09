@@ -21,6 +21,7 @@ abstract class SubmissionService {
     String? endTime,
     Map<String, String?>? attachments,
     bool autoSubmit = false,
+    bool isWfhFromHome = false,
   });
   Future<SubmissionItem> submitDraft(int id);
   Future<void> deleteSubmission(int id);
@@ -82,6 +83,7 @@ class ApiSubmissionService implements SubmissionService {
     String? endTime,
     Map<String, String?>? attachments, // key: document_id (string format of int), value: file path
     bool autoSubmit = false,
+    bool isWfhFromHome = false,
   }) async {
     try {
       final DateFormat dateFormat = DateFormat('yyyy-MM-dd');
@@ -91,6 +93,7 @@ class ApiSubmissionService implements SubmissionService {
         'start_date': dateFormat.format(startDate),
         'reason': description,
         'auto_submit': autoSubmit ? 1 : 0,
+        if (isWfhFromHome) 'is_wfh_from_home': 1,
       };
 
       if (endDate != null) data['end_date'] = dateFormat.format(endDate);

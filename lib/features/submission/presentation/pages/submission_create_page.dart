@@ -14,6 +14,8 @@ import '../../data/models/submission_type.dart';
 import '../../data/services/submission_service.dart';
 import 'widgets/attachment_upload_field.dart';
 import 'widgets/submission_type_info_card.dart';
+import '../../../../core/network/session_manager.dart';
+import '../../../profile/presentation/pages/set_home_location_page.dart';
 
 class SubmissionCreatePage extends StatelessWidget {
   const SubmissionCreatePage({super.key});
@@ -147,6 +149,115 @@ class SubmissionCreatePage extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                );
+              }),
+
+              // ── WFH dari Rumah Toggle (hanya untuk WFH) ─────────────────
+              Obx(() {
+                final type = ctrl.selectedType.value;
+                if (type == null || (type.code != 'WFH' && type.code != 'WFA')) {
+                  return const SizedBox.shrink();
+                }
+                final user = Get.find<SessionManager>().currentUser.value;
+                final hasHomeLocation = user?.homeLatitude != null && user?.homeLongitude != null;
+
+                return Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.s20.h),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: ctrl.isWfhFromHome.value
+                            ? colors.primary.withValues(alpha: 0.4)
+                            : colors.outline.withValues(alpha: 0.3),
+                      ),
+                      color: ctrl.isWfhFromHome.value
+                          ? colors.primary.withValues(alpha: 0.04)
+                          : colors.surface,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s16.w,
+                            vertical: AppSpacing.s4.h,
+                          ),
+                          title: Row(
+                            children: [
+                              Icon(
+                                Icons.home_work_rounded,
+                                size: 18,
+                                color: ctrl.isWfhFromHome.value
+                                    ? colors.primary
+                                    : colors.onSurface.withValues(alpha: 0.6),
+                              ),
+                              SizedBox(width: AppSpacing.s8.w),
+                              Text(
+                                'WFH dari Rumah',
+                                style: typography.bodyMedium.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: ctrl.isWfhFromHome.value
+                                      ? colors.primary
+                                      : colors.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: Padding(
+                            padding: EdgeInsets.only(top: AppSpacing.s2.h),
+                            child: Text(
+                              'Presensi akan divalidasi dari koordinat rumah Anda',
+                              style: typography.bodySmall.copyWith(
+                                color: colors.onSurface.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ),
+                          value: ctrl.isWfhFromHome.value,
+                          activeColor: colors.primary,
+                          onChanged: (val) => ctrl.isWfhFromHome.value = val,
+                        ),
+                        if (ctrl.isWfhFromHome.value && !hasHomeLocation)
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              AppSpacing.s16.w,
+                              0,
+                              AppSpacing.s16.w,
+                              AppSpacing.s12.h,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.warning_amber_rounded,
+                                  size: 14,
+                                  color: colors.error,
+                                ),
+                                SizedBox(width: AppSpacing.s4.w),
+                                Expanded(
+                                  child: Text(
+                                    'Koordinat rumah belum diatur. ',
+                                    style: typography.bodySmall.copyWith(
+                                      color: colors.error,
+                                    ),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => Get.to(() => const SetHomeLocationPage()),
+                                  child: Text(
+                                    'Atur Sekarang →',
+                                    style: typography.bodySmall.copyWith(
+                                      color: colors.primary,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 );
               }),

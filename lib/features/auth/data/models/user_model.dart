@@ -17,6 +17,8 @@ class UserModel {
     required this.roles,
     required this.permissions,
     required this.isBypassFermuk,
+    this.homeLatitude,
+    this.homeLongitude,
   });
 
   final int id;
@@ -28,6 +30,8 @@ class UserModel {
   final String? phone;
   final String? profilePictureUrl;
   final String? faceData;
+  final double? homeLatitude;
+  final double? homeLongitude;
   final bool isBypassFermuk;
   final UserOrgUnit? institution;
   final UserOrgUnit? department;
@@ -47,6 +51,8 @@ class UserModel {
       phone: json['phone'] as String?,
       profilePictureUrl: json['profile_picture_url'] as String?,
       faceData: json['face_data'] as String?,
+      homeLatitude: json['home_latitude'] != null ? (json['home_latitude'] as num).toDouble() : null,
+      homeLongitude: json['home_longitude'] != null ? (json['home_longitude'] as num).toDouble() : null,
       isBypassFermuk: json['is_bypass_fermuk'] as bool? ?? false,
       institution: json['institution'] != null
           ? UserOrgUnit.fromJson(json['institution'] as Map<String, dynamic>)
@@ -86,6 +92,8 @@ class UserModel {
     String? phone,
     String? profilePictureUrl,
     String? faceData,
+    double? homeLatitude,
+    double? homeLongitude,
     bool? isBypassFermuk,
     UserOrgUnit? institution,
     UserOrgUnit? department,
@@ -104,6 +112,8 @@ class UserModel {
       phone: phone ?? this.phone,
       profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
       faceData: faceData ?? this.faceData,
+      homeLatitude: homeLatitude ?? this.homeLatitude,
+      homeLongitude: homeLongitude ?? this.homeLongitude,
       isBypassFermuk: isBypassFermuk ?? this.isBypassFermuk,
       institution: institution ?? this.institution,
       department: department ?? this.department,

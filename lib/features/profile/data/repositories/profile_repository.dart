@@ -19,6 +19,10 @@ abstract class ProfileRepository {
     int? jobTitleId,
     int? institutionId,
   });
+  Future<UserModel> updateHomeLocation({
+    required double latitude,
+    required double longitude,
+  });
   Future<List<ReferenceItem>> fetchReferences(String model);
   Future<ProfileEmployeeDataModel?> getEmployeeData();
   Future<ProfileEmployeeDataModel> upsertEmployeeData({
@@ -147,6 +151,29 @@ class ProfileRepositoryImpl implements ProfileRepository {
       ).data!;
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal memperbarui profil');
+    }
+  }
+
+  @override
+  Future<UserModel> updateHomeLocation({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/mobile/profile/home-location',
+        data: {
+          'home_latitude': latitude,
+          'home_longitude': longitude,
+        },
+      );
+
+      return ApiResponse.fromJson(
+        response.data!,
+        (data) => UserModel.fromJson(data as Map<String, dynamic>),
+      ).data!;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal menyimpan lokasi rumah');
     }
   }
 
