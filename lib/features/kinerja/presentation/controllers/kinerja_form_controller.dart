@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/activity_item.dart';
 import '../../data/models/activity_type.dart';
 import '../../data/services/kinerja_service.dart';
@@ -64,11 +65,14 @@ class KinerjaFormController extends GetxController {
   }
 
   Future<void> _fetchAndSetStartTime(DateTime date, {bool updateField = true}) async {
+    final bypass = Get.find<SharedPreferences>().getBool('bypass_attendance_activity') ?? false;
     final time = await _service.fetchAttendanceByDate(date);
-    clockInTime.value = time;
-    if (time != null) {
+    
+    clockInTime.value = time ?? (bypass ? '07:30' : null);
+    
+    if (clockInTime.value != null) {
       if (updateField) {
-        startTimeCtrl.text = time;
+        startTimeCtrl.text = clockInTime.value!;
       }
     } else {
       if (updateField) {

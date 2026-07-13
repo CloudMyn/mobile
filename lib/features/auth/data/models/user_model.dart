@@ -19,6 +19,12 @@ class UserModel {
     required this.isBypassFermuk,
     this.homeLatitude,
     this.homeLongitude,
+    required this.isDeveloper,
+    this.employmentStatus,
+    this.employeeType,
+    this.joinDate,
+    this.isActive,
+    this.canChangeSchedule,
   });
 
   final int id;
@@ -33,12 +39,18 @@ class UserModel {
   final double? homeLatitude;
   final double? homeLongitude;
   final bool isBypassFermuk;
+  final bool isDeveloper;
   final UserOrgUnit? institution;
   final UserOrgUnit? department;
   final UserOrgUnit? jobTitle;
   final UserRank? rank;
   final List<String> roles;
   final List<String> permissions;
+  final String? employmentStatus;
+  final String? employeeType;
+  final String? joinDate;
+  final bool? isActive;
+  final bool? canChangeSchedule;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -54,6 +66,7 @@ class UserModel {
       homeLatitude: json['home_latitude'] != null ? (json['home_latitude'] as num).toDouble() : null,
       homeLongitude: json['home_longitude'] != null ? (json['home_longitude'] as num).toDouble() : null,
       isBypassFermuk: json['is_bypass_fermuk'] as bool? ?? false,
+      isDeveloper: json['is_developer'] as bool? ?? false,
       institution: json['institution'] != null
           ? UserOrgUnit.fromJson(json['institution'] as Map<String, dynamic>)
           : null,
@@ -76,6 +89,11 @@ class UserModel {
               ?.map((e) => e.toString())
               .toList() ??
           [],
+      employmentStatus: json['employment_status'] as String?,
+      employeeType: json['employee_type'] as String?,
+      joinDate: json['join_date'] as String?,
+      isActive: json['is_active'] as bool?,
+      canChangeSchedule: json['can_change_schedule'] as bool?,
     );
   }
 
@@ -101,6 +119,12 @@ class UserModel {
     UserRank? rank,
     List<String>? roles,
     List<String>? permissions,
+    bool? isDeveloper,
+    String? employmentStatus,
+    String? employeeType,
+    String? joinDate,
+    bool? isActive,
+    bool? canChangeSchedule,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -121,6 +145,12 @@ class UserModel {
       rank: rank ?? this.rank,
       roles: roles ?? this.roles,
       permissions: permissions ?? this.permissions,
+      isDeveloper: isDeveloper ?? this.isDeveloper,
+      employmentStatus: employmentStatus ?? this.employmentStatus,
+      employeeType: employeeType ?? this.employeeType,
+      joinDate: joinDate ?? this.joinDate,
+      isActive: isActive ?? this.isActive,
+      canChangeSchedule: canChangeSchedule ?? this.canChangeSchedule,
     );
   }
 

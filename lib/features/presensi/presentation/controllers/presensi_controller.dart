@@ -1,6 +1,9 @@
 import 'dart:typed_data';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/token_storage.dart';
@@ -226,7 +229,27 @@ class PresensiController extends GetxController {
       return;
     }
 
-    final pos = result.position!;
+    Position pos = result.position!;
+    
+    // Developer Cheat: Mock GPS Location
+    final mockGps = Get.find<SharedPreferences>().getBool('mock_gps_location') ?? false;
+    if (mockGps && cfg.hasValidGeofence) {
+      final target = cfg.validLocations.first;
+      pos = Position(
+        longitude: target.longitude,
+        latitude: target.latitude,
+        timestamp: DateTime.now(),
+        accuracy: 5.0,
+        altitude: pos.altitude,
+        altitudeAccuracy: pos.altitudeAccuracy,
+        heading: pos.heading,
+        headingAccuracy: pos.headingAccuracy,
+        speed: pos.speed,
+        speedAccuracy: pos.speedAccuracy,
+      );
+      debugPrint('[PresensiController] checkLocation: MOCKED GPS to Lat: ${pos.latitude}, Lng: ${pos.longitude}');
+    }
+
     currentPosition.value = pos;
     debugPrint(
       '[PresensiController] checkLocation: Current position: Lat: ${pos.latitude}, Lng: ${pos.longitude}, Accuracy: ${pos.accuracy}m',

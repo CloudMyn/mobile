@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../design_system/components/app_button.dart';
 import '../../../../design_system/components/app_card.dart';
 import '../../../../design_system/components/app_skeleton.dart';
@@ -92,8 +93,8 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
               children: [
                 // ── Alert Card Belum Absen Masuk ───────────
                 Obx(() {
-                  final hasClockedIn =
-                      _controller.todayClockInTime.value != null;
+                  final bypass = Get.find<SharedPreferences>().getBool('bypass_attendance_activity') ?? false;
+                  final hasClockedIn = _controller.todayClockInTime.value != null || bypass;
                   if (hasClockedIn) return const SizedBox.shrink();
 
                   return Padding(

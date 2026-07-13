@@ -24,6 +24,7 @@ import '../../../../profile/presentation/pages/set_home_location_page.dart';
 import '../../../../../core/network/session_manager.dart';
 import '../../../../auth/presentation/pages/leader_splash_page.dart';
 import '../../../../profile/presentation/pages/supervisor_history_page.dart';
+import '../../../../profile/presentation/pages/about_us_page.dart';
 import '../../../../../design_system/components/app_button.dart';
 import '../../../../../core/utils/restart_helper.dart';
 
@@ -69,202 +70,233 @@ class ProfileTab extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.symmetric(horizontal: AppSpacing.s16.w),
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ProfileHeader(ctrl: ctrl, colors: colors, typography: typography),
-          SizedBox(height: AppSpacing.s24.h),
-          _SectionLabel(
-            label: 'Pengaturan Akun',
-            colors: colors,
-            typography: typography,
-          ),
-          SizedBox(height: AppSpacing.s8.h),
-          AppCard(
-            outlined: true,
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                AppListItem(
-                  title: 'Update Foto Profil',
-                  subtitle: 'Ganti foto profil Anda',
-                  leading: const Icon(Icons.photo_camera_rounded),
-                  showDivider: true,
-                  onTap: () => Get.to(() => const UpdatePhotoPage()),
-                ),
-                AppListItem(
-                  title: 'Update Password',
-                  subtitle: 'Ubah kata sandi akun',
-                  leading: const Icon(Icons.lock_outline_rounded),
-                  showDivider: true,
-                  onTap: () => Get.to(() => const UpdatePasswordPage()),
-                ),
-                Obx(() {
-                  final session = Get.find<SessionManager>();
-                  final user = session.currentUser.value;
-                  final hasFace = user?.faceData != null && user!.faceData!.isNotEmpty;
-                  return AppListItem(
-                    title: hasFace ? 'Pengaturan Wajah' : 'Daftarkan Wajah',
-                    subtitle: hasFace ? 'Wajah sudah terdaftar' : 'Untuk absensi dengan Face Recognition',
-                    leading: const Icon(Icons.face_retouching_natural_rounded),
-                    showDivider: true,
-                    onTap: () => Get.to(() => const FaceEnrollmentPage()),
-                  );
-                }),
-                Obx(() {
-                  final session = Get.find<SessionManager>();
-                  final user = session.currentUser.value;
-                  final hasHomeLocation = user?.homeLatitude != null && user?.homeLongitude != null;
-                  return AppListItem(
-                    title: 'Lokasi Rumah',
-                    subtitle: hasHomeLocation
-                        ? 'Terdaftar: ${user!.homeLatitude!.toStringAsFixed(5)}, ${user.homeLongitude!.toStringAsFixed(5)}'
-                        : 'Belum diatur – diperlukan untuk WFH dari rumah',
-                    leading: Icon(
-                      Icons.home_work_rounded,
-                      color: hasHomeLocation ? null : colors.error,
-                    ),
-                    trailing: hasHomeLocation
-                        ? Icon(Icons.check_circle_rounded, color: colors.success, size: 18)
-                        : Icon(Icons.warning_amber_rounded, color: colors.error, size: 18),
-                    showDivider: true,
-                    onTap: () => Get.to(() => const SetHomeLocationPage()),
-                  );
-                }),
-                AppListItem(
-                  title: 'Pembaruan Data Pegawai',
-                  subtitle: 'Edit data kontak dan identitas',
-                  leading: const Icon(Icons.manage_accounts_rounded),
-                  showDivider: true,
-                  onTap: () => Get.to(() => const UpdateEmployeePage()),
-                ),
-                AppListItem(
-                  title: 'Menu Atasan',
-                  subtitle: 'Riwayat dan pengajuan atasan',
-                  leading: const Icon(Icons.supervisor_account_rounded),
-                  onTap: () => Get.to(() => const SupervisorHistoryPage()),
-                ),
-              ],
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _ProfileHeader(ctrl: ctrl, colors: colors, typography: typography),
+            SizedBox(height: AppSpacing.s24.h),
+            _SectionLabel(
+              label: 'Pengaturan Akun',
+              colors: colors,
+              typography: typography,
             ),
-          ),
-          SizedBox(height: AppSpacing.s16.h),
-          _SectionLabel(
-            label: 'Jadwal & Informasi',
-            colors: colors,
-            typography: typography,
-          ),
-          SizedBox(height: AppSpacing.s8.h),
-          AppCard(
-            outlined: true,
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                Obx(() {
-                  if (!ctrl.canChooseSchedule.value) {
-                    return const SizedBox.shrink();
-                  }
-                  return AppListItem(
-                    title: 'Atur Jadwal Shift',
-                    subtitle: 'Pilih jadwal shift kerja Anda',
-                    leading: const Icon(Icons.schedule_rounded),
+            SizedBox(height: AppSpacing.s8.h),
+            AppCard(
+              outlined: true,
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  AppListItem(
+                    title: 'Update Foto Profil',
+                    subtitle: 'Ganti foto profil Anda',
+                    leading: const Icon(Icons.photo_camera_rounded),
                     showDivider: true,
-                    onTap: () => Get.to(() => const ShiftSchedulePage()),
-                  );
-                }),
-                AppListItem(
-                  title: 'FAQ',
-                  subtitle: 'Pertanyaan yang sering diajukan',
-                  leading: const Icon(Icons.help_outline_rounded),
-                  trailing: Icon(
-                    Icons.open_in_new_rounded,
-                    size: 16,
-                    color: colors.outline,
+                    onTap: () => Get.to(() => const UpdatePhotoPage()),
                   ),
-                  onTap: _openFaq,
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: AppSpacing.s16.h),
-          _SectionLabel(
-            label: 'Tampilan',
-            colors: colors,
-            typography: typography,
-          ),
-          SizedBox(height: AppSpacing.s8.h),
-          AppCard(
-            outlined: true,
-            padding: EdgeInsets.zero,
-            child: Obx(() {
-              final themeCtrl = Get.find<ThemeController>();
-              return AppListItem(
-                title: 'Mode Gelap',
-                subtitle: themeCtrl.isSystemMode
-                    ? 'Mengikuti sistem'
-                    : (themeCtrl.isDarkMode ? 'Aktif' : 'Nonaktif'),
-                leading: const Icon(Icons.dark_mode_rounded),
-                trailing: Switch(
-                  value: themeCtrl.isDarkMode,
-                  activeThumbColor: colors.onPrimary,
-                  activeTrackColor: colors.primary,
-                  inactiveThumbColor: colors.outline,
-                  inactiveTrackColor: colors.outline.withValues(alpha: 0.3),
-                  onChanged: (value) => themeCtrl.toggleDarkMode(value),
-                ),
-                onTap: () => themeCtrl.toggleDarkMode(!themeCtrl.isDarkMode),
-              );
-            }),
-          ),
-          SizedBox(height: AppSpacing.s16.h),
-          _SectionLabel(
-            label: 'Developer',
-            colors: colors,
-            typography: typography,
-          ),
-          SizedBox(height: AppSpacing.s8.h),
-          AppCard(
-            outlined: true,
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                AppListItem(
-                  title: 'Request Log',
-                  subtitle: 'Lihat log request & response API',
-                  leading: const Icon(Icons.bug_report_rounded),
-                  showDivider: true,
-                  onTap: () => Get.to(() => const RequestLogPage()),
-                ),
-                AppListItem(
-                  title: 'Leader Splash Page',
-                  subtitle: 'Tampilkan Splash Pimpinan Daerah (Tanpa Auto Close)',
-                  leading: const Icon(Icons.slideshow_rounded),
-                  onTap: () => Get.to(() => const LeaderSplashPage(autoClose: false)),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: AppSpacing.s32.h),
-          _ReloadButton(
-            colors: colors,
-            typography: typography,
-            onPressed: () => _showRestartConfirmation(context),
-          ),
-          SizedBox(height: AppSpacing.s12.h),
-          _LogoutButton(ctrl: ctrl, colors: colors, typography: typography),
-          SizedBox(height: AppSpacing.s16.h),
-          Center(
-            child: Text(
-              'Versi ${AppConstants.versionName} (${AppConstants.buildNumber})',
-              style: typography.bodySmall.copyWith(
-                color: colors.onSurface.withValues(alpha: 0.4),
+                  AppListItem(
+                    title: 'Update Password',
+                    subtitle: 'Ubah kata sandi akun',
+                    leading: const Icon(Icons.lock_outline_rounded),
+                    showDivider: true,
+                    onTap: () => Get.to(() => const UpdatePasswordPage()),
+                  ),
+                  Obx(() {
+                    final session = Get.find<SessionManager>();
+                    final user = session.currentUser.value;
+                    final hasFace =
+                        user?.faceData != null && user!.faceData!.isNotEmpty;
+                    return AppListItem(
+                      title: hasFace ? 'Pengaturan Wajah' : 'Daftarkan Wajah',
+                      subtitle: hasFace
+                          ? 'Wajah sudah terdaftar'
+                          : 'Untuk absensi dengan Face Recognition',
+                      leading: const Icon(
+                        Icons.face_retouching_natural_rounded,
+                      ),
+                      showDivider: true,
+                      onTap: () => Get.to(() => const FaceEnrollmentPage()),
+                    );
+                  }),
+                  Obx(() {
+                    final session = Get.find<SessionManager>();
+                    final user = session.currentUser.value;
+                    final hasHomeLocation =
+                        user?.homeLatitude != null &&
+                        user?.homeLongitude != null;
+                    return AppListItem(
+                      title: 'Lokasi Rumah',
+                      subtitle: hasHomeLocation
+                          ? 'Terdaftar: ${user!.homeLatitude!.toStringAsFixed(5)}, ${user.homeLongitude!.toStringAsFixed(5)}'
+                          : 'Belum diatur – diperlukan untuk WFH dari rumah',
+                      leading: Icon(
+                        Icons.home_work_rounded,
+                        color: hasHomeLocation ? null : colors.error,
+                      ),
+                      trailing: hasHomeLocation
+                          ? Icon(
+                              Icons.check_circle_rounded,
+                              color: colors.success,
+                              size: 18,
+                            )
+                          : Icon(
+                              Icons.warning_amber_rounded,
+                              color: colors.error,
+                              size: 18,
+                            ),
+                      showDivider: true,
+                      onTap: () => Get.to(() => const SetHomeLocationPage()),
+                    );
+                  }),
+                  AppListItem(
+                    title: 'Pembaruan Data Pegawai',
+                    subtitle: 'Edit data kontak dan identitas',
+                    leading: const Icon(Icons.manage_accounts_rounded),
+                    showDivider: true,
+                    onTap: () => Get.to(() => const UpdateEmployeePage()),
+                  ),
+                  AppListItem(
+                    title: 'Menu Atasan',
+                    subtitle: 'Riwayat dan pengajuan atasan',
+                    leading: const Icon(Icons.supervisor_account_rounded),
+                    onTap: () => Get.to(() => const SupervisorHistoryPage()),
+                  ),
+                ],
               ),
             ),
-          ),
-          SizedBox(height: AppSpacing.s32.h),
-        ],
+            SizedBox(height: AppSpacing.s16.h),
+            _SectionLabel(
+              label: 'Jadwal & Informasi',
+              colors: colors,
+              typography: typography,
+            ),
+            SizedBox(height: AppSpacing.s8.h),
+            AppCard(
+              outlined: true,
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  Obx(() {
+                    if (!ctrl.canChooseSchedule.value) {
+                      return const SizedBox.shrink();
+                    }
+                    return AppListItem(
+                      title: 'Atur Jadwal Shift',
+                      subtitle: 'Pilih jadwal shift kerja Anda',
+                      leading: const Icon(Icons.schedule_rounded),
+                      showDivider: true,
+                      onTap: () => Get.to(() => const ShiftSchedulePage()),
+                    );
+                  }),
+                  AppListItem(
+                    title: 'FAQ',
+                    subtitle: 'Pertanyaan yang sering diajukan',
+                    leading: const Icon(Icons.help_outline_rounded),
+                    trailing: Icon(
+                      Icons.open_in_new_rounded,
+                      size: 16,
+                      color: colors.outline,
+                    ),
+                    onTap: _openFaq,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: AppSpacing.s16.h),
+            _SectionLabel(
+              label: 'Tampilan',
+              colors: colors,
+              typography: typography,
+            ),
+            SizedBox(height: AppSpacing.s8.h),
+            AppCard(
+              outlined: true,
+              padding: EdgeInsets.zero,
+              child: Obx(() {
+                final themeCtrl = Get.find<ThemeController>();
+                return AppListItem(
+                  title: 'Mode Gelap',
+                  subtitle: themeCtrl.isSystemMode
+                      ? 'Mengikuti sistem'
+                      : (themeCtrl.isDarkMode ? 'Aktif' : 'Nonaktif'),
+                  leading: const Icon(Icons.dark_mode_rounded),
+                  trailing: Switch(
+                    value: themeCtrl.isDarkMode,
+                    activeThumbColor: colors.onPrimary,
+                    activeTrackColor: colors.primary,
+                    inactiveThumbColor: colors.outline,
+                    inactiveTrackColor: colors.outline.withValues(alpha: 0.3),
+                    onChanged: (value) => themeCtrl.toggleDarkMode(value),
+                  ),
+                  onTap: () => themeCtrl.toggleDarkMode(!themeCtrl.isDarkMode),
+                );
+              }),
+            ),
+            SizedBox(height: AppSpacing.s16.h),
+            _SectionLabel(
+              label: 'Developer & Tentang',
+              colors: colors,
+              typography: typography,
+            ),
+            SizedBox(height: AppSpacing.s8.h),
+            AppCard(
+              outlined: true,
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  AppListItem(
+                    title: 'Tentang Aplikasi',
+                    subtitle: 'Tim pengembang dan pihak terkait',
+                    leading: const Icon(Icons.info_outline_rounded),
+                    showDivider: true,
+                    onTap: () => Get.to(() => const AboutUsPage()),
+                  ),
+                  Obx(() {
+                    final session = Get.find<SessionManager>();
+                    final user = session.currentUser.value;
+                    if (user?.isDeveloper != true) {
+                      return const SizedBox.shrink();
+                    }
+                    return AppListItem(
+                      title: 'Request Log',
+                      subtitle: 'Lihat log request & response API',
+                      leading: const Icon(Icons.bug_report_rounded),
+                      showDivider: true,
+                      onTap: () => Get.to(() => const RequestLogPage()),
+                    );
+                  }),
+                  AppListItem(
+                    title: 'Leader Splash Page',
+                    subtitle:
+                        'Tampilkan Splash Pimpinan Daerah (Tanpa Auto Close)',
+                    leading: const Icon(Icons.slideshow_rounded),
+                    onTap: () =>
+                        Get.to(() => const LeaderSplashPage(autoClose: false)),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: AppSpacing.s32.h),
+            _ReloadButton(
+              colors: colors,
+              typography: typography,
+              onPressed: () => _showRestartConfirmation(context),
+            ),
+            SizedBox(height: AppSpacing.s12.h),
+            _LogoutButton(ctrl: ctrl, colors: colors, typography: typography),
+            SizedBox(height: AppSpacing.s16.h),
+            Center(
+              child: Text(
+                'Versi ${AppConstants.versionName} (${AppConstants.buildNumber})',
+                style: typography.bodySmall.copyWith(
+                  color: colors.onSurface.withValues(alpha: 0.4),
+                ),
+              ),
+            ),
+            SizedBox(height: AppSpacing.s32.h),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Future<void> _openFaq() async {
     final uri = Uri.parse(AppConstants.faqUrl);

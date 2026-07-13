@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 
 import '../../../../core/network/session_manager.dart';
 import '../../../../design_system/components/app_button.dart';
@@ -103,7 +103,9 @@ class _SetHomeLocationPageState extends State<SetHomeLocationPage> {
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
 
-    final initialCenter = _selectedLocation ?? const LatLng(-4.5, 119.9); // Default: Sulawesi Selatan
+    final initialCenter =
+        _selectedLocation ??
+        const LatLng(-4.5, 119.9); // Default: Sulawesi Selatan
 
     return Scaffold(
       backgroundColor: colors.surface,
@@ -126,19 +128,20 @@ class _SetHomeLocationPageState extends State<SetHomeLocationPage> {
             decoration: BoxDecoration(
               color: colors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(AppRadius.r12),
-              border: Border.all(
-                color: colors.primary.withValues(alpha: 0.2),
-              ),
+              border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline_rounded,
-                    color: colors.primary, size: 18),
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: colors.primary,
+                  size: 18,
+                ),
                 SizedBox(width: AppSpacing.s8.w),
                 Expanded(
                   child: Text(
-                    'Ketuk peta untuk memilih lokasi rumah Anda. Lokasi ini digunakan untuk validasi presensi WFH.',
+                    'Ketuk peta untuk memilih lokasi rumah Anda',
                     style: typography.bodySmall.copyWith(
                       color: colors.primary,
                       height: 1.4,
@@ -185,14 +188,17 @@ class _SetHomeLocationPageState extends State<SetHomeLocationPage> {
                                     color: colors.primary,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: Colors.white, width: 2),
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: colors.primary
-                                            .withValues(alpha: 0.4),
+                                        color: colors.primary.withValues(
+                                          alpha: 0.4,
+                                        ),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
-                                      )
+                                      ),
                                     ],
                                   ),
                                   child: const Icon(
@@ -276,8 +282,11 @@ class _SetHomeLocationPageState extends State<SetHomeLocationPage> {
                 if (_selectedLocation != null) ...[
                   Row(
                     children: [
-                      Icon(Icons.place_rounded,
-                          color: colors.primary, size: 18),
+                      Icon(
+                        Icons.place_rounded,
+                        color: colors.primary,
+                        size: 18,
+                      ),
                       SizedBox(width: AppSpacing.s8.w),
                       Expanded(
                         child: Text(
