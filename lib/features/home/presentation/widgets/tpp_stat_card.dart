@@ -6,7 +6,9 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
+import '../controllers/report_viewer_controller.dart';
 import '../controllers/statistik_controller.dart';
+import '../pages/report_viewer_page.dart';
 import '../pages/tpp_daily_detail_screen.dart';
 
 class TppStatCard extends StatelessWidget {
@@ -190,31 +192,64 @@ class TppStatCard extends StatelessWidget {
             
             SizedBox(height: AppSpacing.s16.h),
             
-            // ── Tombol Detail Harian ───────────────────────────────────────────
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Get.to(() => TppDailyDetailScreen(tpp: tpp));
-                },
-                icon: Icon(Icons.calendar_month_rounded, size: 20.w),
-                label: const Text('Detail Potongan Harian'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colors.primary,
-                  side: BorderSide(color: colors.primary.withValues(alpha: 0.5)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.r8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Get.to(() => TppDailyDetailScreen(tpp: tpp));
+                    },
+                    icon: Icon(Icons.calendar_month_rounded, size: 18.w),
+                    label: const Text('Detail Harian'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.primary,
+                      side: BorderSide(
+                        color: colors.primary.withValues(alpha: 0.5),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.r8),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.s12.h),
+                      textStyle: typography.labelMedium
+                          .copyWith(fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s12.h),
-                  textStyle: typography.labelLarge.copyWith(fontWeight: FontWeight.bold),
                 ),
-              ),
+                SizedBox(width: AppSpacing.s8.w),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Get.to(
+                        () => const ReportViewerPage(),
+                        arguments: {
+                          'reportType': ReportType.tpp,
+                          'year': ctrl.selectedYear.value,
+                          'month': ctrl.selectedMonth.value,
+                        },
+                      );
+                    },
+                    icon: Icon(Icons.picture_as_pdf_rounded, size: 18.w),
+                    label: const Text('Laporan PDF'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.primary,
+                      foregroundColor: colors.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.r8),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.s12.h),
+                      textStyle: typography.labelMedium
+                          .copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       );
     });
   }
+
 
   String _rupiah(int amount) {
     final formatted = amount.toString().replaceAllMapped(

@@ -7,7 +7,9 @@ import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 import '../../../presensi/presentation/pages/attendance_history_page.dart';
+import '../controllers/report_viewer_controller.dart';
 import '../controllers/statistik_controller.dart';
+import '../pages/report_viewer_page.dart';
 
 class MonthlyStatsCard extends StatelessWidget {
   const MonthlyStatsCard({super.key});
@@ -75,22 +77,15 @@ class MonthlyStatsCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                TextButton(
+                IconButton(
                   onPressed: () => Get.to(() => const AttendanceHistoryPage()),
-                  style: TextButton.styleFrom(
-                    shape: const StadiumBorder(),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s12,
-                      vertical: 0,
-                    ),
+                  icon: Icon(
+                    Icons.chevron_right_rounded,
+                    color: colors.onSurface.withValues(alpha: 0.5),
+                    size: 24.w,
                   ),
-                  child: Text(
-                    'lihat',
-                    style: typography.labelLarge.copyWith(
-                      color: colors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  tooltip: 'Detail Kehadiran',
+                  visualDensity: VisualDensity.compact,
                 ),
               ],
             ),
@@ -189,11 +184,65 @@ class MonthlyStatsCard extends StatelessWidget {
                 ],
               ),
             ],
+            SizedBox(height: AppSpacing.s16.h),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Get.to(() => const AttendanceHistoryPage());
+                    },
+                    icon: Icon(Icons.calendar_month_rounded, size: 18.w),
+                    label: const Text('Detail Kehadiran'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.primary,
+                      side: BorderSide(
+                        color: colors.primary.withValues(alpha: 0.5),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.r8),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.s12.h),
+                      textStyle: typography.labelMedium
+                          .copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                SizedBox(width: AppSpacing.s8.w),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Get.to(
+                        () => const ReportViewerPage(),
+                        arguments: {
+                          'reportType': ReportType.attendance,
+                          'year': ctrl.selectedYear.value,
+                          'month': ctrl.selectedMonth.value,
+                        },
+                      );
+                    },
+                    icon: Icon(Icons.picture_as_pdf_rounded, size: 18.w),
+                    label: const Text('Laporan PDF'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.primary,
+                      foregroundColor: colors.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.r8),
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.s12.h),
+                      textStyle: typography.labelMedium
+                          .copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       );
     });
   }
+
 
   String _formatMinutes(int minutes) {
     if (minutes < 60) return '$minutes menit';

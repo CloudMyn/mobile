@@ -32,4 +32,64 @@ class StatistikService {
       );
     }
   }
+
+  Future<List<int>> downloadAttendanceReportPdf({
+    required int year,
+    required int month,
+    String scope = 'monthly',
+    String? date,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'year': year,
+        'month': month,
+        'scope': scope,
+      };
+      if (date != null && date.isNotEmpty) {
+        queryParams['date'] = date;
+      }
+
+      final response = await _dio.get<List<int>>(
+        '/reports/attendance/my/pdf',
+        queryParameters: queryParams,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return response.data ?? [];
+    } on DioException catch (e) {
+      final err = e.error;
+      if (err is ApiException) throw err;
+      if (err is NetworkException) throw err;
+      throw ApiException(
+        statusCode: e.response?.statusCode ?? 0,
+        message: e.message ?? 'Gagal mengunduh laporan PDF presensi',
+      );
+    }
+  }
+
+  Future<List<int>> downloadTppReportPdf({
+    required int year,
+    required int month,
+    required int userId,
+  }) async {
+    try {
+      final response = await _dio.get<List<int>>(
+        '/reports/tpp/user/$userId/pdf',
+        queryParameters: {
+          'year': year,
+          'month': month,
+        },
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return response.data ?? [];
+    } on DioException catch (e) {
+      final err = e.error;
+      if (err is ApiException) throw err;
+      if (err is NetworkException) throw err;
+      throw ApiException(
+        statusCode: e.response?.statusCode ?? 0,
+        message: e.message ?? 'Gagal mengunduh laporan PDF TPP',
+      );
+    }
+  }
 }
+
