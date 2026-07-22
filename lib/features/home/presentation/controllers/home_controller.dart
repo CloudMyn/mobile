@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../design_system/components/molecules/app_loading_overlay.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/session_manager.dart';
 import '../../../../design_system/components/app_feedback.dart';
@@ -167,6 +169,31 @@ class HomeController extends GetxController {
       todaySchedule.value = updated;
     } catch (_) {
       // Jika gagal refresh, tidak apa-apa — user bisa pull-to-refresh manual
+    }
+  }
+
+  Future<void> startWfh() async {
+    try {
+      AppLoadingOverlay.show('Memulai WFH...');
+      await _dashboardService.startWfh();
+      AppLoadingOverlay.hide();
+      
+      Get.snackbar(
+        'Berhasil',
+        'Presensi WFH telah dicatat.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Get.theme.colorScheme.primary,
+        colorText: Colors.white,
+      );
+      
+      await loadDashboard();
+    } catch (e) {
+      AppLoadingOverlay.hide();
+      AppFeedback.showSnackbar(
+        title: 'Gagal Memulai WFH',
+        message: e is ApiException ? (e as ApiException).message : 'Terjadi kesalahan.',
+        isError: true,
+      );
     }
   }
 

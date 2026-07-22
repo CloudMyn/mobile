@@ -346,6 +346,25 @@ class _AttendanceCardState extends State<AttendanceCard> {
       padding: EdgeInsets.all(AppSpacing.s12.w),
       child: Column(
         children: [
+          if (!schedule.allCompleted && (schedule.dayStatus.toLowerCase() == 'wfh' || schedule.dayStatus.toLowerCase() == 'wfa')) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: isBusy ? null : () => _homeCtrl.startWfh(),
+                icon: const Icon(Icons.home_work_rounded),
+                label: const Text('Mulai WFH / WFA'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.onPrimary,
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s12.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.r8),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: AppSpacing.s12.h),
+          ],
           if (schedule.allCompleted) ...[
              Container(
                padding: EdgeInsets.all(AppSpacing.s12.w),

@@ -48,4 +48,22 @@ class DashboardService {
       );
     }
   }
+
+  /// Memulai WFH (Otomatis presensi In dan Out)
+  Future<void> startWfh({int shiftNo = 1}) async {
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/mobile/presensi/wfh/start',
+        data: {'shift_no': shiftNo},
+      );
+    } on DioException catch (e) {
+      final err = e.error;
+      if (err is ApiException) throw err;
+      if (err is NetworkException) throw err;
+      throw ApiException(
+        statusCode: e.response?.statusCode ?? 0,
+        message: e.message ?? 'Gagal memulai WFH',
+      );
+    }
+  }
 }
