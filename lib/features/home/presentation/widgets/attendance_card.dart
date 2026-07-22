@@ -16,6 +16,7 @@ import '../../../presensi/presentation/widgets/presensi_step_indicator.dart';
 import '../../../profile/presentation/controllers/profile_controller.dart';
 import '../../data/models/dashboard_model.dart';
 import '../controllers/home_controller.dart';
+import '../../../kinerja/presentation/pages/kinerja_create_page.dart';
 
 /// Card gabungan: profil pengguna, jadwal hari ini, dan tombol presensi.
 /// Slot presensi dirender secara dinamis dari [TodaySchedule.records].
@@ -250,11 +251,18 @@ class _AttendanceCardState extends State<AttendanceCard> {
     AppTypography typography,
   ) {
     final isWorkday = schedule.isWorkday;
+    final status = schedule.dayStatus.toLowerCase();
+    final isWfhOrWfa = status == 'wfh' || status == 'wfa';
+
     final Color chipBg;
     final Color chipText;
     final Color chipBorder;
 
-    if (isWorkday) {
+    if (isWfhOrWfa) {
+      chipBg = colors.warning.withValues(alpha: 0.2);
+      chipText = colors.warning;
+      chipBorder = colors.warning.withValues(alpha: 0.35);
+    } else if (isWorkday) {
       chipBg = Colors.white.withValues(alpha: 0.15);
       chipText = Colors.white;
       chipBorder = Colors.white.withValues(alpha: 0.25);
@@ -264,10 +272,12 @@ class _AttendanceCardState extends State<AttendanceCard> {
       chipBorder = colors.warning.withValues(alpha: 0.35);
     }
 
-    final label = isWorkday
-        ? '${schedule.schedule?.name ?? 'Shift'}  •  '
-            '${_fmtTime(schedule.scheduledStartAt)} – ${_fmtTime(schedule.scheduledEndAt)}'
-        : schedule.dayStatusLabel;
+    final label = isWfhOrWfa
+        ? status.toUpperCase()
+        : (isWorkday
+            ? '${schedule.schedule?.name ?? 'Shift'}  •  '
+                '${_fmtTime(schedule.scheduledStartAt)} – ${_fmtTime(schedule.scheduledEndAt)}'
+            : schedule.dayStatusLabel);
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -328,8 +338,11 @@ class _AttendanceCardState extends State<AttendanceCard> {
       );
     }
 
+    final status = schedule.dayStatus.toLowerCase();
+    final isWfhOrWfa = status == 'wfh' || status == 'wfa';
+
     final records = schedule.records;
-    if (records.isEmpty) {
+    if (records.isEmpty && !isWfhOrWfa) {
       return Padding(
         padding: EdgeInsets.all(AppSpacing.s16.w),
         child: Text(
@@ -346,26 +359,34 @@ class _AttendanceCardState extends State<AttendanceCard> {
       padding: EdgeInsets.all(AppSpacing.s12.w),
       child: Column(
         children: [
-          if (!schedule.allCompleted && (schedule.dayStatus.toLowerCase() == 'wfh' || schedule.dayStatus.toLowerCase() == 'wfa')) ...[
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: isBusy ? null : () => _homeCtrl.startWfh(),
-                icon: const Icon(Icons.home_work_rounded),
-                label: const Text('Mulai WFH / WFA'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.primary,
-                  foregroundColor: colors.onPrimary,
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s12.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.r8),
+          if (isWfhOrWfa) ...[
+            Builder(
+              builder: (context) {
+                final isActivated = schedule.summaryNote != null &&
+                    schedule.summaryNote!.contains('diaktifkan');
+                if (isActivated) return const SizedBox.shrink();
+
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: isBusy ? null : () => _homeCtrl.startWfh(),
+                    icon: const Icon(Icons.power_settings_new_rounded),
+                    label: const Text('Mulai WFH / WFA'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.primary,
+                      foregroundColor: colors.onPrimary,
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.s12.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.r8),
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
             SizedBox(height: AppSpacing.s12.h),
           ],
-          if (schedule.allCompleted) ...[
+          if (schedule.allCompleted && !isWfhOrWfa) ...[
              Container(
                padding: EdgeInsets.all(AppSpacing.s12.w),
                decoration: BoxDecoration(

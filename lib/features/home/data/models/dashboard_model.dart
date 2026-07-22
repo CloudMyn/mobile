@@ -59,6 +59,8 @@ class DashboardModel {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class TodaySchedule {
+  final String? summaryNote;
+
   const TodaySchedule({
     required this.id,
     required this.workDate,
@@ -75,6 +77,7 @@ class TodaySchedule {
     this.scheduledLocation,
     required this.records,
     required this.shiftNo,
+    this.summaryNote,
   });
 
   final int id;
@@ -95,7 +98,11 @@ class TodaySchedule {
 
   bool get isWorkday {
     final status = dayStatus.toLowerCase();
-    return status == 'workday' || status == 'partial' || status == 'present';
+    return status == 'workday' ||
+        status == 'partial' ||
+        status == 'present' ||
+        status == 'wfh' ||
+        status == 'wfa';
   }
 
   String get dayStatusLabel {
@@ -104,9 +111,11 @@ class TodaySchedule {
       'workday' => 'Hari Kerja',
       'partial' => 'Hari Kerja Sebagian',
       'present' => 'Hadir',
+      'wfh' => 'WFH',
+      'wfa' => 'WFA',
       'holiday' => 'Hari Libur',
       'weekend' => 'Akhir Pekan',
-      _ => dayStatus,
+      _ => dayStatus.toUpperCase(),
     };
   }
 
@@ -139,6 +148,7 @@ class TodaySchedule {
             ..sort((a, b) => a.attendanceType.defaultSequence
                 .compareTo(b.attendanceType.defaultSequence)),
       shiftNo: json['shift_no'] as int? ?? 1,
+      summaryNote: json['summary_note'] as String?,
     );
   }
 }

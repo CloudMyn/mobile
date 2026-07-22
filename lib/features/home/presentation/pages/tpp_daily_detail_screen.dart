@@ -302,6 +302,49 @@ class _DailyRecordCard extends StatelessWidget {
     );
   }
 
+  String _getBadgeLabel(StatistikTppDailyRecord record) {
+    final status = record.attendanceStatus?.toLowerCase();
+    if (status != null && status.isNotEmpty) {
+      return switch (status) {
+        'offday' => 'Hari Libur',
+        'holiday' => 'Libur Nasional',
+        'wfh' => 'WFH',
+        'wfa' => 'WFA',
+        'leave' => 'Cuti',
+        'permit' => 'Izin',
+        'sick' => 'Sakit',
+        'absent' => 'Alpa',
+        'present' => 'Hadir',
+        'workday' => 'Hari Kerja',
+        _ => status.toUpperCase(),
+      };
+    }
+    
+    if (!record.isWorkday) {
+      return 'Tanpa Status';
+    }
+
+    final totalDeduction = record.disciplineDeductionPct + record.activityDeductionPct;
+    return totalDeduction > 0 ? 'Ada Potongan' : 'Kinerja Aman';
+  }
+
+  Color _getBadgeColor(StatistikTppDailyRecord record, AppColors colors) {
+    final status = record.attendanceStatus?.toLowerCase();
+    if (status != null && status.isNotEmpty) {
+      if (status == 'offday' || status == 'holiday') return colors.outline;
+      if (status == 'wfh' || status == 'wfa') return colors.warning;
+      if (status == 'absent') return colors.error;
+      if (status == 'present') return colors.success;
+    }
+    
+    if (!record.isWorkday) {
+      return colors.outline;
+    }
+
+    final totalDeduction = record.disciplineDeductionPct + record.activityDeductionPct;
+    return totalDeduction > 0 ? colors.error : colors.success;
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateObj = DateTime.tryParse(record.recordDate);
@@ -333,10 +376,10 @@ class _DailyRecordCard extends StatelessWidget {
                 Row(
                   children: [
                     _buildMiniBadge(
-                      isOffday ? 'Hari Libur' : (totalDeduction > 0 ? 'Ada Potongan' : 'Kinerja Aman'),
-                      isOffday ? colors.outline : (totalDeduction > 0 ? colors.error : colors.success),
+                      _getBadgeLabel(record),
+                      _getBadgeColor(record, colors),
                     ),
-                    if (!isOffday && (record.totalLateMinutes > 0 || record.totalEarlyLeaveMinutes > 0)) ...[
+                    if (record.isWorkday && (record.totalLateMinutes > 0 || record.totalEarlyLeaveMinutes > 0)) ...[
                       SizedBox(width: AppSpacing.s8.w),
                       Text(
                         'T:${record.totalLateMinutes}m | PC:${record.totalEarlyLeaveMinutes}m',

@@ -631,14 +631,20 @@ class ApiKinerjaService implements KinerjaService {
       final response = await _dio.get<Map<String, dynamic>>('/mobile/presensi/date/$dateStr');
       final data = response.data?['data'];
       
-      if (data != null && data['records'] != null) {
-        final records = data['records'] as List;
-        for (var record in records) {
-          if (record['status'] != 'pending' && record['status'] != 'absent') {
-            final attendedAt = record['attended_at'];
-            if (attendedAt != null) {
-              final dt = DateTime.parse(attendedAt.toString()).toUtc().add(const Duration(hours: 8));
-              return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      if (data != null) {
+        final dayStatus = (data['day_status'] as String? ?? '').toLowerCase();
+        if (dayStatus == 'wfh' || dayStatus == 'wfa') {
+          return 'WFH';
+        }
+        if (data['records'] != null) {
+          final records = data['records'] as List;
+          for (var record in records) {
+            if (record['status'] != 'pending' && record['status'] != 'absent') {
+              final attendedAt = record['attended_at'];
+              if (attendedAt != null) {
+                final dt = DateTime.parse(attendedAt.toString()).toUtc().add(const Duration(hours: 8));
+                return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+              }
             }
           }
         }
