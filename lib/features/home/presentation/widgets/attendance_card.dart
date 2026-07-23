@@ -364,7 +364,70 @@ class _AttendanceCardState extends State<AttendanceCard> {
               builder: (context) {
                 final isActivated = schedule.summaryNote != null &&
                     schedule.summaryNote!.contains('diaktifkan');
-                if (isActivated) return const SizedBox.shrink();
+                if (isActivated) {
+                  return Container(
+                    padding: EdgeInsets.all(AppSpacing.s12.w),
+                    decoration: BoxDecoration(
+                      color: colors.success.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.r8),
+                      border: Border.all(
+                        color: colors.success.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_rounded,
+                          color: colors.success,
+                          size: 24.sp,
+                        ),
+                        SizedBox(width: AppSpacing.s12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Presensi WFH Anda Hari Ini Telah Aktif',
+                                style: typography.bodyMedium.copyWith(
+                                  color: colors.onSurface,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              SizedBox(height: AppSpacing.s2.h),
+                              Text(
+                                'Catat aktivitas kinerja harian Anda.',
+                                style: typography.caption.copyWith(
+                                  color: colors.onSurface.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: AppSpacing.s8.w),
+                        ElevatedButton.icon(
+                          onPressed: () => Get.to(() => const KinerjaCreatePage()),
+                          icon: Icon(Icons.add_task_rounded, size: 16.sp),
+                          label: const Text('Isi Kinerja'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.success,
+                            foregroundColor: colors.onPrimary,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.s12.w,
+                              vertical: AppSpacing.s8.h,
+                            ),
+                            textStyle: typography.caption.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.r8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
                 return SizedBox(
                   width: double.infinity,
