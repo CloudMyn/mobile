@@ -20,6 +20,7 @@ import '../../data/models/employee_enums.dart';
 import '../../data/models/shift_model.dart';
 import '../../data/models/reference_model.dart';
 import '../../data/repositories/profile_repository.dart';
+import '../../../home/presentation/controllers/home_controller.dart';
 
 class ProfileController extends GetxController {
   final employee = Rx<EmployeeModel?>(null);
@@ -589,12 +590,18 @@ class ProfileController extends GetxController {
           .updateSchedule(selectedShiftId.value!);
       currentShiftId.value = selectedShiftId.value;
       final message = result['message'] as String? ?? 'Jadwal berhasil disimpan';
+
+      Get.back();
+
       AppFeedback.showSnackbar(
         title: 'Berhasil',
         message: message,
         type: FeedbackType.success,
       );
-      Get.back();
+
+      if (Get.isRegistered<HomeController>()) {
+        Get.find<HomeController>().loadDashboard();
+      }
     } on ValidationException catch (e) {
       AppFeedback.showSnackbar(
         title: 'Gagal',
