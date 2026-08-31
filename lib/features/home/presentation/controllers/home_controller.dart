@@ -14,7 +14,7 @@ import '../../data/services/dashboard_service.dart';
 import '../../../presensi/data/models/attendance_config.dart';
 import '../../../presensi/presentation/controllers/presensi_controller.dart';
 import '../../../presensi/presentation/pages/presence_page.dart';
-import '../../../kinerja/presentation/pages/kinerja_create_page.dart';
+// import '../../../kinerja/presentation/pages/kinerja_create_page.dart';
 
 class HomeController extends GetxController {
   HomeController({required DashboardService dashboardService})
@@ -188,7 +188,7 @@ class HomeController extends GetxController {
       );
       
       await loadDashboard();
-      Get.to(() => const KinerjaCreatePage());
+      // Get.to(() => const KinerjaCreatePage()); // Nonaktifkan untuk sementara
     } catch (e) {
       AppLoadingOverlay.hide();
       AppFeedback.showSnackbar(

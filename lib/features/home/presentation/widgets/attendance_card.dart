@@ -16,7 +16,7 @@ import '../../../presensi/presentation/widgets/presensi_step_indicator.dart';
 import '../../../profile/presentation/controllers/profile_controller.dart';
 import '../../data/models/dashboard_model.dart';
 import '../controllers/home_controller.dart';
-import '../../../kinerja/presentation/pages/kinerja_create_page.dart';
+// import '../../../kinerja/presentation/pages/kinerja_create_page.dart';
 
 /// Card gabungan: profil pengguna, jadwal hari ini, dan tombol presensi.
 /// Slot presensi dirender secara dinamis dari [TodaySchedule.records].
@@ -394,6 +394,8 @@ class _AttendanceCardState extends State<AttendanceCard> {
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
+                              // Nonaktifkan 'Isi Kinerja' untuk sementara
+                              /*
                               SizedBox(height: AppSpacing.s2.h),
                               Text(
                                 'Catat aktivitas kinerja harian Anda.',
@@ -401,9 +403,11 @@ class _AttendanceCardState extends State<AttendanceCard> {
                                   color: colors.onSurface.withValues(alpha: 0.6),
                                 ),
                               ),
+                              */
                             ],
                           ),
                         ),
+                        /*
                         SizedBox(width: AppSpacing.s8.w),
                         ElevatedButton.icon(
                           onPressed: () => Get.to(() => const KinerjaCreatePage()),
@@ -424,6 +428,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
                             ),
                           ),
                         ),
+                        */
                       ],
                     ),
                   );

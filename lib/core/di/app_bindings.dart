@@ -43,6 +43,8 @@ import '../../features/submission/data/services/submission_service.dart';
 import '../../features/submission/data/services/subordinate_submission_service.dart';
 import '../../features/submission/presentation/controllers/submission_controller.dart';
 import '../../features/submission/presentation/controllers/subordinate_submission_controller.dart';
+import '../../features/skp/data/services/skp_service.dart';
+import '../../features/skp/presentation/controllers/skp_list_controller.dart';
 
 /// Mendaftarkan semua dependency global.
 /// Async deps (SharedPreferences, FlutterSecureStorage) di-inisialisasi
@@ -214,6 +216,13 @@ class AppBindings extends Bindings {
     Get.put<InformasiService>(InformasiService(dio), permanent: true);
     Get.lazyPut<InformasiController>(
       () => InformasiController(service: Get.find<InformasiService>()),
+      fenix: true,
+    );
+
+    // ── SKP (Laporan Bulanan) ──────────────────────────────────────────────────
+    Get.put<SkpService>(MockSkpService(), permanent: true);
+    Get.lazyPut<SkpListController>(
+      () => SkpListController(service: Get.find<SkpService>()),
       fenix: true,
     );
   }
