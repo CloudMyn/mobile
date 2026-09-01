@@ -27,7 +27,7 @@ class SkpUploadPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppTopAppBar(
-        title: 'Upload Laporan SKP',
+        title: 'Upload Evaluasi Kinerja Pegawai',
         variant: AppTopAppBarVariant.withBack,
       ),
       body: Obx(() {
@@ -48,6 +48,8 @@ class SkpUploadPage extends StatelessWidget {
         }
 
         final data = controller.extractedData.value;
+        final isValid = controller.isDocValid.value;
+        final validationError = controller.validationError.value;
 
         return Column(
           children: [
@@ -72,6 +74,8 @@ class SkpUploadPage extends StatelessWidget {
                     onPressed: () {
                       controller.selectedFile.value = null;
                       controller.extractedData.value = null;
+                      controller.isDocValid.value = false;
+                      controller.validationError.value = null;
                     },
                     icon: Icon(
                       Icons.refresh_rounded,
@@ -89,7 +93,7 @@ class SkpUploadPage extends StatelessWidget {
 
             // Area PDF Viewer
             Expanded(
-              flex: 5,
+              flex: 4,
               child: Container(
                 color: colors.surface,
                 child: PDFView(
@@ -105,7 +109,7 @@ class SkpUploadPage extends StatelessWidget {
 
             // Area Extracted Data (Read-Only)
             Expanded(
-              flex: 4,
+              flex: 5,
               child: Container(
                 color: colors.background,
                 child: Column(
@@ -118,23 +122,97 @@ class SkpUploadPage extends StatelessWidget {
                         AppSpacing.s16.w,
                         AppSpacing.s8.h,
                       ),
-                      child: Text(
-                        'Hasil Ekstraksi Evaluasi Kinerja',
-                        style: typography.titleSmall.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colors.onSurface,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Hasil Ekstraksi Dokumen EKP',
+                            style: typography.titleSmall.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colors.onSurface,
+                            ),
+                          ),
+                          if (isValid)
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: AppSpacing.s8.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.success.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4.r),
+                                border: Border.all(
+                                  color: colors.success.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Text(
+                                '✓ Dokumen Valid',
+                                style: typography.caption.copyWith(
+                                  color: colors.success,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     if (controller.isExtracting.value)
                       const Expanded(
                         child: Center(child: CircularProgressIndicator()),
                       )
+                    else if (validationError != null)
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.all(AppSpacing.s16.w),
+                          child: Container(
+                            padding: EdgeInsets.all(AppSpacing.s16.w),
+                            decoration: BoxDecoration(
+                              color: colors.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8.r),
+                              border: Border.all(
+                                color: colors.error.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline_rounded,
+                                      color: colors.error,
+                                      size: 24.sp,
+                                    ),
+                                    SizedBox(width: AppSpacing.s8.w),
+                                    Expanded(
+                                      child: Text(
+                                        'Dokumen EKP Ditolak',
+                                        style: typography.bodyMedium.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: colors.error,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: AppSpacing.s8.h),
+                                Text(
+                                  validationError,
+                                  style: typography.caption.copyWith(
+                                    color: colors.onSurface,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
                     else if (data == null)
                       Expanded(
                         child: Center(
                           child: Text(
-                            'Tidak ada data evaluasi yang terdeteksi',
+                            'Tidak ada data EKP yang terdeteksi',
                             style: typography.bodyMedium.copyWith(
                               color: colors.outline,
                             ),
@@ -151,44 +229,35 @@ class SkpUploadPage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               _buildEvaluationSummary(data, colors, typography),
-                              SizedBox(height: AppSpacing.s8.h),
-                              if (data['sample_activities'] is List &&
-                                  (data['sample_activities'] as List).isNotEmpty) ...[
-                                Text(
-                                  'Sampel Kegiatan Terdeteksi:',
-                                  style: typography.labelSmall.copyWith(
-                                    color: colors.outline,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: AppSpacing.s4.h),
-                                ...(data['sample_activities'] as List)
-                                    .map((act) => Padding(
-                                          padding: EdgeInsets.only(
-                                            bottom: AppSpacing.s4.h,
-                                          ),
-                                          child: Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text('• ',
-                                                  style: typography.caption
-                                                      .copyWith(
-                                                          color:
-                                                              colors.primary)),
-                                              Expanded(
-                                                child: Text(
-                                                  act.toString(),
-                                                  style: typography.caption
-                                                      .copyWith(
-                                                    color: colors.onSurface,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        )),
-                              ],
+                              SizedBox(height: AppSpacing.s12.h),
+                              _buildPersonCard(
+                                title: '1. Pegawai Yang Dinilai',
+                                isCurrentUser: true,
+                                person:
+                                    data['pegawai_dinilai']
+                                        as Map<String, dynamic>?,
+                                colors: colors,
+                                typography: typography,
+                              ),
+                              SizedBox(height: AppSpacing.s12.h),
+                              _buildPersonCard(
+                                title:
+                                    '2. Pejabat Penilai Kinerja (Direct Atasan)',
+                                person:
+                                    data['pejabat_penilai']
+                                        as Map<String, dynamic>?,
+                                colors: colors,
+                                typography: typography,
+                              ),
+                              SizedBox(height: AppSpacing.s12.h),
+                              _buildPersonCard(
+                                title: '3. Atasan Pejabat Penilai Kinerja',
+                                person:
+                                    data['atasan_pejabat_penilai']
+                                        as Map<String, dynamic>?,
+                                colors: colors,
+                                typography: typography,
+                              ),
                               SizedBox(height: AppSpacing.s16.h),
                             ],
                           ),
@@ -205,13 +274,17 @@ class SkpUploadPage extends StatelessWidget {
         if (controller.selectedFile.value == null) {
           return const SizedBox.shrink();
         }
+        final canSubmit =
+            controller.isDocValid.value &&
+            controller.validationError.value == null;
+
         return SafeArea(
           child: Padding(
             padding: EdgeInsets.all(AppSpacing.s16.w),
             child: AppButton(
-              label: 'Kirim Laporan (Verifikasi Atasan)',
+              label: 'Kirim Dokumen EKP',
               style: AppButtonStyle.filled,
-              onPressed: controller.saveReport,
+              onPressed: canSubmit ? controller.saveReport : null,
             ),
           ),
         );
@@ -224,8 +297,28 @@ class SkpUploadPage extends StatelessWidget {
     AppColors colors,
     AppTypography typography,
   ) {
-    final predikat = data['predikat_kinerja_pegawai']?.toString() ?? 'Baik';
-    final capaian = data['capaian_kinerja_organisasi']?.toString() ?? 'Baik';
+    final eval = data['evaluasi_kinerja'] as Map<String, dynamic>?;
+    final predikat =
+        eval?['predikat_kinerja_pegawai']?.toString() ??
+        data['predikat_kinerja_pegawai']?.toString() ??
+        '-';
+    final capaian =
+        eval?['capaian_kinerja_organisasi']?.toString() ??
+        data['capaian_kinerja_organisasi']?.toString() ??
+        '-';
+    final tpp = eval?['tpp_percentage'] ?? 80;
+    final periodeText = data['periode_penilaian']?.toString();
+
+    Color predikatColor = colors.primary;
+    if (predikat == 'Sangat Baik') {
+      predikatColor = colors.success;
+    } else if (predikat == 'Baik') {
+      predikatColor = colors.primary;
+    } else if (predikat == 'Butuh Perbaikan') {
+      predikatColor = colors.warning;
+    } else if (predikat == 'Kurang' || predikat == 'Sangat Kurang') {
+      predikatColor = colors.error;
+    }
 
     return AppCard(
       outlined: true,
@@ -250,14 +343,14 @@ class SkpUploadPage extends StatelessWidget {
                         vertical: AppSpacing.s4.h,
                       ),
                       decoration: BoxDecoration(
-                        color: colors.primary.withValues(alpha: 0.1),
+                        color: predikatColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4.r),
                       ),
                       child: Text(
                         predikat,
                         style: typography.bodyMedium.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: colors.primary,
+                          color: predikatColor,
                         ),
                       ),
                     ),
@@ -294,8 +387,130 @@ class SkpUploadPage extends StatelessWidget {
                   ],
                 ),
               ),
+              SizedBox(width: AppSpacing.s8.w),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Estimasi TPP',
+                    style: typography.caption.copyWith(color: colors.outline),
+                  ),
+                  SizedBox(height: AppSpacing.s4.h),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s8.w,
+                      vertical: AppSpacing.s4.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                    child: Text(
+                      '$tpp%',
+                      style: typography.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
+          if (periodeText != null && periodeText.isNotEmpty) ...[
+            SizedBox(height: AppSpacing.s8.h),
+            Divider(color: colors.outline.withValues(alpha: 0.2)),
+            SizedBox(height: AppSpacing.s4.h),
+            Text(
+              'Periode Dokumen: $periodeText',
+              style: typography.caption.copyWith(
+                color: colors.outline,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonCard({
+    required String title,
+    bool isCurrentUser = false,
+    Map<String, dynamic>? person,
+    required AppColors colors,
+    required AppTypography typography,
+  }) {
+    if (person == null) return const SizedBox.shrink();
+
+    final nama = person['nama']?.toString() ?? '-';
+    final nip = person['nip']?.toString() ?? '-';
+    final pangkat = person['pangkat_gol']?.toString() ?? '';
+    final jabatan = person['jabatan']?.toString() ?? '-';
+    final unitKerja = person['unit_kerja']?.toString() ?? '-';
+
+    return AppCard(
+      outlined: true,
+      padding: EdgeInsets.all(AppSpacing.s12.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: typography.labelMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colors.primary,
+                ),
+              ),
+              if (isCurrentUser)
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s8.w,
+                    vertical: 2.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                  child: Text(
+                    'Akun Sesuai',
+                    style: typography.caption.copyWith(
+                      color: colors.success,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10.sp,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.s8.h),
+          Text(
+            nama,
+            style: typography.bodyMedium.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colors.onSurface,
+            ),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            'NIP: $nip ${pangkat.isNotEmpty ? '• $pangkat' : ''}',
+            style: typography.caption.copyWith(color: colors.outline),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            'Jabatan: $jabatan',
+            style: typography.caption.copyWith(color: colors.onSurface),
+          ),
+          if (unitKerja.isNotEmpty && unitKerja != '-') ...[
+            SizedBox(height: 2.h),
+            Text(
+              'Unit Kerja: $unitKerja',
+              style: typography.caption.copyWith(color: colors.outline),
+            ),
+          ],
         ],
       ),
     );
@@ -316,9 +531,11 @@ class SkpUploadPage extends StatelessWidget {
           SizedBox(width: AppSpacing.s8.w),
           Expanded(
             child: Text(
-              '1 file SKP hanya berlaku untuk 1 periode bulan. Jika ingin mengganti file, hapus file lama terlebih dahulu agar diverifikasi ulang oleh atasan.',
-              style: typography.caption
-                  .copyWith(color: colors.onSurface, height: 1.3),
+              '1 file Dokumen EKP hanya berlaku untuk 1 periode bulan. Pastikan file PDF memuat Dokumen Evaluasi Kinerja Pegawai resmi dan sesuai dengan NIP akun login Anda.',
+              style: typography.caption.copyWith(
+                color: colors.onSurface,
+                height: 1.3,
+              ),
             ),
           ),
         ],
@@ -341,7 +558,7 @@ class SkpUploadPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Periode Laporan SKP',
+            'Periode Laporan EKP',
             style: typography.titleSmall.copyWith(
               fontWeight: FontWeight.bold,
               color: colors.onSurface,
@@ -355,9 +572,12 @@ class SkpUploadPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Bulan',
-                        style: typography.labelSmall
-                            .copyWith(color: colors.outline)),
+                    Text(
+                      'Bulan',
+                      style: typography.labelSmall.copyWith(
+                        color: colors.outline,
+                      ),
+                    ),
                     SizedBox(height: AppSpacing.s4.h),
                     AppDropdown<int>(
                       value: controller.selectedMonth.value,
@@ -367,9 +587,10 @@ class SkpUploadPage extends StatelessWidget {
                         (index) => DropdownMenuItem(
                           value: index + 1,
                           child: Text(
-                            DateFormat('MMMM', 'id_ID').format(
-                              DateTime(2024, index + 1),
-                            ),
+                            DateFormat(
+                              'MMMM',
+                              'id_ID',
+                            ).format(DateTime(2024, index + 1)),
                           ),
                         ),
                       ),
@@ -386,19 +607,20 @@ class SkpUploadPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Tahun',
-                        style: typography.labelSmall
-                            .copyWith(color: colors.outline)),
+                    Text(
+                      'Tahun',
+                      style: typography.labelSmall.copyWith(
+                        color: colors.outline,
+                      ),
+                    ),
                     SizedBox(height: AppSpacing.s4.h),
                     AppDropdown<int>(
                       value: controller.selectedYear.value,
                       hint: 'Tahun',
                       items: years
                           .map(
-                            (y) => DropdownMenuItem(
-                              value: y,
-                              child: Text('$y'),
-                            ),
+                            (y) =>
+                                DropdownMenuItem(value: y, child: Text('$y')),
                           )
                           .toList(),
                       onChanged: (val) {
@@ -425,11 +647,14 @@ class SkpUploadPage extends StatelessWidget {
       padding: EdgeInsets.all(AppSpacing.s24.w),
       child: Column(
         children: [
-          Icon(Icons.picture_as_pdf_rounded,
-              size: 48.sp, color: colors.outline),
+          Icon(
+            Icons.picture_as_pdf_rounded,
+            size: 48.sp,
+            color: colors.outline,
+          ),
           SizedBox(height: AppSpacing.s16.h),
           Text(
-            'Unggah Dokumen PDF Penilaian SKP (Maks. 10MB)',
+            'Unggah Dokumen PDF Evaluasi Kinerja Pegawai (EKP) (Maks. 10MB)',
             textAlign: TextAlign.center,
             style: typography.bodyMedium.copyWith(color: colors.outline),
           ),

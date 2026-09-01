@@ -79,7 +79,7 @@ class _SkpListPageState extends State<SkpListPage>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Filter Laporan SKP',
+                        'Filter Dokumen EKP',
                         style: typography.titleSmall.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -222,9 +222,9 @@ class _SkpListPageState extends State<SkpListPage>
     final monthName = DateFormat('MMMM', 'id_ID')
         .format(DateTime(2024, report.periodMonth));
     AppFeedback.showDialog(
-      title: 'Hapus Laporan SKP?',
+      title: 'Hapus Dokumen EKP?',
       message:
-          'Anda akan menghapus laporan SKP periode $monthName ${report.periodYear}.\n\n'
+          'Anda akan menghapus Dokumen EKP periode $monthName ${report.periodYear}.\n\n'
           'Menghapus file ini akan membatalkan status verifikasi dan Anda harus mengunggah file baru untuk diverifikasi kembali oleh atasan.',
       confirmLabel: 'Hapus File',
       cancelLabel: 'Batal',
@@ -234,9 +234,9 @@ class _SkpListPageState extends State<SkpListPage>
 
   void _reUploadAfterRejection(SkpReportModel report) {
     AppFeedback.showDialog(
-      title: 'Upload Ulang SKP?',
+      title: 'Upload Ulang Dokumen EKP?',
       message:
-          'Laporan sebelumnya yang ditolak akan dihapus terlebih dahulu agar Anda dapat mengunggah berkas perbaikan.',
+          'Dokumen EKP sebelumnya yang ditolak akan dihapus terlebih dahulu agar Anda dapat mengunggah berkas perbaikan.',
       confirmLabel: 'Lanjut Upload',
       cancelLabel: 'Batal',
       onConfirm: () async {
@@ -271,7 +271,7 @@ class _SkpListPageState extends State<SkpListPage>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Tolak Laporan SKP',
+                'Tolak Dokumen EKP',
                 style: typography.titleSmall.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colors.error,
@@ -279,7 +279,7 @@ class _SkpListPageState extends State<SkpListPage>
               ),
               SizedBox(height: AppSpacing.s8.h),
               Text(
-                'Laporan pegawai: ${report.displayName} (Periode: ${DateFormat('MMMM', 'id_ID').format(DateTime(2024, report.periodMonth))} ${report.periodYear})',
+                'Dokumen EKP pegawai: ${report.displayName} (Periode: ${DateFormat('MMMM', 'id_ID').format(DateTime(2024, report.periodMonth))} ${report.periodYear})',
                 style: typography.caption.copyWith(color: colors.outline),
               ),
               SizedBox(height: AppSpacing.s16.h),
@@ -346,7 +346,7 @@ class _SkpListPageState extends State<SkpListPage>
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppTopAppBar(
-        title: 'Laporan SKP',
+        title: 'Evaluasi Kinerja Pegawai',
         variant: AppTopAppBarVariant.standard,
         elevation: 0,
         actions: [
@@ -389,8 +389,8 @@ class _SkpListPageState extends State<SkpListPage>
               unselectedLabelColor: colors.outline,
               indicatorColor: colors.primary,
               tabs: const [
-                Tab(text: 'Laporan Saya'),
-                Tab(text: 'Laporan Bawahan'),
+                Tab(text: 'Dokumen Saya'),
+                Tab(text: 'Verifikasi Bawahan'),
               ],
             ),
           ),
@@ -418,7 +418,7 @@ class _SkpListPageState extends State<SkpListPage>
           backgroundColor: colors.primary,
           icon: Icon(Icons.upload_file_rounded, color: colors.onPrimary),
           label: Text(
-            'Upload Laporan',
+            'Upload Dokumen EKP',
             style: typography.labelLarge.copyWith(
               color: colors.onPrimary,
               fontWeight: FontWeight.bold,
@@ -461,8 +461,8 @@ class _SkpListPageState extends State<SkpListPage>
                 SizedBox(height: AppSpacing.s12.h),
                 Text(
                   isSubordinate
-                      ? 'Belum ada laporan bawahan.'
-                      : 'Belum ada laporan SKP yang diunggah.',
+                      ? 'Belum ada dokumen bawahan.'
+                      : 'Belum ada Dokumen EKP yang diunggah.',
                   style: typography.bodyMedium.copyWith(color: colors.outline),
                   textAlign: TextAlign.center,
                 ),
