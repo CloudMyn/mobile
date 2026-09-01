@@ -1,110 +1,232 @@
-class SkpItem {
-  final String kegiatan;
-  final String target;
-  final String realisasi;
-  final String? keterangan;
+class SkpReportUser {
+  final int id;
+  final String name;
+  final String? fullName;
+  final String? nip;
 
-  SkpItem({
-    required this.kegiatan,
-    required this.target,
-    required this.realisasi,
-    this.keterangan,
+  SkpReportUser({
+    required this.id,
+    required this.name,
+    this.fullName,
+    this.nip,
   });
 
-  factory SkpItem.fromJson(Map<String, dynamic> json) {
-    return SkpItem(
-      kegiatan: json['kegiatan'] ?? '',
-      target: json['target'] ?? '',
-      realisasi: json['realisasi'] ?? '',
-      keterangan: json['keterangan'],
+  String get displayName => fullName?.isNotEmpty == true ? fullName! : name;
+
+  factory SkpReportUser.fromJson(Map<String, dynamic> json) {
+    return SkpReportUser(
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      name: json['name']?.toString() ?? '',
+      fullName: json['full_name']?.toString(),
+      nip: json['nip']?.toString(),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'kegiatan': kegiatan,
-      'target': target,
-      'realisasi': realisasi,
-      'keterangan': keterangan,
-    };
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'full_name': fullName,
+    'nip': nip,
+  };
+}
+
+class SkpReportInstitution {
+  final int id;
+  final String name;
+
+  SkpReportInstitution({
+    required this.id,
+    required this.name,
+  });
+
+  factory SkpReportInstitution.fromJson(Map<String, dynamic> json) {
+    return SkpReportInstitution(
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      name: json['name']?.toString() ?? '',
+    );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+  };
+}
+
+class SkpReportVerifier {
+  final int id;
+  final String name;
+  final String? fullName;
+
+  SkpReportVerifier({
+    required this.id,
+    required this.name,
+    this.fullName,
+  });
+
+  String get displayName => fullName?.isNotEmpty == true ? fullName! : name;
+
+  factory SkpReportVerifier.fromJson(Map<String, dynamic> json) {
+    return SkpReportVerifier(
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      name: json['name']?.toString() ?? '',
+      fullName: json['full_name']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'full_name': fullName,
+  };
 }
 
 class SkpReportModel {
-  final int? id;
-  final String filename;
-  final DateTime uploadDate;
-  final int? _periodMonth;
-  final int? _periodYear;
-  final List<SkpItem> items;
+  final int id;
+  final int periodMonth;
+  final int periodYear;
+  final String fileName;
+  final int fileSize;
+  final String? fileUrl;
+  final Map<String, dynamic>? jsonExtractedData;
+  final int? tppPercentage;
   final String status;
-  final String? pegawaiName;
-
-  int get periodMonth => _periodMonth ?? uploadDate.month;
-  int get periodYear => _periodYear ?? uploadDate.year;
+  final DateTime? verifiedAt;
+  final String? rejectionNote;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final SkpReportUser? user;
+  final SkpReportInstitution? institution;
+  final SkpReportVerifier? verifier;
 
   SkpReportModel({
-    this.id,
-    required this.filename,
-    required this.uploadDate,
-    int? periodMonth,
-    int? periodYear,
-    this.items = const [],
+    required this.id,
+    required this.periodMonth,
+    required this.periodYear,
+    required this.fileName,
+    this.fileSize = 0,
+    this.fileUrl,
+    this.jsonExtractedData,
+    this.tppPercentage,
     this.status = 'pending',
-    this.pegawaiName,
-  })  : _periodMonth = periodMonth ?? uploadDate.month,
-        _periodYear = periodYear ?? uploadDate.year;
+    this.verifiedAt,
+    this.rejectionNote,
+    this.createdAt,
+    this.updatedAt,
+    this.user,
+    this.institution,
+    this.verifier,
+  });
+
+  bool get isApproved => status.toLowerCase() == 'disetujui';
+  bool get isPending => status.toLowerCase() == 'pending';
+  bool get isRejected => status.toLowerCase() == 'ditolak';
+
+  String get displayName => user?.displayName ?? 'Pegawai';
+  String get verifierDisplayName => verifier?.displayName ?? '-';
+
+  String? get predikatKinerja =>
+      jsonExtractedData?['predikat_kinerja_pegawai']?.toString();
+
+  String? get capaianOrganisasi =>
+      jsonExtractedData?['capaian_kinerja_organisasi']?.toString();
 
   factory SkpReportModel.fromJson(Map<String, dynamic> json) {
-    final uploadDate = json['uploadDate'] != null
-        ? DateTime.parse(json['uploadDate'])
-        : DateTime.now();
     return SkpReportModel(
-      id: json['id'],
-      filename: json['filename'] ?? 'unknown.pdf',
-      uploadDate: uploadDate,
-      periodMonth: json['periodMonth'] ?? uploadDate.month,
-      periodYear: json['periodYear'] ?? uploadDate.year,
-      items: json['items'] != null
-          ? (json['items'] as List).map((i) => SkpItem.fromJson(i)).toList()
-          : [],
-      status: json['status'] ?? 'pending',
-      pegawaiName: json['pegawaiName'],
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      periodMonth: json['period_month'] is int
+          ? json['period_month']
+          : int.tryParse(json['period_month']?.toString() ?? '1') ?? 1,
+      periodYear: json['period_year'] is int
+          ? json['period_year']
+          : int.tryParse(json['period_year']?.toString() ?? '2026') ?? 2026,
+      fileName: json['file_name']?.toString() ?? 'unknown.pdf',
+      fileSize: json['file_size'] is int
+          ? json['file_size']
+          : int.tryParse(json['file_size']?.toString() ?? '0') ?? 0,
+      fileUrl: json['file_url']?.toString(),
+      jsonExtractedData: json['json_extracted_data'] is Map<String, dynamic>
+          ? json['json_extracted_data'] as Map<String, dynamic>
+          : null,
+      tppPercentage: json['tpp_percentage'] is int
+          ? json['tpp_percentage']
+          : int.tryParse(json['tpp_percentage']?.toString() ?? ''),
+      status: json['status']?.toString() ?? 'pending',
+      verifiedAt: json['verified_at'] != null
+          ? DateTime.tryParse(json['verified_at'].toString())
+          : null,
+      rejectionNote: json['rejection_note']?.toString(),
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'].toString())
+          : null,
+      user: json['user'] is Map<String, dynamic>
+          ? SkpReportUser.fromJson(json['user'] as Map<String, dynamic>)
+          : null,
+      institution: json['institution'] is Map<String, dynamic>
+          ? SkpReportInstitution.fromJson(json['institution'] as Map<String, dynamic>)
+          : null,
+      verifier: json['verifier'] is Map<String, dynamic>
+          ? SkpReportVerifier.fromJson(json['verifier'] as Map<String, dynamic>)
+          : null,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'filename': filename,
-      'uploadDate': uploadDate.toIso8601String(),
-      'periodMonth': periodMonth,
-      'periodYear': periodYear,
-      'items': items.map((i) => i.toJson()).toList(),
-      'status': status,
-      'pegawaiName': pegawaiName,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'period_month': periodMonth,
+    'period_year': periodYear,
+    'file_name': fileName,
+    'file_size': fileSize,
+    'file_url': fileUrl,
+    'json_extracted_data': jsonExtractedData,
+    'tpp_percentage': tppPercentage,
+    'status': status,
+    'verified_at': verifiedAt?.toIso8601String(),
+    'rejection_note': rejectionNote,
+    'created_at': createdAt?.toIso8601String(),
+    'updated_at': updatedAt?.toIso8601String(),
+    'user': user?.toJson(),
+    'institution': institution?.toJson(),
+    'verifier': verifier?.toJson(),
+  };
 
   SkpReportModel copyWith({
     int? id,
-    String? filename,
-    DateTime? uploadDate,
     int? periodMonth,
     int? periodYear,
-    List<SkpItem>? items,
+    String? fileName,
+    int? fileSize,
+    String? fileUrl,
+    Map<String, dynamic>? jsonExtractedData,
+    int? tppPercentage,
     String? status,
-    String? pegawaiName,
+    DateTime? verifiedAt,
+    String? rejectionNote,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    SkpReportUser? user,
+    SkpReportInstitution? institution,
+    SkpReportVerifier? verifier,
   }) {
     return SkpReportModel(
       id: id ?? this.id,
-      filename: filename ?? this.filename,
-      uploadDate: uploadDate ?? this.uploadDate,
       periodMonth: periodMonth ?? this.periodMonth,
       periodYear: periodYear ?? this.periodYear,
-      items: items ?? this.items,
+      fileName: fileName ?? this.fileName,
+      fileSize: fileSize ?? this.fileSize,
+      fileUrl: fileUrl ?? this.fileUrl,
+      jsonExtractedData: jsonExtractedData ?? this.jsonExtractedData,
+      tppPercentage: tppPercentage ?? this.tppPercentage,
       status: status ?? this.status,
-      pegawaiName: pegawaiName ?? this.pegawaiName,
+      verifiedAt: verifiedAt ?? this.verifiedAt,
+      rejectionNote: rejectionNote ?? this.rejectionNote,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      user: user ?? this.user,
+      institution: institution ?? this.institution,
+      verifier: verifier ?? this.verifier,
     );
   }
 }
