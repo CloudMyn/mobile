@@ -88,11 +88,18 @@ class _SetHomeLocationPageState extends State<SetHomeLocationPage> {
 
     setState(() => _isSaving = true);
     try {
-      await Get.find<ProfileController>().saveHomeLocation(
+      final success = await Get.find<ProfileController>().saveHomeLocation(
         latitude: loc.latitude,
         longitude: loc.longitude,
       );
-      Get.back();
+      if (success) {
+        Get.back();
+        AppFeedback.showSnackbar(
+          title: 'Berhasil',
+          message: 'Lokasi rumah berhasil disimpan',
+          type: FeedbackType.success,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

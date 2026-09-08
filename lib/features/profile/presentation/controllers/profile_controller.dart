@@ -625,7 +625,7 @@ class ProfileController extends GetxController {
     }
   }
 
-  Future<void> saveHomeLocation({
+  Future<bool> saveHomeLocation({
     required double latitude,
     required double longitude,
   }) async {
@@ -642,22 +642,28 @@ class ProfileController extends GetxController {
       } else {
         session.setUser(updatedUser);
       }
-      AppFeedback.showSnackbar(
-        title: 'Berhasil',
-        message: 'Lokasi rumah berhasil disimpan',
-      );
+      return true;
     } on ApiException catch (e) {
       AppFeedback.showSnackbar(
         title: 'Gagal',
         message: e.message,
         isError: true,
       );
+      return false;
     } on NetworkException catch (e) {
       AppFeedback.showSnackbar(
         title: 'Gagal',
         message: e.message,
         isError: true,
       );
+      return false;
+    } catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Gagal',
+        message: 'Gagal menyimpan lokasi rumah',
+        isError: true,
+      );
+      return false;
     }
   }
 
