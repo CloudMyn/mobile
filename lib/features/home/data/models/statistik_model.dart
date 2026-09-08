@@ -68,6 +68,15 @@ class StatistikTpp {
     required this.disciplineScore,
     required this.activityScore,
     required this.dailyRecords,
+    this.paguJabatan,
+    this.attendanceNetPagu,
+    this.skpScorePct,
+    this.skpAmountRp,
+    this.taxDeductionRp,
+    this.finalTakeHomePayRp,
+    this.ekpStatus,
+    this.ekpPredikat,
+    this.ekpPercentage,
   });
 
   final int id;
@@ -78,6 +87,23 @@ class StatistikTpp {
   final double disciplineScore; // 0.0–1.0
   final double activityScore;   // 0.0–1.0
   final List<StatistikTppDailyRecord> dailyRecords;
+
+  final int? paguJabatan;
+  final int? attendanceNetPagu;
+  final double? skpScorePct;
+  final int? skpAmountRp;
+  final int? taxDeductionRp;
+  final int? finalTakeHomePayRp;
+  final String? ekpStatus;
+  final String? ekpPredikat;
+  final double? ekpPercentage;
+
+  String get displayPredikat {
+    if (ekpPredikat != null && ekpPredikat!.trim().isNotEmpty) {
+      return ekpPredikat!;
+    }
+    return 'Belum Ada Penilaian';
+  }
 
   factory StatistikTpp.fromJson(Map<String, dynamic> json) {
     return StatistikTpp(
@@ -95,6 +121,15 @@ class StatistikTpp {
           .map((e) =>
               StatistikTppDailyRecord.fromJson(e as Map<String, dynamic>))
           .toList(),
+      paguJabatan: (json['pagu_jabatan'] as num?)?.toInt(),
+      attendanceNetPagu: (json['attendance_net_pagu'] as num?)?.toInt(),
+      skpScorePct: (json['skp_score_pct'] as num?)?.toDouble(),
+      skpAmountRp: (json['skp_amount_rp'] as num?)?.toInt(),
+      taxDeductionRp: (json['tax_deduction_rp'] as num?)?.toInt(),
+      finalTakeHomePayRp: (json['final_take_home_pay_rp'] as num?)?.toInt(),
+      ekpStatus: json['ekp_status'] as String?,
+      ekpPredikat: json['ekp_predikat'] as String?,
+      ekpPercentage: (json['ekp_percentage'] as num?)?.toDouble(),
     );
   }
 }

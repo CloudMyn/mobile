@@ -2,8 +2,9 @@ import 'package:dio/dio.dart';
 import '../../../../core/error/app_exception.dart';
 import '../../../../core/network/api_response.dart';
 import '../models/statistik_model.dart';
+import '../models/tpp_detail_model.dart';
 
-/// Service untuk GET /mobile/statistik
+/// Service untuk GET /mobile/statistik dan /mobile/tpp/my
 class StatistikService {
   StatistikService(this._dio);
 
@@ -29,6 +30,30 @@ class StatistikService {
       throw ApiException(
         statusCode: e.response?.statusCode ?? 0,
         message: e.message ?? 'Gagal memuat statistik',
+      );
+    }
+  }
+
+  Future<TppDetailModel> fetchMyTpp({
+    required int month,
+    required int year,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/mobile/tpp/my',
+        queryParameters: {'month': month, 'year': year},
+      );
+      return ApiResponse.fromJson(
+        response.data!,
+        (data) => TppDetailModel.fromJson(data as Map<String, dynamic>),
+      ).data!;
+    } on DioException catch (e) {
+      final err = e.error;
+      if (err is ApiException) throw err;
+      if (err is NetworkException) throw err;
+      throw ApiException(
+        statusCode: e.response?.statusCode ?? 0,
+        message: e.message ?? 'Gagal memuat rincian TPP',
       );
     }
   }

@@ -14,7 +14,7 @@ class HomePage extends StatelessWidget {
   static const _navItems = [
     AppBottomNavBarItem(icon: Icons.home_rounded, label: 'Home'),
     AppBottomNavBarItem(icon: Icons.newspaper_rounded, label: 'Informasi'),
-    AppBottomNavBarItem(icon: Icons.assignment_turned_in_rounded, label: 'SKP'),
+    AppBottomNavBarItem(icon: Icons.assignment_turned_in_rounded, label: 'EKP'),
     AppBottomNavBarItem(icon: Icons.person_rounded, label: 'Profile'),
   ];
 

@@ -39,6 +39,11 @@ class TppStatCard extends StatelessWidget {
         );
       }
 
+      final pagu = tpp.paguJabatan ?? tpp.amountBeforeDeduction;
+      final netHadir = tpp.attendanceNetPagu ?? pagu;
+      final finalTakeHome = tpp.finalTakeHomePayRp ?? tpp.amountAfterDeduction;
+      final ekpScore = tpp.skpScorePct != null ? (tpp.skpScorePct! / 100) : tpp.activityScore;
+
       return AppCard(
         outlined: true,
         child: Column(
@@ -84,10 +89,10 @@ class TppStatCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                Icon(
-                  Icons.trending_up_rounded,
-                  color: colors.success,
-                  size: 20,
+                _EkpStatusBadge(
+                  status: tpp.ekpStatus,
+                  colors: colors,
+                  typography: typography,
                 ),
               ],
             ),
@@ -98,9 +103,9 @@ class TppStatCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _MiniBar(
-                    label: 'Besaran',
-                    value: tpp.amountBeforeDeduction.toDouble(),
-                    maxValue: tpp.amountBeforeDeduction.toDouble(),
+                    label: 'Pagu',
+                    value: pagu.toDouble(),
+                    maxValue: pagu > 0 ? pagu.toDouble() : 1.0,
                     color: colors.primary,
                     typography: typography,
                   ),
@@ -108,19 +113,19 @@ class TppStatCard extends StatelessWidget {
                 SizedBox(width: AppSpacing.s8.w),
                 Expanded(
                   child: _MiniBar(
-                    label: 'Potongan',
-                    value: tpp.deductionAmount.toDouble(),
-                    maxValue: tpp.amountBeforeDeduction.toDouble(),
-                    color: colors.warning,
+                    label: 'Net Hadir',
+                    value: netHadir.toDouble(),
+                    maxValue: pagu > 0 ? pagu.toDouble() : 1.0,
+                    color: const Color(0xFF0891B2),
                     typography: typography,
                   ),
                 ),
                 SizedBox(width: AppSpacing.s8.w),
                 Expanded(
                   child: _MiniBar(
-                    label: 'Hasil',
-                    value: tpp.amountAfterDeduction.toDouble(),
-                    maxValue: tpp.amountBeforeDeduction.toDouble(),
+                    label: 'Diterima',
+                    value: finalTakeHome.toDouble(),
+                    maxValue: pagu > 0 ? pagu.toDouble() : 1.0,
                     color: colors.success,
                     typography: typography,
                   ),
@@ -139,16 +144,16 @@ class TppStatCard extends StatelessWidget {
               child: Column(
                 children: [
                   _DetailRow(
-                    label: 'Jumlah Besaran',
-                    value: _rupiah(tpp.amountBeforeDeduction),
+                    label: 'Pagu Jabatan',
+                    value: _rupiah(pagu),
                     color: colors.onSurface,
                     typography: typography,
                   ),
                   SizedBox(height: AppSpacing.s8.h),
                   _DetailRow(
-                    label: 'Potongan',
-                    value: _rupiah(tpp.deductionAmount),
-                    color: colors.warning,
+                    label: 'Pagu Net Kehadiran',
+                    value: _rupiah(netHadir),
+                    color: const Color(0xFF0891B2),
                     typography: typography,
                   ),
                   Divider(
@@ -156,8 +161,8 @@ class TppStatCard extends StatelessWidget {
                     color: colors.outline.withValues(alpha: 0.15),
                   ),
                   _DetailRow(
-                    label: 'Hasil Potongan',
-                    value: _rupiah(tpp.amountAfterDeduction),
+                    label: 'Nilai TPP Diterima',
+                    value: _rupiah(finalTakeHome),
                     color: colors.success,
                     bold: true,
                     typography: typography,
@@ -181,8 +186,9 @@ class TppStatCard extends StatelessWidget {
                 SizedBox(width: AppSpacing.s8.w),
                 Expanded(
                   child: _ScoreChip(
-                    label: 'Aktivitas',
-                    score: tpp.activityScore,
+                    label: 'Skor EKP',
+                    score: ekpScore,
+                    subtitle: tpp.displayPredikat,
                     colors: colors,
                     typography: typography,
                   ),
@@ -197,10 +203,14 @@ class TppStatCard extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      Get.to(() => TppDailyDetailScreen(tpp: tpp));
+                      Get.to(() => TppDailyDetailScreen(
+                            tpp: tpp,
+                            initialMonth: ctrl.selectedMonth.value,
+                            initialYear: ctrl.selectedYear.value,
+                          ));
                     },
-                    icon: Icon(Icons.calendar_month_rounded, size: 18.w),
-                    label: const Text('Detail Harian'),
+                    icon: Icon(Icons.analytics_rounded, size: 18.w),
+                    label: const Text('Rincian Lengkap'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: colors.primary,
                       side: BorderSide(
@@ -307,12 +317,14 @@ class _ScoreChip extends StatelessWidget {
   const _ScoreChip({
     required this.label,
     required this.score,
+    this.subtitle,
     required this.colors,
     required this.typography,
   });
 
   final String label;
   final double score; // 0.0–1.0
+  final String? subtitle;
   final AppColors colors;
   final AppTypography typography;
 
@@ -335,23 +347,101 @@ class _ScoreChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.r8),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: typography.caption.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.6),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: typography.caption.copyWith(
+                  color: colors.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              Text(
+                '$pct%',
+                style: typography.labelLarge.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-          Text(
-            '$pct%',
-            style: typography.labelLarge.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
+          if (subtitle != null && subtitle!.isNotEmpty) ...[
+            SizedBox(height: 2.h),
+            Text(
+              subtitle!,
+              style: typography.caption.copyWith(
+                fontSize: 9.sp,
+                fontWeight: FontWeight.w600,
+                color: subtitle == 'Belum Ada Penilaian'
+                    ? colors.outline
+                    : const Color(0xFF0D9488),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _EkpStatusBadge extends StatelessWidget {
+  const _EkpStatusBadge({
+    required this.status,
+    required this.colors,
+    required this.typography,
+  });
+
+  final String? status;
+  final AppColors colors;
+  final AppTypography typography;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = status?.toLowerCase() ?? 'belum_upload';
+    String text;
+    Color color;
+
+    switch (s) {
+      case 'disetujui':
+        text = 'EKP Disetujui';
+        color = colors.success;
+        break;
+      case 'pending':
+        text = 'EKP Menunggu';
+        color = colors.warning;
+        break;
+      case 'ditolak':
+        text = 'EKP Ditolak';
+        color = colors.error;
+        break;
+      default:
+        text = 'Belum Ada EKP';
+        color = colors.outline;
+        break;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.s8.w,
+        vertical: 2.h,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppRadius.r4),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        text,
+        style: typography.caption.copyWith(
+          color: color,
+          fontSize: 9.sp,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

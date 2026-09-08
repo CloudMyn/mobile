@@ -58,7 +58,7 @@ class SkpListController extends GetxController {
     } catch (e) {
       AppFeedback.showSnackbar(
         title: 'Error',
-        message: 'Gagal memuat laporan SKP: $e',
+        message: 'Gagal memuat laporan EKP: $e',
         type: FeedbackType.error,
       );
     } finally {
@@ -172,7 +172,7 @@ class SkpListController extends GetxController {
       AppFeedback.showSnackbar(
         title: 'Berhasil Dihapus',
         message:
-            'Laporan SKP berhasil dihapus. Anda dapat mengunggah file baru untuk periode tersebut.',
+            'Laporan EKP berhasil dihapus. Anda dapat mengunggah file baru untuk periode tersebut.',
         type: FeedbackType.success,
       );
     } catch (e) {

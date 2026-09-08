@@ -11,6 +11,7 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
 import '../../data/repositories/skp_report_repository.dart';
+import '../../data/services/ekp_pdf_parser.dart';
 import '../controllers/skp_upload_controller.dart';
 
 class SkpUploadPage extends StatelessWidget {
@@ -27,7 +28,7 @@ class SkpUploadPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppTopAppBar(
-        title: 'Upload Laporan SKP',
+        title: 'Upload Laporan EKP',
         variant: AppTopAppBarVariant.withBack,
       ),
       body: Obx(() {
@@ -47,7 +48,7 @@ class SkpUploadPage extends StatelessWidget {
           );
         }
 
-        final data = controller.extractedData.value;
+        final parsed = controller.parsedEkp.value;
 
         return Column(
           children: [
@@ -72,6 +73,7 @@ class SkpUploadPage extends StatelessWidget {
                     onPressed: () {
                       controller.selectedFile.value = null;
                       controller.extractedData.value = null;
+                      controller.parsedEkp.value = null;
                     },
                     icon: Icon(
                       Icons.refresh_rounded,
@@ -119,7 +121,7 @@ class SkpUploadPage extends StatelessWidget {
                         AppSpacing.s8.h,
                       ),
                       child: Text(
-                        'Hasil Ekstraksi Evaluasi Kinerja',
+                        'Hasil Verifikasi & Ekstraksi Dokumen EKP',
                         style: typography.titleSmall.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colors.onSurface,
@@ -130,11 +132,11 @@ class SkpUploadPage extends StatelessWidget {
                       const Expanded(
                         child: Center(child: CircularProgressIndicator()),
                       )
-                    else if (data == null)
+                    else if (parsed == null)
                       Expanded(
                         child: Center(
                           child: Text(
-                            'Tidak ada data evaluasi yang terdeteksi',
+                            'Data EKP belum diekstrak.',
                             style: typography.bodyMedium.copyWith(
                               color: colors.outline,
                             ),
@@ -150,45 +152,9 @@ class SkpUploadPage extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              _buildEvaluationSummary(data, colors, typography),
+                              _buildEvaluationSummary(parsed, colors, typography),
                               SizedBox(height: AppSpacing.s8.h),
-                              if (data['sample_activities'] is List &&
-                                  (data['sample_activities'] as List).isNotEmpty) ...[
-                                Text(
-                                  'Sampel Kegiatan Terdeteksi:',
-                                  style: typography.labelSmall.copyWith(
-                                    color: colors.outline,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: AppSpacing.s4.h),
-                                ...(data['sample_activities'] as List)
-                                    .map((act) => Padding(
-                                          padding: EdgeInsets.only(
-                                            bottom: AppSpacing.s4.h,
-                                          ),
-                                          child: Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text('• ',
-                                                  style: typography.caption
-                                                      .copyWith(
-                                                          color:
-                                                              colors.primary)),
-                                              Expanded(
-                                                child: Text(
-                                                  act.toString(),
-                                                  style: typography.caption
-                                                      .copyWith(
-                                                    color: colors.onSurface,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        )),
-                              ],
+                              _buildIdentitySummary(parsed, colors, typography),
                               SizedBox(height: AppSpacing.s16.h),
                             ],
                           ),
@@ -202,14 +168,14 @@ class SkpUploadPage extends StatelessWidget {
         );
       }),
       bottomNavigationBar: Obx(() {
-        if (controller.selectedFile.value == null) {
+        if (controller.selectedFile.value == null || controller.extractedData.value == null) {
           return const SizedBox.shrink();
         }
         return SafeArea(
           child: Padding(
             padding: EdgeInsets.all(AppSpacing.s16.w),
             child: AppButton(
-              label: 'Kirim Laporan (Verifikasi Atasan)',
+              label: 'Kirim Laporan EKP (Verifikasi Atasan)',
               style: AppButtonStyle.filled,
               onPressed: controller.saveReport,
             ),
@@ -220,12 +186,12 @@ class SkpUploadPage extends StatelessWidget {
   }
 
   Widget _buildEvaluationSummary(
-    Map<String, dynamic> data,
+    EkpExtractedData parsed,
     AppColors colors,
     AppTypography typography,
   ) {
-    final predikat = data['predikat_kinerja_pegawai']?.toString() ?? 'Baik';
-    final capaian = data['capaian_kinerja_organisasi']?.toString() ?? 'Baik';
+    final predikat = parsed.predikatKinerja ?? '-';
+    final capaian = parsed.capaianOrganisasi ?? '-';
 
     return AppCard(
       outlined: true,
@@ -301,6 +267,80 @@ class SkpUploadPage extends StatelessWidget {
     );
   }
 
+  Widget _buildIdentitySummary(
+    EkpExtractedData parsed,
+    AppColors colors,
+    AppTypography typography,
+  ) {
+    return AppCard(
+      outlined: true,
+      padding: EdgeInsets.all(AppSpacing.s12.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Pegawai Yang Dinilai',
+            style: typography.labelSmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colors.primary,
+            ),
+          ),
+          SizedBox(height: AppSpacing.s4.h),
+          Text(
+            parsed.pegawaiNama ?? '-',
+            style: typography.bodySmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colors.onSurface,
+            ),
+          ),
+          Text(
+            'NIP. ${parsed.pegawaiNip ?? '-'}',
+            style: typography.caption.copyWith(color: colors.outline),
+          ),
+          if (parsed.pegawaiJabatan != null)
+            Text(
+              parsed.pegawaiJabatan!,
+              style: typography.caption.copyWith(color: colors.onSurface),
+            ),
+          SizedBox(height: AppSpacing.s8.h),
+          const Divider(height: 1),
+          SizedBox(height: AppSpacing.s8.h),
+          Text(
+            'Pejabat Penilai Kinerja',
+            style: typography.labelSmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colors.primary,
+            ),
+          ),
+          SizedBox(height: AppSpacing.s4.h),
+          Text(
+            parsed.penilaiNama ?? '-',
+            style: typography.bodySmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colors.onSurface,
+            ),
+          ),
+          Text(
+            'NIP. ${parsed.penilaiNip ?? '-'}',
+            style: typography.caption.copyWith(color: colors.outline),
+          ),
+          if (parsed.rawPeriodText != null) ...[
+            SizedBox(height: AppSpacing.s8.h),
+            const Divider(height: 1),
+            SizedBox(height: AppSpacing.s8.h),
+            Text(
+              'Periode Dokumen: ${parsed.rawPeriodText}',
+              style: typography.caption.copyWith(
+                color: colors.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildRuleBanner(AppColors colors, AppTypography typography) {
     return Container(
       padding: EdgeInsets.all(AppSpacing.s12.w),
@@ -316,7 +356,7 @@ class SkpUploadPage extends StatelessWidget {
           SizedBox(width: AppSpacing.s8.w),
           Expanded(
             child: Text(
-              '1 file SKP hanya berlaku untuk 1 periode bulan. Jika ingin mengganti file, hapus file lama terlebih dahulu agar diverifikasi ulang oleh atasan.',
+              '1 file EKP hanya berlaku untuk 1 periode bulan. Jika ingin mengganti file, hapus file lama terlebih dahulu agar diverifikasi ulang oleh atasan.',
               style: typography.caption
                   .copyWith(color: colors.onSurface, height: 1.3),
             ),
@@ -341,7 +381,7 @@ class SkpUploadPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Periode Laporan SKP',
+            'Periode Laporan EKP',
             style: typography.titleSmall.copyWith(
               fontWeight: FontWeight.bold,
               color: colors.onSurface,
@@ -374,7 +414,7 @@ class SkpUploadPage extends StatelessWidget {
                         ),
                       ),
                       onChanged: (val) {
-                        if (val != null) controller.selectedMonth.value = val;
+                        if (val != null) controller.setPeriod(val, controller.selectedYear.value);
                       },
                     ),
                   ],
@@ -402,7 +442,7 @@ class SkpUploadPage extends StatelessWidget {
                           )
                           .toList(),
                       onChanged: (val) {
-                        if (val != null) controller.selectedYear.value = val;
+                        if (val != null) controller.setPeriod(controller.selectedMonth.value, val);
                       },
                     ),
                   ],
@@ -429,7 +469,7 @@ class SkpUploadPage extends StatelessWidget {
               size: 48.sp, color: colors.outline),
           SizedBox(height: AppSpacing.s16.h),
           Text(
-            'Unggah Dokumen PDF Penilaian SKP (Maks. 10MB)',
+            'Unggah Dokumen PDF Penilaian EKP (Maks. 10MB)',
             textAlign: TextAlign.center,
             style: typography.bodyMedium.copyWith(color: colors.outline),
           ),
