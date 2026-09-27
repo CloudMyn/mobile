@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../../../../design_system/components/app_bottom_nav_bar.dart';
 import '../controllers/navigation_controller.dart';
 import '../../../informasi/presentation/pages/informasi_page.dart';
-// import 'tabs/activity_tab.dart'; // Disabled for now (Kinerja)
+import 'tabs/activity_tab.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/profile_tab.dart';
 import '../../../skp/presentation/pages/skp_list_page.dart';
@@ -14,6 +14,7 @@ class HomePage extends StatelessWidget {
   static const _navItems = [
     AppBottomNavBarItem(icon: Icons.home_rounded, label: 'Home'),
     AppBottomNavBarItem(icon: Icons.newspaper_rounded, label: 'Informasi'),
+    AppBottomNavBarItem(icon: Icons.history_rounded, label: 'Kinerja'),
     AppBottomNavBarItem(icon: Icons.assignment_turned_in_rounded, label: 'EKP'),
     AppBottomNavBarItem(icon: Icons.person_rounded, label: 'Profile'),
   ];
@@ -21,6 +22,7 @@ class HomePage extends StatelessWidget {
   static final _tabs = <Widget>[
     const HomeTab(),
     const InformasiPage(),
+    const ActivityTab(),
     const SkpListPage(),
     const ProfileTab(),
   ];
