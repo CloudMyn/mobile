@@ -6,7 +6,7 @@ import '../../../informasi/presentation/pages/informasi_page.dart';
 import 'tabs/activity_tab.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/profile_tab.dart';
-import '../../../skp/presentation/pages/skp_list_page.dart';
+// import '../../../skp/presentation/pages/skp_list_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -15,7 +15,6 @@ class HomePage extends StatelessWidget {
     AppBottomNavBarItem(icon: Icons.home_rounded, label: 'Home'),
     AppBottomNavBarItem(icon: Icons.newspaper_rounded, label: 'Informasi'),
     AppBottomNavBarItem(icon: Icons.history_rounded, label: 'Kinerja'),
-    AppBottomNavBarItem(icon: Icons.assignment_turned_in_rounded, label: 'EKP'),
     AppBottomNavBarItem(icon: Icons.person_rounded, label: 'Profile'),
   ];
 
@@ -23,7 +22,6 @@ class HomePage extends StatelessWidget {
     const HomeTab(),
     const InformasiPage(),
     const ActivityTab(),
-    const SkpListPage(),
     const ProfileTab(),
   ];
 
