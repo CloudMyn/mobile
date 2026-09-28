@@ -89,7 +89,12 @@ class AttendanceConfig {
       }
     }
 
-    final hasNoRequiredLocation = record.requiredLocation == null && record.eventGeofence == null;
+    final reqLoc = record.requiredLocation;
+    if (reqLoc != null && !resolvedLocations.any((l) => l.id == reqLoc.id)) {
+      resolvedLocations = [reqLoc, ...resolvedLocations];
+    }
+
+    final hasNoRequiredLocation = resolvedLocations.isEmpty && record.requiredLocation == null && record.eventGeofence == null;
 
     return AttendanceConfig.fromRecord(
       record,
