@@ -31,10 +31,28 @@ Future<void> main() async {
   HttpOverrides.global = AppHttpOverrides();
   await initializeDateFormatting('id_ID', null);
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  // Deteksi awal ukuran layar untuk menentukan orientasi tablet vs smartphone.
+  // Ambang batas standar tablet adalah shortestSide >= 600 dp.
+  final views = WidgetsBinding.instance.platformDispatcher.views;
+  final view = views.isNotEmpty ? views.first : null;
+  final isTabletEarly = view != null &&
+      ((view.physicalSize.width / view.devicePixelRatio) < (view.physicalSize.height / view.devicePixelRatio)
+          ? (view.physicalSize.width / view.devicePixelRatio)
+          : (view.physicalSize.height / view.devicePixelRatio)) >= 600.0;
+
+  if (isTabletEarly) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  } else {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
 
   // Inisialisasi async dependencies sebelum runApp agar AppBindings
   // bisa tetap synchronous dan GetX tidak melewatkan registrasi.
@@ -53,7 +71,7 @@ Future<void> main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({
     super.key,
     required this.prefs,
@@ -64,9 +82,42 @@ class MyApp extends StatelessWidget {
   final FlutterSecureStorage secureStorage;
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool? _isTablet;
+
+  void _updateOrientations(double shortestSide) {
+    final isTabletDevice = shortestSide >= 600.0;
+    if (_isTablet == isTabletDevice) return;
+    _isTablet = isTabletDevice;
+
+    if (isTabletDevice) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // shortestSide dari constraints untuk memastikan orientasi tablet tetap berlaku
+        final shortestSide = constraints.biggest.shortestSide;
+        if (shortestSide > 0 && shortestSide.isFinite) {
+          _updateOrientations(shortestSide);
+        }
+
         const maxMobileWidth = 430.0;
         final isWide = constraints.maxWidth > maxMobileWidth;
         
@@ -86,8 +137,8 @@ class MyApp extends StatelessWidget {
             title: AppConstants.appName,
             debugShowCheckedModeBanner: false,
             initialBinding: AppBindings(
-              prefs: prefs,
-              secureStorage: secureStorage,
+              prefs: widget.prefs,
+              secureStorage: widget.secureStorage,
             ),
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
@@ -106,12 +157,33 @@ class MyApp extends StatelessWidget {
                 size: Size(maxMobileWidth, mediaQuery.size.height),
               );
 
+              final theme = Theme.of(context);
+              final isDark = theme.brightness == Brightness.dark;
+              final backdropColor = isDark
+                  ? const Color(0xFF0F172A) // Dark slate background
+                  : const Color(0xFFF1F5F9); // Light slate background
+              final shadowColor = isDark
+                  ? Colors.black.withValues(alpha: 0.6)
+                  : Colors.black.withValues(alpha: 0.12);
+
               return Container(
-                color: Colors.black12,
+                color: backdropColor,
                 child: Center(
-                  child: SizedBox(
+                  child: Container(
                     width: maxMobileWidth,
                     height: mediaQuery.size.height,
+                    decoration: BoxDecoration(
+                      color: theme.scaffoldBackgroundColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: shadowColor,
+                          blurRadius: 24,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.hardEdge,
                     child: MediaQuery(
                       data: constrainedMediaQueryData,
                       child: child ?? const SizedBox(),

@@ -7,7 +7,7 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
-import '../../../skp/presentation/pages/skp_list_page.dart';
+// import '../../../skp/presentation/pages/skp_list_page.dart';
 import '../../data/models/statistik_model.dart';
 import '../../data/models/tpp_detail_model.dart';
 import '../../data/services/statistik_service.dart';
@@ -924,6 +924,7 @@ class _EkpBanner extends StatelessWidget {
               ),
             ],
           ),
+          /*
           SizedBox(height: AppSpacing.s10.h),
           Align(
             alignment: Alignment.centerRight,
@@ -948,6 +949,7 @@ class _EkpBanner extends StatelessWidget {
               ),
             ),
           ),
+          */
         ],
       ),
     );

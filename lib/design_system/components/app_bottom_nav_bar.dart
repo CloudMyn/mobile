@@ -46,7 +46,7 @@ class AppBottomNavBar extends StatelessWidget {
               onTap: () => onTap(index),
               child: AnimatedContainer(
                 duration: AppDuration.normal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s16, vertical: AppSpacing.s8),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s10, vertical: AppSpacing.s8),
                 decoration: BoxDecoration(
                   color: isSelected ? colors.primary.withValues(alpha: AppOpacity.overlay) : Colors.transparent,
                   borderRadius: BorderRadius.circular(AppRadius.r12),
