@@ -25,7 +25,7 @@ class AppConstants {
   // =========================================================================
 
   /// Semantic version (major.minor.patch) — dibaca dari pubspec.yaml.
-  static const String versionName = '1.5.1';
+  static const String versionName = '1.16.1';
 
   /// Build number — dibaca dari pubspec.yaml (angka setelah '+').
   static const int buildNumber = 1;
