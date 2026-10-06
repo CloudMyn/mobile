@@ -39,10 +39,11 @@ class TppStatCard extends StatelessWidget {
         );
       }
 
-      final pagu = tpp.paguJabatan ?? tpp.amountBeforeDeduction;
-      final netHadir = tpp.attendanceNetPagu ?? pagu;
+      final pagu = tpp.pagu;
+      final dispNet = tpp.dispNet;
+      final actNet = tpp.actNet;
       final finalTakeHome = tpp.finalTakeHomePayRp ?? tpp.amountAfterDeduction;
-      final ekpScore = tpp.skpScorePct != null ? (tpp.skpScorePct! / 100) : tpp.activityScore;
+      final kinScore = tpp.activityScore;
 
       return AppCard(
         outlined: true,
@@ -89,8 +90,8 @@ class TppStatCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                _EkpStatusBadge(
-                  status: tpp.ekpStatus,
+                _KinerjaStatusBadge(
+                  activityScore: kinScore,
                   colors: colors,
                   typography: typography,
                 ),
@@ -113,10 +114,20 @@ class TppStatCard extends StatelessWidget {
                 SizedBox(width: AppSpacing.s8.w),
                 Expanded(
                   child: _MiniBar(
-                    label: 'Net Hadir',
-                    value: netHadir.toDouble(),
+                    label: 'Disiplin',
+                    value: dispNet.toDouble(),
                     maxValue: pagu > 0 ? pagu.toDouble() : 1.0,
                     color: const Color(0xFF0891B2),
+                    typography: typography,
+                  ),
+                ),
+                SizedBox(width: AppSpacing.s8.w),
+                Expanded(
+                  child: _MiniBar(
+                    label: 'Kinerja',
+                    value: actNet.toDouble(),
+                    maxValue: pagu > 0 ? pagu.toDouble() : 1.0,
+                    color: const Color(0xFF7C3AED),
                     typography: typography,
                   ),
                 ),
@@ -151,9 +162,16 @@ class TppStatCard extends StatelessWidget {
                   ),
                   SizedBox(height: AppSpacing.s8.h),
                   _DetailRow(
-                    label: 'Pagu Net Kehadiran',
-                    value: _rupiah(netHadir),
+                    label: 'Porsi Disiplin (40%)',
+                    value: _rupiah(dispNet),
                     color: const Color(0xFF0891B2),
+                    typography: typography,
+                  ),
+                  SizedBox(height: AppSpacing.s8.h),
+                  _DetailRow(
+                    label: 'Porsi Kinerja (60%)',
+                    value: _rupiah(actNet),
+                    color: const Color(0xFF7C3AED),
                     typography: typography,
                   ),
                   Divider(
@@ -177,8 +195,9 @@ class TppStatCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _ScoreChip(
-                    label: 'Disiplin',
+                    label: 'Disiplin (40%)',
                     score: tpp.disciplineScore,
+                    subtitle: 'Presensi Bulanan',
                     colors: colors,
                     typography: typography,
                   ),
@@ -186,9 +205,11 @@ class TppStatCard extends StatelessWidget {
                 SizedBox(width: AppSpacing.s8.w),
                 Expanded(
                   child: _ScoreChip(
-                    label: 'Skor EKP',
-                    score: ekpScore,
-                    subtitle: tpp.displayPredikat,
+                    label: 'Kinerja (60%)',
+                    score: kinScore,
+                    subtitle: tpp.workDays > 0
+                        ? '${tpp.approvedDays} dari ${tpp.workDays} hari'
+                        : 'Aktivitas Harian',
                     colors: colors,
                     typography: typography,
                   ),
@@ -330,10 +351,11 @@ class _ScoreChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pct = (score * 100).toStringAsFixed(0);
-    final color = score >= 0.9
+    final normalized = score > 1.0 ? score / 100.0 : score;
+    final pct = (normalized * 100).toStringAsFixed(0);
+    final color = normalized >= 0.9
         ? colors.success
-        : score >= 0.75
+        : normalized >= 0.75
             ? colors.warning
             : colors.error;
 
@@ -389,41 +411,27 @@ class _ScoreChip extends StatelessWidget {
   }
 }
 
-class _EkpStatusBadge extends StatelessWidget {
-  const _EkpStatusBadge({
-    required this.status,
+class _KinerjaStatusBadge extends StatelessWidget {
+  const _KinerjaStatusBadge({
+    required this.activityScore,
     required this.colors,
     required this.typography,
   });
 
-  final String? status;
+  final double activityScore;
   final AppColors colors;
   final AppTypography typography;
 
   @override
   Widget build(BuildContext context) {
-    final s = status?.toLowerCase() ?? 'belum_upload';
-    String text;
-    Color color;
-
-    switch (s) {
-      case 'disetujui':
-        text = 'EKP Disetujui';
-        color = colors.success;
-        break;
-      case 'pending':
-        text = 'EKP Menunggu';
-        color = colors.warning;
-        break;
-      case 'ditolak':
-        text = 'EKP Ditolak';
-        color = colors.error;
-        break;
-      default:
-        text = 'Belum Ada EKP';
-        color = colors.outline;
-        break;
-    }
+    final normalized = activityScore > 1.0 ? activityScore / 100.0 : activityScore;
+    final pct = (normalized * 100).toInt();
+    final isFull = pct >= 100;
+    final hasScore = pct > 0;
+    final color = isFull
+        ? colors.success
+        : (hasScore ? const Color(0xFFD97706) : colors.outline);
+    final text = 'Kinerja $pct%';
 
     return Container(
       padding: EdgeInsets.symmetric(

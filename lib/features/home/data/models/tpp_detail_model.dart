@@ -108,6 +108,16 @@ class TppCalculationInfo {
     required this.disciplineScore,
     required this.activityScore,
     required this.weightedScore,
+    this.disciplinePortionPagu,
+    this.disciplineDeductionRp,
+    this.disciplineNetRp,
+    this.activityPortionPagu,
+    this.activityDeductionPct,
+    this.activityDeductionRp,
+    this.activityNetRp,
+    this.approvedActivityDays,
+    this.totalWorkDays,
+    this.totalTppGrossRp,
   });
 
   final int paguJabatan;
@@ -126,6 +136,27 @@ class TppCalculationInfo {
   final double disciplineScore;
   final double activityScore;
   final double weightedScore;
+
+  final int? disciplinePortionPagu;
+  final int? disciplineDeductionRp;
+  final int? disciplineNetRp;
+  final int? activityPortionPagu;
+  final double? activityDeductionPct;
+  final int? activityDeductionRp;
+  final int? activityNetRp;
+  final int? approvedActivityDays;
+  final int? totalWorkDays;
+  final int? totalTppGrossRp;
+
+  int get dispPagu => disciplinePortionPagu ?? (paguJabatan * 0.4).round();
+  int get dispNet => disciplineNetRp ?? attendanceNetPagu;
+  int get dispDedRp => disciplineDeductionRp ?? attendanceDeductionRp;
+  int get actPagu => activityPortionPagu ?? (paguJabatan * 0.6).round();
+  int get actNet => activityNetRp ?? (actPagu * (activityScore / 100)).round();
+  int get actDedRp => activityDeductionRp ?? (actPagu - actNet);
+  int get grossRp => totalTppGrossRp ?? (dispNet + actNet);
+  int get approvedDays => approvedActivityDays ?? 0;
+  int get workDays => totalWorkDays ?? 0;
 
   static String formatRupiah(num val, {bool withDecimals = false}) {
     final format = NumberFormat.currency(
@@ -158,6 +189,16 @@ class TppCalculationInfo {
       disciplineScore: (json['discipline_score'] as num?)?.toDouble() ?? 0.0,
       activityScore: (json['activity_score'] as num?)?.toDouble() ?? 0.0,
       weightedScore: (json['weighted_score'] as num?)?.toDouble() ?? 0.0,
+      disciplinePortionPagu: (json['discipline_portion_pagu'] as num?)?.toInt(),
+      disciplineDeductionRp: (json['discipline_deduction_rp'] as num?)?.toInt(),
+      disciplineNetRp: (json['discipline_net_rp'] as num?)?.toInt(),
+      activityPortionPagu: (json['activity_portion_pagu'] as num?)?.toInt(),
+      activityDeductionPct: (json['activity_deduction_pct'] as num?)?.toDouble(),
+      activityDeductionRp: (json['activity_deduction_rp'] as num?)?.toInt(),
+      activityNetRp: (json['activity_net_rp'] as num?)?.toInt(),
+      approvedActivityDays: (json['approved_activity_days'] as num?)?.toInt(),
+      totalWorkDays: (json['total_work_days'] as num?)?.toInt(),
+      totalTppGrossRp: (json['total_tpp_gross_rp'] as num?)?.toInt(),
     );
   }
 }

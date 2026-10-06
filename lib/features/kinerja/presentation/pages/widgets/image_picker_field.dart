@@ -82,7 +82,7 @@ class ImagePickerField extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.s4.h),
           Text(
-            'Foto akan dikompresi dengan ukuran maksimal sesuai pengaturan',
+            'Foto akan dikompresi otomatis agar jernih dan tajam (maks. 800 KB)',
             style: typography.caption.copyWith(
               color: colors.onSurface.withValues(alpha: 0.4),
             ),
@@ -139,7 +139,7 @@ class ImagePickerField extends StatelessWidget {
                       ),
                       SizedBox(height: 2.h),
                       Text(
-                        '1:1 • ${_getFileSize(imagePath!)}',
+                        'Dokumentasi • ${_getFileSize(imagePath!)}',
                         style: typography.caption.copyWith(
                           color: colors.onSurface.withValues(alpha: 0.4),
                         ),

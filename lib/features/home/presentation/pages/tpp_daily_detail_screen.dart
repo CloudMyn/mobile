@@ -7,7 +7,6 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
-// import '../../../skp/presentation/pages/skp_list_page.dart';
 import '../../data/models/statistik_model.dart';
 import '../../data/models/tpp_detail_model.dart';
 import '../../data/services/statistik_service.dart';
@@ -153,37 +152,29 @@ class _TppDailyDetailScreenState extends State<TppDailyDetailScreen> {
                       ),
                       SizedBox(height: AppSpacing.s12.h),
 
-                      // ── Card 1: Pagu Jabatan & Potongan Kehadiran ─────────
-                      _PaguKehadiranCard(
+                      // ── Card 1: Disiplin Kerja (Bobot 40%) ───────────────
+                      _DisiplinKerjaCard(
                         calc: data.calculation,
                         colors: colors,
                         typography: typography,
                       ),
                       SizedBox(height: AppSpacing.s12.h),
 
-                      // ── Card 2: Pagu X SKP, Pajak & Diterima ─────────────
-                      _PaguSkpDanPajakCard(
+                      // ── Card 2: Kinerja Harian (Bobot 60%) ───────────────
+                      _KinerjaHarianCard(
                         calc: data.calculation,
                         colors: colors,
                         typography: typography,
                       ),
                       SizedBox(height: AppSpacing.s12.h),
 
-                      // ── Card 3: Predikat Kinerja Pegawai (Opsional jika ada EKP) ──
-                      if (data.ekp.isApproved && data.ekp.predikat != null) ...[
-                        _PredikatKinerjaCard(
-                          ekp: data.ekp,
-                          colors: colors,
-                          typography: typography,
-                        ),
-                        SizedBox(height: AppSpacing.s12.h),
-                        _EkpBanner(
-                          ekp: data.ekp,
-                          colors: colors,
-                          typography: typography,
-                        ),
-                        SizedBox(height: AppSpacing.s12.h),
-                      ],
+                      // ── Card 3: Ringkasan Total & Pajak PPh 21 ───────────
+                      _RingkasanPenerimaanCard(
+                        calc: data.calculation,
+                        colors: colors,
+                        typography: typography,
+                      ),
+                      SizedBox(height: AppSpacing.s20.h),
 
                       // ── Bagian Detail Potongan Harian ─────────────────────
                       Text(
@@ -441,10 +432,10 @@ class _EmployeeIdentityHeader extends StatelessWidget {
   }
 }
 
-// ── Card 1: Pagu Jabatan & Potongan Kehadiran ──────────────────────────────────
+// ── Card 1: Disiplin Kerja (Bobot 40%) ────────────────────────────────────────
 
-class _PaguKehadiranCard extends StatelessWidget {
-  const _PaguKehadiranCard({
+class _DisiplinKerjaCard extends StatelessWidget {
+  const _DisiplinKerjaCard({
     required this.calc,
     required this.colors,
     required this.typography,
@@ -456,23 +447,70 @@ class _PaguKehadiranCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final discScoreStr = calc.disciplineScore.truncateToDouble() == calc.disciplineScore
+        ? '${calc.disciplineScore.toInt()}%'
+        : '${calc.disciplineScore.toStringAsFixed(1)}%';
+
     return AppCard(
       outlined: true,
       padding: EdgeInsets.all(AppSpacing.s12.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Pagu Jabatan
-          Text(
-            'Pagu Jabatan',
-            style: typography.caption.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.6),
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Disiplin Kerja',
+                      style: typography.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      'Porsi Pagu: 40% × ${TppCalculationInfo.formatRupiah(calc.paguJabatan)}',
+                      style: typography.caption.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.6),
+                        fontSize: 10.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s8.w,
+                  vertical: AppSpacing.s4.h,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0284C7).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.r8),
+                  border: Border.all(
+                    color: const Color(0xFF0284C7).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Text(
+                  'BOBOT 40%',
+                  style: typography.caption.copyWith(
+                    color: const Color(0xFF0284C7),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 9.sp,
+                  ),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 2.h),
+          SizedBox(height: AppSpacing.s8.h),
+
+          // Nilai Porsi Pagu Disiplin
           Text(
-            TppCalculationInfo.formatRupiah(calc.paguJabatan),
+            TppCalculationInfo.formatRupiah(calc.dispPagu),
             style: typography.titleSmall.copyWith(
               fontWeight: FontWeight.bold,
               color: colors.onSurface,
@@ -487,28 +525,42 @@ class _PaguKehadiranCard extends StatelessWidget {
             ),
           ),
 
-          // Subbox Kehadiran
+          // Skor Disiplin Presensi
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Pagu - Persentase Kehadiran',
+                'Skor Disiplin Presensi',
                 style: typography.caption.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF0891B2),
+                  color: colors.onSurface,
                 ),
               ),
-              SizedBox(width: 4.w),
-              Icon(Icons.check_circle_rounded,
-                  size: 13.w, color: const Color(0xFF0891B2)),
-              SizedBox(width: 4.w),
-              Expanded(
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s8.w,
+                  vertical: 2.h,
+                ),
+                decoration: BoxDecoration(
+                  color: (calc.disciplineScore >= 90
+                          ? colors.success
+                          : (calc.disciplineScore >= 70
+                              ? const Color(0xFFD97706)
+                              : colors.error))
+                      .withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.r4),
+                ),
                 child: Text(
-                  '(Telah disinkronisasi)',
+                  discScoreStr,
                   style: typography.caption.copyWith(
-                    fontSize: 9.sp,
-                    color: const Color(0xFF0891B2).withValues(alpha: 0.8),
+                    fontWeight: FontWeight.bold,
+                    color: calc.disciplineScore >= 90
+                        ? colors.success
+                        : (calc.disciplineScore >= 70
+                            ? const Color(0xFFD97706)
+                            : colors.error),
+                    fontSize: 10.sp,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -517,7 +569,7 @@ class _PaguKehadiranCard extends StatelessWidget {
 
           // Persentase rincian
           _PercentageRow(
-            label: 'Persentase Tidak Hadir :',
+            label: 'Persentase Tidak Hadir (Alpa) :',
             pct: calc.absentDeductionPct,
             colors: colors,
             typography: typography,
@@ -545,6 +597,14 @@ class _PaguKehadiranCard extends StatelessWidget {
               typography: typography,
             ),
           ],
+          SizedBox(height: 3.h),
+          _PercentageRow(
+            label: 'Total Potongan Kehadiran :',
+            pct: calc.attendanceDeductionPct,
+            colors: colors,
+            typography: typography,
+            isTotal: true,
+          ),
 
           SizedBox(height: AppSpacing.s10.h),
           Container(
@@ -556,20 +616,31 @@ class _PaguKehadiranCard extends StatelessWidget {
                 color: colors.outline.withValues(alpha: 0.1),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${TppCalculationInfo.formatRupiah(calc.paguJabatan)} - ${TppCalculationInfo.formatRupiah(calc.attendanceDeductionRp)}',
-                  style: typography.caption.copyWith(
-                    color: colors.onSurface.withValues(alpha: 0.5),
-                    fontSize: 10.sp,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pagu 40% - Potongan Presensi',
+                      style: typography.caption.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.5),
+                        fontSize: 9.sp,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      '${TppCalculationInfo.formatRupiah(calc.dispPagu)} - ${TppCalculationInfo.formatRupiah(calc.dispDedRp)}',
+                      style: typography.caption.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.7),
+                        fontSize: 10.sp,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 2.h),
                 Text(
-                  TppCalculationInfo.formatRupiah(calc.attendanceNetPagu,
-                      withDecimals: true),
+                  TppCalculationInfo.formatRupiah(calc.dispNet),
                   style: typography.bodyMedium.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colors.onSurface,
@@ -590,12 +661,14 @@ class _PercentageRow extends StatelessWidget {
     required this.pct,
     required this.colors,
     required this.typography,
+    this.isTotal = false,
   });
 
   final String label;
   final double pct;
   final AppColors colors;
   final AppTypography typography;
+  final bool isTotal;
 
   @override
   Widget build(BuildContext context) {
@@ -609,7 +682,8 @@ class _PercentageRow extends StatelessWidget {
         Text(
           label,
           style: typography.caption.copyWith(
-            color: colors.onSurface.withValues(alpha: 0.65),
+            color: colors.onSurface.withValues(alpha: isTotal ? 0.85 : 0.65),
+            fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal,
             fontSize: 11.sp,
           ),
         ),
@@ -626,10 +700,10 @@ class _PercentageRow extends StatelessWidget {
   }
 }
 
-// ── Card 2: Pagu X Nilai SKP, Pajak & Diterima ────────────────────────────────
+// ── Card 2: Kinerja Harian (Bobot 60%) ────────────────────────────────────────
 
-class _PaguSkpDanPajakCard extends StatelessWidget {
-  const _PaguSkpDanPajakCard({
+class _KinerjaHarianCard extends StatelessWidget {
+  const _KinerjaHarianCard({
     required this.calc,
     required this.colors,
     required this.typography,
@@ -641,13 +715,11 @@ class _PaguSkpDanPajakCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final skpPctStr = calc.skpScorePct.truncateToDouble() == calc.skpScorePct
-        ? '${calc.skpScorePct.toInt()}%'
-        : '${calc.skpScorePct.toStringAsFixed(1)}%';
+    final actScoreStr = calc.activityScore.truncateToDouble() == calc.activityScore
+        ? '${calc.activityScore.toInt()}%'
+        : '${calc.activityScore.toStringAsFixed(1)}%';
 
-    final taxRateStr = calc.taxRatePct.truncateToDouble() == calc.taxRatePct
-        ? '${calc.taxRatePct.toInt()}%'
-        : '${calc.taxRatePct.toStringAsFixed(1)}%';
+    final isFullActivity = calc.activityScore >= 100;
 
     return AppCard(
       outlined: true,
@@ -655,26 +727,61 @@ class _PaguSkpDanPajakCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Capaian Kinerja (Bobot 60%)
-          Text(
-            'Capaian Kinerja (Bobot 60%)',
-            style: typography.caption.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.6),
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Kinerja Harian',
+                      style: typography.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      'Porsi Pagu: 60% × ${TppCalculationInfo.formatRupiah(calc.paguJabatan)}',
+                      style: typography.caption.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.6),
+                        fontSize: 10.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s8.w,
+                  vertical: AppSpacing.s4.h,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.r8),
+                  border: Border.all(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Text(
+                  'BOBOT 60%',
+                  style: typography.caption.copyWith(
+                    color: const Color(0xFF10B981),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 9.sp,
+                  ),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 2.h),
+          SizedBox(height: AppSpacing.s8.h),
+
+          // Nilai Porsi Pagu Kinerja
           Text(
-            'Skor Kinerja: $skpPctStr (Bobot 60%)',
-            style: typography.caption.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.45),
-              fontSize: 10.sp,
-            ),
-          ),
-          SizedBox(height: 2.h),
-          Text(
-            TppCalculationInfo.formatRupiah(calc.skpAmountRp),
-            style: typography.bodyMedium.copyWith(
+            TppCalculationInfo.formatRupiah(calc.actPagu),
+            style: typography.titleSmall.copyWith(
               fontWeight: FontWeight.bold,
               color: colors.onSurface,
             ),
@@ -688,29 +795,251 @@ class _PaguSkpDanPajakCard extends StatelessWidget {
             ),
           ),
 
-          // Potongan Pajak
-          Text(
-            'Potongan Pajak $taxRateStr',
-            style: typography.caption.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.6),
-              fontWeight: FontWeight.w600,
-            ),
+          // Capaian Kinerja Harian
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Capaian Kinerja Harian',
+                style: typography.caption.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colors.onSurface,
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s8.w,
+                  vertical: 2.h,
+                ),
+                decoration: BoxDecoration(
+                  color: (isFullActivity ? colors.success : const Color(0xFFD97706))
+                      .withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.r4),
+                ),
+                child: Text(
+                  actScoreStr,
+                  style: typography.caption.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isFullActivity ? colors.success : const Color(0xFFD97706),
+                    fontSize: 10.sp,
+                  ),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 2.h),
+          SizedBox(height: AppSpacing.s8.h),
+
+          // Baris keterpenuhan hari kerja
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Hari Kerja Disetujui :',
+                style: typography.caption.copyWith(
+                  color: colors.onSurface.withValues(alpha: 0.65),
+                  fontSize: 11.sp,
+                ),
+              ),
+              Text(
+                '${calc.approvedDays} dari ${calc.workDays} hari',
+                style: typography.caption.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colors.onSurface,
+                  fontSize: 11.sp,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 3.h),
           Text(
-            TppCalculationInfo.formatRupiah(calc.skpAmountRp),
+            '* Setiap hari kerja dengan min. 1 aktivitas disetujui dinilai 100%',
             style: typography.caption.copyWith(
               color: colors.onSurface.withValues(alpha: 0.45),
-              fontSize: 10.sp,
+              fontSize: 9.sp,
+              fontStyle: FontStyle.italic,
             ),
           ),
-          SizedBox(height: 2.h),
+
+          SizedBox(height: AppSpacing.s10.h),
+          Container(
+            padding: EdgeInsets.all(AppSpacing.s8.w),
+            decoration: BoxDecoration(
+              color: colors.background,
+              borderRadius: BorderRadius.circular(AppRadius.r8),
+              border: Border.all(
+                color: colors.outline.withValues(alpha: 0.1),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pagu 60% × Skor Kinerja',
+                      style: typography.caption.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.5),
+                        fontSize: 9.sp,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      '$actScoreStr × ${TppCalculationInfo.formatRupiah(calc.actPagu)}',
+                      style: typography.caption.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.7),
+                        fontSize: 10.sp,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  TppCalculationInfo.formatRupiah(calc.actNet),
+                  style: typography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Card 3: Ringkasan Total & Pajak PPh 21 ─────────────────────────────────────
+
+class _RingkasanPenerimaanCard extends StatelessWidget {
+  const _RingkasanPenerimaanCard({
+    required this.calc,
+    required this.colors,
+    required this.typography,
+  });
+
+  final TppCalculationInfo calc;
+  final AppColors colors;
+  final AppTypography typography;
+
+  @override
+  Widget build(BuildContext context) {
+    final taxRateStr = calc.taxRatePct.truncateToDouble() == calc.taxRatePct
+        ? '${calc.taxRatePct.toInt()}%'
+        : '${calc.taxRatePct.toStringAsFixed(1)}%';
+
+    return AppCard(
+      outlined: true,
+      padding: EdgeInsets.all(AppSpacing.s12.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            TppCalculationInfo.formatRupiah(calc.taxDeductionRp),
+            'Ringkasan Penerimaan TPP',
             style: typography.bodyMedium.copyWith(
               fontWeight: FontWeight.bold,
-              color: calc.taxDeductionRp > 0 ? colors.error : colors.onSurface,
+              color: colors.onSurface,
             ),
+          ),
+          SizedBox(height: AppSpacing.s10.h),
+
+          // Disiplin (40%)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Penerimaan Disiplin (40%)',
+                style: typography.caption.copyWith(
+                  color: colors.onSurface.withValues(alpha: 0.7),
+                  fontSize: 11.sp,
+                ),
+              ),
+              Text(
+                TppCalculationInfo.formatRupiah(calc.dispNet),
+                style: typography.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colors.onSurface,
+                  fontSize: 11.sp,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 4.h),
+
+          // Kinerja (60%)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Penerimaan Kinerja (60%)',
+                style: typography.caption.copyWith(
+                  color: colors.onSurface.withValues(alpha: 0.7),
+                  fontSize: 11.sp,
+                ),
+              ),
+              Text(
+                TppCalculationInfo.formatRupiah(calc.actNet),
+                style: typography.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colors.onSurface,
+                  fontSize: 11.sp,
+                ),
+              ),
+            ],
+          ),
+
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.s8.h),
+            child: Divider(
+              color: colors.outline.withValues(alpha: 0.12),
+              height: 1,
+            ),
+          ),
+
+          // Total TPP Bruto
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total TPP Bruto',
+                style: typography.bodySmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colors.onSurface,
+                ),
+              ),
+              Text(
+                TppCalculationInfo.formatRupiah(calc.grossRp),
+                style: typography.bodySmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colors.onSurface,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+
+          // Potongan Pajak PPh 21
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Potongan Pajak PPh 21 ($taxRateStr)',
+                style: typography.caption.copyWith(
+                  color: colors.onSurface.withValues(alpha: 0.7),
+                  fontSize: 11.sp,
+                ),
+              ),
+              Text(
+                calc.taxDeductionRp > 0
+                    ? '- ${TppCalculationInfo.formatRupiah(calc.taxDeductionRp)}'
+                    : 'Rp 0',
+                style: typography.caption.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: calc.taxDeductionRp > 0 ? colors.error : colors.onSurface,
+                  fontSize: 11.sp,
+                ),
+              ),
+            ],
           ),
 
           SizedBox(height: AppSpacing.s12.h),
@@ -765,196 +1094,6 @@ class _PaguSkpDanPajakCard extends StatelessWidget {
   }
 }
 
-// ── Card 3: Predikat Kinerja Pegawai ──────────────────────────────────────────
-
-class _PredikatKinerjaCard extends StatelessWidget {
-  const _PredikatKinerjaCard({
-    required this.ekp,
-    required this.colors,
-    required this.typography,
-  });
-
-  final TppEkpInfo ekp;
-  final AppColors colors;
-  final AppTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasScore = ekp.isApproved && ekp.predikat != null;
-    final titleText = ekp.displayPredikat;
-
-    final titleColor = hasScore ? colors.onSurface : const Color(0xFFD97706);
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.s16.w,
-        vertical: AppSpacing.s16.h,
-      ),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.r12),
-        border: Border.all(
-          color: colors.outline.withValues(alpha: 0.15),
-          style: BorderStyle.solid,
-        ),
-      ),
-      child: Column(
-        children: [
-          Text(
-            titleText,
-            style: typography.titleLarge.copyWith(
-              fontWeight: FontWeight.w800,
-              color: titleColor,
-              fontSize: 22.sp,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: AppSpacing.s8.h),
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.s8.w,
-              vertical: AppSpacing.s2.h,
-            ),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0D9488).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppRadius.r4),
-            ),
-            child: Text(
-              'Predikat Kinerja',
-              style: typography.caption.copyWith(
-                color: const Color(0xFF0D9488),
-                fontWeight: FontWeight.bold,
-                fontSize: 11.sp,
-              ),
-            ),
-          ),
-          SizedBox(height: AppSpacing.s4.h),
-          Text(
-            'Hasil Predikat Kerja Bulanan',
-            style: typography.caption.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.5),
-              fontSize: 10.sp,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Banner Dokumen EKP ────────────────────────────────────────────────────────
-
-class _EkpBanner extends StatelessWidget {
-  const _EkpBanner({
-    required this.ekp,
-    required this.colors,
-    required this.typography,
-  });
-
-  final TppEkpInfo ekp;
-  final AppColors colors;
-  final AppTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    Color statusColor;
-    if (ekp.isApproved) {
-      statusColor = colors.success;
-    } else if (ekp.isPending) {
-      statusColor = colors.warning;
-    } else if (ekp.isRejected) {
-      statusColor = colors.error;
-    } else {
-      statusColor = colors.outline;
-    }
-
-    return Container(
-      padding: EdgeInsets.all(AppSpacing.s12.w),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.r12),
-        border: Border.all(
-          color: colors.outline.withValues(alpha: 0.15),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 34.w,
-                height: 34.w,
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppRadius.r8),
-                ),
-                child: Icon(
-                  Icons.assignment_turned_in_rounded,
-                  color: colors.primary,
-                  size: 18.w,
-                ),
-              ),
-              SizedBox(width: AppSpacing.s10.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Dokumen Evaluasi Kinerja Pegawai (EKP)',
-                      style: typography.labelMedium.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colors.onSurface,
-                        fontSize: 12.sp,
-                      ),
-                    ),
-                    SizedBox(height: 2.h),
-                    Text(
-                      ekp.statusDescription,
-                      style: typography.caption.copyWith(
-                        color: statusColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 10.sp,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          /*
-          SizedBox(height: AppSpacing.s10.h),
-          Align(
-            alignment: Alignment.centerRight,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Get.to(() => const SkpListPage());
-              },
-              icon: Icon(Icons.open_in_new_rounded, size: 14.w),
-              label: const Text('Buka Modul EKP'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: colors.primary,
-                side: BorderSide(color: colors.primary.withValues(alpha: 0.4)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.r8),
-                ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.s12.w,
-                  vertical: AppSpacing.s4.h,
-                ),
-                visualDensity: VisualDensity.compact,
-                textStyle: typography.caption.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          */
-        ],
-      ),
-    );
-  }
-}
 
 // ── Daily Record Item ─────────────────────────────────────────────────────────
 

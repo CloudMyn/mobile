@@ -121,7 +121,7 @@ class AppConstants {
   /// Dapat di-override saat run/build dengan: --dart-define=API_BASE_URL=...
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.30.105:8000',
+    defaultValue: 'https://masseddi-api.barrukab.go.id',
   );
 
   /// Default timeout untuk request HTTP (dalam detik).
@@ -146,11 +146,16 @@ class AppConstants {
 
   /// Dimensi maksimum gambar (lebar/tinggi) — gambar akan di-resize
   /// mempertahankan aspect ratio agar tidak melebihi nilai ini.
-  static const int maxImageDimension = 1080;
+  /// 1440px memberikan ketajaman tinggi untuk teks dokumen/kegiatan.
+  static const int maxImageDimension = 1440;
 
-  /// Ukuran maksimum file gambar (dalam KB) — gambar akan dikompresi
-  /// iteratif hingga di bawah batas ini.
-  static const int maxUploadFileSizeKB = 50;
+  /// Ukuran maksimum file gambar dokumentasi/kinerja (dalam KB) — gambar akan dikompresi
+  /// hingga di bawah batas ini dengan tetap menjaga kejernihan dan detail teks.
+  /// Server mengizinkan hingga 2048 KB (2 MB), 800 KB adalah sweet-spot ideal.
+  static const int maxUploadFileSizeKB = 800;
+
+  /// Batas bawah kualitas JPEG agar tidak terjadi artefak atau pecah/buram.
+  static const int minImageQuality = 60;
 
   /// Memetakan domain pengembangan lokal (seperti minio-masseddi.test, localhost)
   /// ke host dari apiBaseUrl agar dapat diakses dari emulator/perangkat fisik.

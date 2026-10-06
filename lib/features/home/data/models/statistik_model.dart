@@ -77,6 +77,15 @@ class StatistikTpp {
     this.ekpStatus,
     this.ekpPredikat,
     this.ekpPercentage,
+    this.disciplinePortionPagu,
+    this.disciplineDeductionRp,
+    this.disciplineNetRp,
+    this.activityPortionPagu,
+    this.activityDeductionRp,
+    this.activityNetRp,
+    this.approvedActivityDays,
+    this.totalWorkDays,
+    this.totalTppGrossRp,
   });
 
   final int id;
@@ -98,11 +107,29 @@ class StatistikTpp {
   final String? ekpPredikat;
   final double? ekpPercentage;
 
+  final int? disciplinePortionPagu;
+  final int? disciplineDeductionRp;
+  final int? disciplineNetRp;
+  final int? activityPortionPagu;
+  final int? activityDeductionRp;
+  final int? activityNetRp;
+  final int? approvedActivityDays;
+  final int? totalWorkDays;
+  final int? totalTppGrossRp;
+
+  int get pagu => paguJabatan ?? amountBeforeDeduction;
+  int get dispPagu => disciplinePortionPagu ?? (pagu * 0.4).round();
+  int get dispNet => disciplineNetRp ?? (attendanceNetPagu ?? (dispPagu * disciplineScore).round());
+  int get actPagu => activityPortionPagu ?? (pagu * 0.6).round();
+  int get actNet => activityNetRp ?? (actPagu * activityScore).round();
+  int get approvedDays => approvedActivityDays ?? 0;
+  int get workDays => totalWorkDays ?? 0;
+
   String get displayPredikat {
     if (ekpPredikat != null && ekpPredikat!.trim().isNotEmpty) {
       return ekpPredikat!;
     }
-    return 'Belum Ada Penilaian';
+    return 'Kinerja Harian ${(activityScore * 100).toInt()}%';
   }
 
   factory StatistikTpp.fromJson(Map<String, dynamic> json) {
@@ -130,6 +157,15 @@ class StatistikTpp {
       ekpStatus: json['ekp_status'] as String?,
       ekpPredikat: json['ekp_predikat'] as String?,
       ekpPercentage: (json['ekp_percentage'] as num?)?.toDouble(),
+      disciplinePortionPagu: (json['discipline_portion_pagu'] as num?)?.toInt(),
+      disciplineDeductionRp: (json['discipline_deduction_rp'] as num?)?.toInt(),
+      disciplineNetRp: (json['discipline_net_rp'] as num?)?.toInt(),
+      activityPortionPagu: (json['activity_portion_pagu'] as num?)?.toInt(),
+      activityDeductionRp: (json['activity_deduction_rp'] as num?)?.toInt(),
+      activityNetRp: (json['activity_net_rp'] as num?)?.toInt(),
+      approvedActivityDays: (json['approved_activity_days'] as num?)?.toInt(),
+      totalWorkDays: (json['total_work_days'] as num?)?.toInt(),
+      totalTppGrossRp: (json['total_tpp_gross_rp'] as num?)?.toInt(),
     );
   }
 }
