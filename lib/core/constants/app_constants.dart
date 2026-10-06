@@ -116,7 +116,13 @@ class AppConstants {
   // =========================================================================
 
   /// Base URL API — sesuaikan dengan environment.
-  static const String apiBaseUrl = 'https://masseddi-api.barrukab.go.id';
+  /// Server lokal development: http://192.168.30.105:8000 (IP host PC via Wi-Fi)
+  /// Production: https://masseddi-api.barrukab.go.id
+  /// Dapat di-override saat run/build dengan: --dart-define=API_BASE_URL=...
+  static const String apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://192.168.30.105:8000',
+  );
 
   /// Default timeout untuk request HTTP (dalam detik).
   static const int apiTimeoutSeconds = 30;

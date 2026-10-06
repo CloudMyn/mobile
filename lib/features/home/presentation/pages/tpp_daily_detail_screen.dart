@@ -169,21 +169,21 @@ class _TppDailyDetailScreenState extends State<TppDailyDetailScreen> {
                       ),
                       SizedBox(height: AppSpacing.s12.h),
 
-                      // ── Card 3: Predikat Kinerja Pegawai ──────────────────
-                      _PredikatKinerjaCard(
-                        ekp: data.ekp,
-                        colors: colors,
-                        typography: typography,
-                      ),
-                      SizedBox(height: AppSpacing.s12.h),
-
-                      // ── Banner Dokumen EKP ───────────────────────────────
-                      _EkpBanner(
-                        ekp: data.ekp,
-                        colors: colors,
-                        typography: typography,
-                      ),
-                      SizedBox(height: AppSpacing.s20.h),
+                      // ── Card 3: Predikat Kinerja Pegawai (Opsional jika ada EKP) ──
+                      if (data.ekp.isApproved && data.ekp.predikat != null) ...[
+                        _PredikatKinerjaCard(
+                          ekp: data.ekp,
+                          colors: colors,
+                          typography: typography,
+                        ),
+                        SizedBox(height: AppSpacing.s12.h),
+                        _EkpBanner(
+                          ekp: data.ekp,
+                          colors: colors,
+                          typography: typography,
+                        ),
+                        SizedBox(height: AppSpacing.s12.h),
+                      ],
 
                       // ── Bagian Detail Potongan Harian ─────────────────────
                       Text(
@@ -655,9 +655,9 @@ class _PaguSkpDanPajakCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Pagu X Nilai EKP
+          // Capaian Kinerja (Bobot 60%)
           Text(
-            'Pagu X Nilai EKP',
+            'Capaian Kinerja (Bobot 60%)',
             style: typography.caption.copyWith(
               color: colors.onSurface.withValues(alpha: 0.6),
               fontWeight: FontWeight.w600,
@@ -665,7 +665,7 @@ class _PaguSkpDanPajakCard extends StatelessWidget {
           ),
           SizedBox(height: 2.h),
           Text(
-            '${TppCalculationInfo.formatNumber(calc.attendanceNetPagu)} x $skpPctStr',
+            'Skor Kinerja: $skpPctStr (Bobot 60%)',
             style: typography.caption.copyWith(
               color: colors.onSurface.withValues(alpha: 0.45),
               fontSize: 10.sp,
@@ -1037,6 +1037,31 @@ class _DailyRecordItem extends StatelessWidget {
                       colors: colors,
                       typography: typography,
                     ),
+                    if (record.isWorkday) ...[
+                      SizedBox(width: 4.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s8.w,
+                          vertical: 1.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: record.hasApprovedActivity
+                              ? colors.success.withValues(alpha: 0.1)
+                              : colors.outline.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.r4),
+                        ),
+                        child: Text(
+                          record.hasApprovedActivity ? 'Kinerja ✓' : 'Tanpa Kinerja',
+                          style: typography.caption.copyWith(
+                            fontSize: 8.5.sp,
+                            fontWeight: FontWeight.w600,
+                            color: record.hasApprovedActivity
+                                ? colors.success
+                                : colors.outline,
+                          ),
+                        ),
+                      ),
+                    ],
                     if (record.isWorkday &&
                         (record.totalLateMinutes > 0 ||
                             record.totalEarlyLeaveMinutes > 0)) ...[

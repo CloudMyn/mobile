@@ -25,6 +25,7 @@ abstract class KinerjaService {
     String? startTime,
     String? endTime,
     String? status,
+    bool autoSubmit = true,
     DateTime? date,
   });
   Future<ActivityItem> updateActivity({
@@ -35,8 +36,10 @@ abstract class KinerjaService {
     String? startTime,
     String? endTime,
     String? status,
+    bool autoSubmit = true,
     DateTime? date,
   });
+  Future<ActivityItem> submitActivity(String id);
   Future<void> deleteActivity(String id);
   Future<String?> fetchAttendanceByDate(DateTime date);
 }
@@ -357,11 +360,16 @@ class MockKinerjaService implements KinerjaService {
     String? startTime,
     String? endTime,
     String? status,
+    bool autoSubmit = true,
     DateTime? date,
   }) async {
     await Future.delayed(_delay);
 
     final type = _types.firstWhere((t) => t.id == typeId);
+    final isDraft = !autoSubmit || status?.toLowerCase() == 'draft' || status == 'Belum Selesai';
+    final finalStatus = isDraft ? 'Draft' : 'Pending';
+    final rawStatus = isDraft ? 'draft' : 'submitted';
+
     final item = ActivityItem(
       id: 'k_${DateTime.now().millisecondsSinceEpoch}',
       typeId: typeId,
@@ -372,7 +380,8 @@ class MockKinerjaService implements KinerjaService {
       createdAt: DateTime.now(),
       startTime: startTime,
       endTime: endTime,
-      status: status,
+      status: finalStatus,
+      rawStatus: rawStatus,
     );
 
     _activities.insert(0, item);
@@ -388,6 +397,7 @@ class MockKinerjaService implements KinerjaService {
     String? startTime,
     String? endTime,
     String? status,
+    bool autoSubmit = true,
     DateTime? date,
   }) async {
     await Future.delayed(_delay);
@@ -399,6 +409,10 @@ class MockKinerjaService implements KinerjaService {
       throw Exception('Aktivitas dengan id $id tidak ditemukan');
     }
 
+    final isDraft = !autoSubmit || status?.toLowerCase() == 'draft' || status == 'Belum Selesai';
+    final finalStatus = isDraft ? 'Draft' : 'Pending';
+    final rawStatus = isDraft ? 'draft' : 'submitted';
+
     final updated = _activities[index].copyWith(
       typeId: typeId,
       typeName: type.name,
@@ -406,8 +420,22 @@ class MockKinerjaService implements KinerjaService {
       imageUrl: imagePath,
       startTime: startTime,
       endTime: endTime,
-      status: status,
+      status: finalStatus,
+      rawStatus: rawStatus,
       date: date,
+    );
+    _activities[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<ActivityItem> submitActivity(String id) async {
+    await Future.delayed(_delay);
+    final index = _activities.indexWhere((a) => a.id == id);
+    if (index == -1) throw Exception('Aktivitas dengan id $id tidak ditemukan');
+    final updated = _activities[index].copyWith(
+      status: 'Pending',
+      rawStatus: 'submitted',
     );
     _activities[index] = updated;
     return updated;
@@ -509,17 +537,19 @@ class ApiKinerjaService implements KinerjaService {
     String? startTime,
     String? endTime,
     String? status,
+    bool autoSubmit = true,
     DateTime? date,
   }) async {
     try {
       final activityDate = date ?? DateTime.now();
       final dateStr = '${activityDate.year}-${activityDate.month.toString().padLeft(2, '0')}-${activityDate.day.toString().padLeft(2, '0')}';
       
+      final shouldSubmit = autoSubmit && status != 'Belum Selesai' && status?.toLowerCase() != 'draft';
       final Map<String, dynamic> fields = {
         'activity_type_id': typeId,
         'activity_date': dateStr,
         'description': description,
-        'auto_submit': status == 'Selesai' ? 'true' : 'false',
+        'auto_submit': shouldSubmit ? 'true' : 'false',
       };
       
       if (startTime != null && startTime.isNotEmpty) {
@@ -566,17 +596,19 @@ class ApiKinerjaService implements KinerjaService {
     String? startTime,
     String? endTime,
     String? status,
+    bool autoSubmit = true,
     DateTime? date,
   }) async {
     try {
       final activityDate = date ?? DateTime.now();
       final dateStr = '${activityDate.year}-${activityDate.month.toString().padLeft(2, '0')}-${activityDate.day.toString().padLeft(2, '0')}';
 
+      final shouldSubmit = autoSubmit && status != 'Belum Selesai' && status?.toLowerCase() != 'draft';
       final Map<String, dynamic> fields = {
         'activity_type_id': typeId,
         'activity_date': dateStr,
         'description': description,
-        'auto_submit': status == 'Selesai' ? 'true' : 'false',
+        'auto_submit': shouldSubmit ? 'true' : 'false',
         '_method': 'PUT',
       };
 
@@ -612,6 +644,20 @@ class ApiKinerjaService implements KinerjaService {
       return envelope.data!;
     } on DioException catch (e) {
       throw _mapDioError(e, 'Gagal memperbarui kinerja');
+    }
+  }
+
+  @override
+  Future<ActivityItem> submitActivity(String id) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>('/activities/$id/submit');
+      final envelope = ApiResponse.fromJson(
+        response.data!,
+        (data) => ActivityItem.fromJson(data as Map<String, dynamic>),
+      );
+      return envelope.data!;
+    } on DioException catch (e) {
+      throw _mapDioError(e, 'Gagal mengajukan kinerja');
     }
   }
 

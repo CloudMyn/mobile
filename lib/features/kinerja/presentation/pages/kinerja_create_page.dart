@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/components/app_button.dart';
-import '../../../../design_system/components/app_dropdown.dart';
 import '../../../../design_system/components/app_searchable_dropdown.dart';
 import '../../../../design_system/components/app_text_field.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
@@ -186,25 +185,6 @@ class KinerjaCreatePage extends StatelessWidget {
               }),
               SizedBox(height: AppSpacing.s16.h),
 
-              // ── Status Kegiatan ─────────────────────────────
-              Obx(() {
-                return AppDropdown<String>(
-                  label: 'Status Kegiatan',
-                  hint: 'Pilih status kegiatan',
-                  value: ctrl.selectedStatus.value,
-                  items: const [
-                    DropdownMenuItem(value: 'Selesai', child: Text('Selesai')),
-                    DropdownMenuItem(value: 'Belum Selesai', child: Text('Belum Selesai')),
-                  ],
-                  onChanged: (status) {
-                    if (status != null) ctrl.selectStatus(status);
-                  },
-                  validator: (_) =>
-                      ctrl.selectedStatus.value == null ? 'Status wajib dipilih' : null,
-                );
-              }),
-              SizedBox(height: AppSpacing.s16.h),
-
               // ── Deskripsi ──────────────────────────────────
               AppTextField(
                 label: 'Deskripsi Kegiatan',
@@ -263,19 +243,32 @@ class KinerjaCreatePage extends StatelessWidget {
 
               SizedBox(height: AppSpacing.s24.h),
 
-              // ── Tombol Submit ──────────────────────────────
-              Obx(
-                () => AppButton(
-                  label: isEdit ? 'Simpan Perubahan' : 'Simpan Kinerja',
-                  onPressed:
-                      (ctrl.isLoading.value || ctrl.isCompressing.value)
-                          ? null
-                          : ctrl.submit,
-                  isLoading: ctrl.isLoading.value,
-                  fullWidth: true,
-                  icon: Icons.save_rounded,
-                ),
-              ),
+              // ── Tombol Simpan Draft & Ajukan ──────────────────────────────
+              Obx(() {
+                final isBusy = ctrl.isLoading.value || ctrl.isCompressing.value;
+                return Row(
+                  children: [
+                    Expanded(
+                      child: AppButton(
+                        label: isEdit ? 'Simpan Perubahan' : 'Simpan Draft',
+                        onPressed: isBusy ? null : () => ctrl.submit(autoSubmit: false),
+                        isLoading: ctrl.isLoading.value,
+                        style: AppButtonStyle.outlined,
+                        icon: Icons.save_rounded,
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.s12.w),
+                    Expanded(
+                      child: AppButton(
+                        label: isEdit ? 'Ajukan Sekarang' : 'Ajukan Kinerja',
+                        onPressed: isBusy ? null : () => ctrl.submit(autoSubmit: true),
+                        isLoading: ctrl.isLoading.value,
+                        icon: Icons.send_rounded,
+                      ),
+                    ),
+                  ],
+                );
+              }),
             ],
           ),
         ),

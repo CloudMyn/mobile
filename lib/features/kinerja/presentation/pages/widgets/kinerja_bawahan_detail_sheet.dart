@@ -4,16 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../../core/constants/app_constants.dart';
 import '../../../../../design_system/components/app_button.dart';
+import '../../../../../design_system/components/app_feedback.dart';
+import '../../../../../design_system/components/app_image_viewer.dart';
 import '../../../../../design_system/tokens/app_colors.dart';
 import '../../../../../design_system/tokens/app_radius.dart';
 import '../../../../../design_system/tokens/app_spacing.dart';
 import '../../../../../design_system/tokens/app_typography.dart';
-import '../../../../../design_system/components/app_feedback.dart';
 import '../../../data/models/subordinate_activity_item.dart';
 import '../../controllers/kinerja_bawahan_controller.dart';
 import 'reject_reason_dialog.dart';
 
+/// Bottom sheet yang menampilkan detail lengkap kinerja bawahan untuk atasan.
+/// Menampilkan Info Pegawai, Judul, Output, Lokasi, Deskripsi, Jam/Tanggal,
+/// Lampiran, Status E-Kinerja BKN, serta aksi Setujui / Tolak.
 class KinerjaBawahanDetailSheet extends StatelessWidget {
   final SubordinateActivityItem item;
 
@@ -23,9 +28,14 @@ class KinerjaBawahanDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final typography = Theme.of(context).extension<AppTypography>()!;
+    final attachmentUrl = item.attachmentUrl != null
+        ? AppConstants.sanitizeImageUrl(item.attachmentUrl!)
+        : (item.attachments.isNotEmpty ? item.attachments.first.url : null);
+    final hasAttachment = item.hasAttachment;
+    final isPdf = item.isPdf;
 
     return DraggableScrollableSheet(
-      initialChildSize: item.hasAttachment && !item.isPdf ? 0.8 : 0.6,
+      initialChildSize: 0.8,
       minChildSize: 0.4,
       maxChildSize: 0.95,
       expand: false,
@@ -51,17 +61,17 @@ class KinerjaBawahanDetailSheet extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(height: AppSpacing.s24.h),
+            SizedBox(height: AppSpacing.s16.h),
 
-            // ── Pegawai Info ────────────────────────────────
+            // ── Pegawai Info & Status Chip ──────────────────
             Row(
               children: [
                 CircleAvatar(
-                  radius: 24.r,
+                  radius: 22.r,
                   backgroundColor: colors.primaryContainer,
                   child: Text(
                     item.subordinateAvatar,
-                    style: typography.titleMedium.copyWith(
+                    style: typography.titleSmall.copyWith(
                       color: colors.onPrimaryContainer,
                       fontWeight: FontWeight.bold,
                     ),
@@ -74,85 +84,158 @@ class KinerjaBawahanDetailSheet extends StatelessWidget {
                     children: [
                       Text(
                         item.subordinateName,
-                        style: typography.titleMedium.copyWith(
+                        style: typography.titleSmall.copyWith(
                           color: colors.onSurface,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        item.subordinateNip,
-                        style: typography.bodyMedium.copyWith(
+                        'NIP. ${item.subordinateNip}',
+                        style: typography.caption.copyWith(
                           color: colors.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      if (item.institutionName != null || item.departmentName != null) ...[
+                        SizedBox(height: AppSpacing.s2.h),
+                        Text(
+                          item.institutionName ?? item.departmentName ?? '',
+                          style: typography.caption.copyWith(
+                            color: colors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                _buildStatusChip(colors, typography),
+              ],
+            ),
+            SizedBox(height: AppSpacing.s16.h),
+            Divider(color: colors.outline.withValues(alpha: 0.15)),
+            SizedBox(height: AppSpacing.s12.h),
+
+            // ── Judul Kegiatan ──────────────────────────────
+            Text(
+              item.displayTitle,
+              style: typography.titleMedium.copyWith(
+                color: colors.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: AppSpacing.s12.h),
+
+            // ── Tanggal, Jam & Jenis Kegiatan ───────────────
+            Container(
+              padding: EdgeInsets.all(AppSpacing.s12.w),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.r8),
+                border: Border.all(color: colors.outline.withValues(alpha: 0.15)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today_rounded, size: 16, color: colors.primary),
+                      SizedBox(width: AppSpacing.s8.w),
+                      Expanded(
+                        child: Text(
+                          _formatDate(item.date),
+                          style: typography.bodySmall.copyWith(
+                            color: colors.onSurface,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      if (item.startTime != null && item.endTime != null) ...[
+                        Icon(Icons.access_time_rounded, size: 16, color: colors.primary),
+                        SizedBox(width: AppSpacing.s4.w),
+                        Text(
+                          '${item.startTime} - ${item.endTime}',
+                          style: typography.bodySmall.copyWith(
+                            color: colors.onSurface,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  SizedBox(height: AppSpacing.s8.h),
+                  Row(
+                    children: [
+                      Icon(_getTypeIcon(item.typeId), size: 16, color: colors.primary),
+                      SizedBox(width: AppSpacing.s8.w),
+                      Text(
+                        'Jenis: ',
+                        style: typography.caption.copyWith(color: colors.onSurface.withValues(alpha: 0.5)),
+                      ),
+                      Text(
+                        item.typeName.isNotEmpty ? item.typeName : 'Kegiatan',
+                        style: typography.bodySmall.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: AppSpacing.s16.h),
-            Divider(color: colors.outline.withValues(alpha: 0.2)),
-            SizedBox(height: AppSpacing.s16.h),
-
-            // ── Type + Date ────────────────────────────────
-            Row(
-              children: [
-                Icon(
-                  _getTypeIcon(item.typeId),
-                  size: 20,
-                  color: colors.primary,
-                ),
-                SizedBox(width: AppSpacing.s8.w),
-                Text(
-                  item.typeName,
-                  style: typography.titleSmall.copyWith(
-                    color: colors.onSurface,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.calendar_today_rounded,
-                  size: 14,
-                  color: colors.onSurface.withValues(alpha: 0.4),
-                ),
-                SizedBox(width: AppSpacing.s4.w),
-                Text(
-                  _formatDate(item.date),
-                  style: typography.caption.copyWith(
-                    color: colors.onSurface.withValues(alpha: 0.4),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: AppSpacing.s16.h),
-
-            // ── Description ────────────────────────────────
-            Text(
-              'Deskripsi Kegiatan',
-              style: typography.labelMedium.copyWith(
-                color: colors.onSurface.withValues(alpha: 0.5),
+                ],
               ),
             ),
+            SizedBox(height: AppSpacing.s16.h),
+
+            // ── Output / Hasil ──────────────────────────────
+            _buildSectionLabel('Output / Hasil', colors, typography),
             SizedBox(height: AppSpacing.s4.h),
             Text(
-              item.description,
+              item.output != null && item.output!.isNotEmpty ? item.output! : '—',
               style: typography.bodyMedium.copyWith(
-                color: colors.onSurface,
+                color: item.output != null ? colors.primary : colors.onSurface.withValues(alpha: 0.5),
+                fontWeight: item.output != null ? FontWeight.w500 : FontWeight.normal,
               ),
             ),
             SizedBox(height: AppSpacing.s16.h),
 
-            // ── Attachment ─────────────────────────────────
-            if (item.hasAttachment) ...[
-              Text(
-                'Lampiran',
-                style: typography.labelMedium.copyWith(
-                  color: colors.onSurface.withValues(alpha: 0.5),
-                ),
+            // ── Lokasi ──────────────────────────────────────
+            if (item.locationText != null && item.locationText!.isNotEmpty) ...[
+              _buildSectionLabel('Lokasi', colors, typography),
+              SizedBox(height: AppSpacing.s4.h),
+              Row(
+                children: [
+                  Icon(Icons.location_on_rounded, size: 16, color: colors.error),
+                  SizedBox(width: AppSpacing.s8.w),
+                  Expanded(
+                    child: Text(
+                      item.locationText!,
+                      style: typography.bodyMedium.copyWith(
+                        color: colors.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
               ),
+              SizedBox(height: AppSpacing.s16.h),
+            ],
+
+            // ── Deskripsi Kegiatan ──────────────────────────
+            _buildSectionLabel('Deskripsi Kegiatan', colors, typography),
+            SizedBox(height: AppSpacing.s4.h),
+            Text(
+              item.description.isNotEmpty ? item.description : '—',
+              style: typography.bodyMedium.copyWith(
+                color: colors.onSurface,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: AppSpacing.s16.h),
+
+            // ── Lampiran ────────────────────────────────────
+            if (hasAttachment && attachmentUrl != null) ...[
+              _buildSectionLabel('Lampiran Bukti', colors, typography),
               SizedBox(height: AppSpacing.s8.h),
-              if (item.isPdf)
+              if (isPdf)
                 Container(
                   padding: EdgeInsets.all(AppSpacing.s12.w),
                   decoration: BoxDecoration(
@@ -161,53 +244,94 @@ class KinerjaBawahanDetailSheet extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.picture_as_pdf_rounded, color: colors.error, size: 32),
+                      Icon(Icons.picture_as_pdf_rounded, color: colors.error, size: 30),
                       SizedBox(width: AppSpacing.s12.w),
                       Expanded(
                         child: Text(
-                          'Dokumen Lampiran.pdf',
+                          item.attachments.isNotEmpty
+                              ? item.attachments.first.fileName
+                              : 'Dokumen Lampiran.pdf',
                           style: typography.bodyMedium.copyWith(color: colors.onSurface),
                         ),
                       ),
                       AppButton(
                         label: 'Buka',
                         style: AppButtonStyle.outlined,
-                        onPressed: () => _openUrl(item.attachmentUrl!),
+                        onPressed: () => _openUrl(attachmentUrl),
                       ),
                     ],
                   ),
                 )
               else
                 GestureDetector(
-                  onTap: () {
-                    // In real app, might want to navigate to a full screen image viewer
-                    // Or show a dialog with InteractiveViewer
-                  },
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.r12),
-                    child: item.attachmentUrl!.startsWith('http') 
-                        ? Image.network(
-                            item.attachmentUrl!,
-                            width: double.infinity,
-                            height: 200.h,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildErrorImage(colors),
-                          )
-                        : Image.file(
-                            File(item.attachmentUrl!),
-                            width: double.infinity,
-                            height: 200.h,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildErrorImage(colors),
+                  onTap: () => AppImageViewer.show(
+                    context,
+                    imageUrl: attachmentUrl,
+                    heroTag: 'bawahan_img_${item.id}',
+                  ),
+                  child: Hero(
+                    tag: 'bawahan_img_${item.id}',
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.r12),
+                      child: Stack(
+                        children: [
+                          attachmentUrl.startsWith('http')
+                              ? Image.network(
+                                  attachmentUrl,
+                                  width: double.infinity,
+                                  height: 180.h,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (_, child, progress) =>
+                                      progress == null
+                                          ? child
+                                          : SizedBox(
+                                              height: 180.h,
+                                              child: const Center(
+                                                  child: CircularProgressIndicator()),
+                                            ),
+                                  errorBuilder: (_, _, _) => _buildErrorImage(colors),
+                                )
+                              : Image.file(
+                                  File(attachmentUrl),
+                                  width: double.infinity,
+                                  height: 180.h,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => _buildErrorImage(colors),
+                                ),
+                          Positioned(
+                            right: 8,
+                            bottom: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(
+                                Icons.zoom_in_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
                           ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               SizedBox(height: AppSpacing.s16.h),
             ],
 
-            // ── Status & Reason ────────────────────────────
+            // ── Status Sinkronisasi E-Kinerja (BKN) ──────────
+            if (item.ekinerjaSyncStatus != null) ...[
+              _buildEkinerjaSyncCard(colors, typography),
+              SizedBox(height: AppSpacing.s16.h),
+            ],
+
+            // ── Alasan Penolakan ────────────────────────────
             if (item.status == ActivityStatus.rejected && item.rejectReason != null) ...[
               Container(
+                width: double.infinity,
                 padding: EdgeInsets.all(AppSpacing.s12.w),
                 decoration: BoxDecoration(
                   color: colors.error.withValues(alpha: 0.1),
@@ -238,12 +362,12 @@ class KinerjaBawahanDetailSheet extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(height: AppSpacing.s24.h),
+              SizedBox(height: AppSpacing.s16.h),
             ],
 
             // ── Actions ────────────────────────────────────
             if (item.status == ActivityStatus.pending) ...[
-              SizedBox(height: AppSpacing.s16.h),
+              SizedBox(height: AppSpacing.s12.h),
               Row(
                 children: [
                   Expanded(
@@ -264,7 +388,7 @@ class KinerjaBawahanDetailSheet extends StatelessWidget {
                 ],
               ),
             ] else ...[
-              SizedBox(height: AppSpacing.s16.h),
+              SizedBox(height: AppSpacing.s12.h),
               SizedBox(
                 width: double.infinity,
                 child: AppButton(
@@ -280,10 +404,156 @@ class KinerjaBawahanDetailSheet extends StatelessWidget {
     );
   }
 
+  Widget _buildSectionLabel(String title, AppColors colors, AppTypography typography) {
+    return Text(
+      title,
+      style: typography.labelMedium.copyWith(
+        color: colors.onSurface.withValues(alpha: 0.5),
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  Widget _buildEkinerjaSyncCard(AppColors colors, AppTypography typography) {
+    Color badgeBg;
+    Color badgeFg;
+    String statusLabel;
+
+    switch (item.ekinerjaSyncStatus?.toLowerCase()) {
+      case 'synced':
+        badgeBg = colors.success.withValues(alpha: 0.15);
+        badgeFg = colors.success;
+        statusLabel = 'Tersinkron';
+        break;
+      case 'failed':
+        badgeBg = colors.error.withValues(alpha: 0.15);
+        badgeFg = colors.error;
+        statusLabel = 'Gagal';
+        break;
+      default:
+        badgeBg = colors.warning.withValues(alpha: 0.15);
+        badgeFg = colors.warning;
+        statusLabel = 'Menunggu';
+        break;
+    }
+
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.s12.w),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.r8),
+        border: Border.all(color: colors.outline.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.sync_rounded, size: 16, color: colors.primary),
+              SizedBox(width: AppSpacing.s8.w),
+              Text(
+                'Status Sinkronisasi E-Kinerja BKN',
+                style: typography.labelMedium.copyWith(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.s8.w, vertical: AppSpacing.s2.h),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(AppRadius.r4),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: typography.caption.copyWith(
+                    color: badgeFg,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (item.ekinerjaSyncAction != null && item.ekinerjaSyncAction!.isNotEmpty) ...[
+            SizedBox(height: AppSpacing.s8.h),
+            Text(
+              'Aksi: ${item.ekinerjaSyncAction!.toUpperCase()}',
+              style: typography.caption.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+          if (item.ekinerjaSyncedAt != null) ...[
+            SizedBox(height: AppSpacing.s2.h),
+            Text(
+              'Waktu Sync: ${_formatDateTime(item.ekinerjaSyncedAt!)}',
+              style: typography.caption.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+          if (item.ekinerjaSyncError != null && item.ekinerjaSyncError!.isNotEmpty) ...[
+            SizedBox(height: AppSpacing.s8.h),
+            Container(
+              padding: EdgeInsets.all(AppSpacing.s8.w),
+              decoration: BoxDecoration(
+                color: colors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.r4),
+              ),
+              child: Text(
+                item.ekinerjaSyncError!,
+                style: typography.caption.copyWith(
+                  color: colors.error,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(AppColors colors, AppTypography typography) {
+    Color bg;
+    Color fg;
+    String label;
+
+    switch (item.status) {
+      case ActivityStatus.pending:
+        bg = colors.warning.withValues(alpha: 0.15);
+        fg = colors.warning;
+        label = 'Pending';
+        break;
+      case ActivityStatus.approved:
+        bg = colors.success.withValues(alpha: 0.15);
+        fg = colors.success;
+        label = 'Disetujui';
+        break;
+      case ActivityStatus.rejected:
+        bg = colors.error.withValues(alpha: 0.15);
+        fg = colors.error;
+        label = 'Ditolak';
+        break;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.s8.w, vertical: AppSpacing.s4.h),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadius.r8),
+      ),
+      child: Text(
+        label,
+        style: typography.caption.copyWith(color: fg, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
   Widget _buildErrorImage(AppColors colors) {
     return Container(
       width: double.infinity,
-      height: 200.h,
+      height: 180.h,
       color: colors.surface,
       child: Center(
         child: Icon(
@@ -318,8 +588,7 @@ class KinerjaBawahanDetailSheet extends StatelessWidget {
       context: context,
       builder: (_) => RejectReasonDialog(activityId: item.id),
     );
-    
-    // If successfully rejected (returned true), close the sheet too
+
     if (result == true && context.mounted) {
       Navigator.of(context).pop();
     }
@@ -327,19 +596,32 @@ class KinerjaBawahanDetailSheet extends StatelessWidget {
 
   IconData _getTypeIcon(String typeId) {
     switch (typeId) {
-      case 'kedinasan': return Icons.work_history_rounded;
-      case 'bimtek': return Icons.school_rounded;
-      case 'rakor': return Icons.groups_rounded;
-      case 'pelayanan': return Icons.handshake_rounded;
-      default: return Icons.assignment_rounded;
+      case 'kedinasan':
+        return Icons.work_history_rounded;
+      case 'bimtek':
+        return Icons.school_rounded;
+      case 'rakor':
+        return Icons.groups_rounded;
+      case 'pelayanan':
+        return Icons.handshake_rounded;
+      default:
+        return Icons.assignment_rounded;
     }
   }
 
   String _formatDate(DateTime d) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
     ];
     return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
+  String _formatDateTime(DateTime d) {
+    final date =
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    final time =
+        '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    return '$date $time';
   }
 }

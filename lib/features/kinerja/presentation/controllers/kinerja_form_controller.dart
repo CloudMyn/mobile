@@ -253,7 +253,6 @@ class KinerjaFormController extends GetxController {
     }
     if (startTimeCtrl.text.isEmpty) return 'Jam mulai wajib diisi';
     if (endTimeCtrl.text.isEmpty) return 'Jam selesai wajib diisi';
-    if (selectedStatus.value == null) return 'Pilih status terlebih dahulu';
     if (dateCtrl.text.isEmpty) return 'Tanggal wajib diisi';
 
     if (clockInTime.value == null) {
@@ -282,7 +281,7 @@ class KinerjaFormController extends GetxController {
     return null;
   }
 
-  Future<void> submit() async {
+  Future<void> submit({bool autoSubmit = true}) async {
     if (!formKey.currentState!.validate()) return;
 
     final extraError = validateForm();
@@ -307,7 +306,7 @@ class KinerjaFormController extends GetxController {
           imagePath: compressedImagePath.value,
           startTime: startTimeCtrl.text.trim(),
           endTime: endTimeCtrl.text.trim(),
-          status: selectedStatus.value,
+          autoSubmit: autoSubmit,
           date: selectedDate.value,
         );
 
@@ -319,7 +318,9 @@ class KinerjaFormController extends GetxController {
         Get.back();
         AppFeedback.showSnackbar(
           title: 'Berhasil',
-          message: 'Kinerja berhasil diperbarui',
+          message: autoSubmit
+              ? 'Kinerja berhasil diajukan dan berstatus pending'
+              : 'Draft kinerja berhasil diperbarui',
           type: FeedbackType.success,
         );
       } else {
@@ -330,7 +331,7 @@ class KinerjaFormController extends GetxController {
           imagePath: compressedImagePath.value,
           startTime: startTimeCtrl.text.trim(),
           endTime: endTimeCtrl.text.trim(),
-          status: selectedStatus.value,
+          autoSubmit: autoSubmit,
           date: selectedDate.value,
         );
 
@@ -341,7 +342,9 @@ class KinerjaFormController extends GetxController {
         Get.back();
         AppFeedback.showSnackbar(
           title: 'Berhasil',
-          message: 'Kinerja berhasil dicatat',
+          message: autoSubmit
+              ? 'Kinerja berhasil diajukan dan berstatus pending'
+              : 'Draft kinerja berhasil disimpan',
           type: FeedbackType.success,
         );
       }

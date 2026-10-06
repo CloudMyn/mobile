@@ -184,6 +184,31 @@ class KinerjaController extends GetxController {
     }
   }
 
+  final isSubmitting = false.obs;
+
+  Future<bool> submitActivity(String id) async {
+    isSubmitting.value = true;
+    try {
+      final updated = await _service.submitActivity(id);
+      updateActivityInList(updated);
+      AppFeedback.showSnackbar(
+        title: 'Berhasil',
+        message: 'Kinerja berhasil diajukan dan berstatus pending',
+        type: FeedbackType.success,
+      );
+      return true;
+    } catch (e) {
+      AppFeedback.showSnackbar(
+        title: 'Error',
+        message: 'Gagal mengajukan kinerja: $e',
+        type: FeedbackType.error,
+      );
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
   void updateActivityInList(ActivityItem updated) {
     final idx = activities.indexWhere((a) => a.id == updated.id);
     if (idx != -1) {

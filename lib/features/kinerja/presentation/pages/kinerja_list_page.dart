@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -14,8 +12,6 @@ import '../../../../design_system/tokens/app_colors.dart';
 import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
 import '../../../../design_system/tokens/app_typography.dart';
-import '../../../../design_system/components/app_image_viewer.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../data/models/activity_item.dart';
 import '../../data/services/kinerja_service.dart';
 import '../controllers/kinerja_controller.dart';
@@ -264,6 +260,8 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
                         onEdit: () => _navigateToEdit(context, item),
                         onDelete: () =>
                             _confirmDelete(context, item, colors, typography),
+                        onAjukan: () =>
+                            _confirmSubmit(context, item, colors, typography),
                       ),
                     ),
                   ),
@@ -402,6 +400,54 @@ class _KinerjaListPageState extends State<KinerjaListPage> {
       ),
     );
   }
+
+  void _confirmSubmit(
+    BuildContext context,
+    ActivityItem item,
+    AppColors colors,
+    AppTypography typography,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Ajukan Kinerja?',
+          style: typography.titleMedium.copyWith(
+            color: colors.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Setelah diajukan, status kinerja akan menjadi Pending dan menunggu persetujuan atasan.',
+          style: typography.bodyMedium.copyWith(
+            color: colors.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Batal',
+              style: typography.labelLarge.copyWith(color: colors.onSurface),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _controller.submitActivity(item.id);
+            },
+            child: Text(
+              'Ajukan',
+              style: typography.labelLarge.copyWith(
+                color: colors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Activity Card ───────────────────────────────────────────────
@@ -412,6 +458,7 @@ class _ActivityCard extends StatelessWidget {
   final AppTypography typography;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback? onAjukan;
 
   const _ActivityCard({
     required this.item,
@@ -419,16 +466,15 @@ class _ActivityCard extends StatelessWidget {
     required this.typography,
     required this.onEdit,
     required this.onDelete,
+    this.onAjukan,
   });
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = item.imageUrl != null ? AppConstants.sanitizeImageUrl(item.imageUrl!) : null;
-    final hasImage = imageUrl != null;
-
     return AppCard(
       outlined: true,
       padding: EdgeInsets.all(AppSpacing.s12.w),
+      onTap: () => _showDetailSheet(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -456,18 +502,19 @@ class _ActivityCard extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.s8.h),
 
-          // ── Description ───────────────────────────────────
+          // ── Title (Judul Kegiatan Singkat) ────────────────
           Text(
-            item.description,
-            maxLines: 2,
+            item.displayTitle,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: typography.bodySmall.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.7),
+            style: typography.bodyMedium.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w500,
             ),
           ),
           SizedBox(height: AppSpacing.s8.h),
 
-          // ── Time & Status ────────────────────────────────
+          // ── Time, Attachment & Status ────────────────────
           Row(
             children: [
               if (item.startTime != null && item.endTime != null) ...[
@@ -483,100 +530,56 @@ class _ActivityCard extends StatelessWidget {
                     color: colors.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
+                SizedBox(width: AppSpacing.s8.w),
+              ],
+              if (item.hasAttachment) ...[
+                Icon(
+                  item.attachments.any((a) => a.isPdf)
+                      ? Icons.picture_as_pdf_rounded
+                      : Icons.image_rounded,
+                  size: 14,
+                  color: colors.primary,
+                ),
+                SizedBox(width: AppSpacing.s4.w),
+                Text(
+                  'Lampiran',
+                  style: typography.caption.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
               const Spacer(),
               if (item.status != null) _buildStatusChip(item.status!),
             ],
           ),
-
-          // ── Image thumbnail ───────────────────────────────
-          if (hasImage) ...[
-            SizedBox(height: AppSpacing.s8.h),
-            GestureDetector(
-              onTap: () => AppImageViewer.show(
-                context,
-                imageUrl: imageUrl,
-                heroTag: 'list_img_${item.id}',
-              ),
-              child: Hero(
-                tag: 'list_img_${item.id}',
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.r8),
-                  child: Stack(
-                    children: [
-                      imageUrl.startsWith('http')
-                          ? Image.network(
-                              imageUrl,
-                              width: double.infinity,
-                              height: 120.h,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (_, child, progress) =>
-                                  progress == null ? child : const SizedBox.shrink(),
-                              errorBuilder: (_, _, _) => SizedBox(
-                                height: 120.h,
-                                child: Center(
-                                  child: Icon(
-                                    Icons.broken_image_outlined,
-                                    color: colors.outline,
-                                    size: 32,
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Image.file(
-                              File(imageUrl),
-                              width: double.infinity,
-                              height: 120.h,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => SizedBox(
-                                height: 120.h,
-                                child: Center(
-                                  child: Icon(
-                                    Icons.broken_image_outlined,
-                                    color: colors.outline,
-                                    size: 32,
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                      Positioned(
-                        right: 6,
-                        bottom: 6,
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: const Icon(
-                            Icons.zoom_in_rounded,
-                            color: Colors.white,
-                            size: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-
           SizedBox(height: AppSpacing.s8.h),
 
-          // ── Action Row: Edit | Delete | Lihat Detail ─────
+          // ── Action Row: Ajukan (jika Draft) | Edit (jika Draft) | Delete | Lihat Detail ─────
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              // Edit button
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                tooltip: 'Edit',
-                onPressed: onEdit,
-                visualDensity: VisualDensity.compact,
-                color: colors.primary,
-              ),
+              // Ajukan button (khusus Draft)
+              if (item.isDraft && onAjukan != null)
+                TextButton.icon(
+                  onPressed: onAjukan,
+                  icon: const Icon(Icons.send_rounded, size: 14),
+                  label: const Text('Ajukan'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: colors.primary,
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.s8.w),
+                    textStyle: typography.labelSmall.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              // Edit button (khusus Draft)
+              if (item.isDraft)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  tooltip: 'Edit',
+                  onPressed: onEdit,
+                  visualDensity: VisualDensity.compact,
+                  color: colors.primary,
+                ),
               // Delete button
               IconButton(
                 icon: const Icon(Icons.delete_outline_rounded, size: 18),
@@ -663,13 +666,25 @@ class _ActivityCard extends StatelessWidget {
   Widget _buildStatusChip(String status) {
     Color bg;
     Color fg;
+    String label = status;
 
-    if (status == 'Selesai') {
+    final lower = status.toLowerCase();
+    if (lower == 'disetujui' || lower == 'approved' || lower == 'selesai') {
       bg = colors.success.withValues(alpha: 0.15);
       fg = colors.success;
-    } else {
+      label = 'Disetujui';
+    } else if (lower == 'pending' || lower == 'submitted' || lower == 'menunggu') {
       bg = colors.warning.withValues(alpha: 0.15);
       fg = colors.warning;
+      label = 'Pending';
+    } else if (lower == 'ditolak' || lower == 'rejected') {
+      bg = colors.error.withValues(alpha: 0.15);
+      fg = colors.error;
+      label = 'Ditolak';
+    } else {
+      bg = colors.outline.withValues(alpha: 0.2);
+      fg = colors.onSurface.withValues(alpha: 0.7);
+      label = 'Draft';
     }
 
     return Container(
@@ -682,7 +697,7 @@ class _ActivityCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.r8),
       ),
       child: Text(
-        status,
+        label,
         style: typography.caption.copyWith(
           color: fg,
           fontWeight: FontWeight.bold,

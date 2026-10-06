@@ -263,7 +263,7 @@ class _SubordinateActivityCard extends StatelessWidget {
               _buildStatusChip(),
             ],
           ),
-          SizedBox(height: AppSpacing.s12.h),
+          SizedBox(height: AppSpacing.s10.h),
           Row(
             children: [
               Icon(_getTypeIcon(item.typeId), size: 16, color: colors.primary),
@@ -271,21 +271,36 @@ class _SubordinateActivityCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.typeName,
-                  style: typography.bodyMedium.copyWith(
-                    color: colors.onSurface,
-                    fontWeight: FontWeight.w500,
+                  style: typography.labelMedium.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
+              if (item.startTime != null && item.endTime != null) ...[
+                Icon(
+                  Icons.access_time_rounded,
+                  size: 13,
+                  color: colors.onSurface.withValues(alpha: 0.5),
+                ),
+                SizedBox(width: AppSpacing.s4.w),
+                Text(
+                  '${item.startTime} - ${item.endTime}',
+                  style: typography.caption.copyWith(
+                    color: colors.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
             ],
           ),
           SizedBox(height: AppSpacing.s8.h),
           Text(
-            item.description,
-            maxLines: 2,
+            item.displayTitle,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: typography.bodySmall.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.7),
+            style: typography.bodyMedium.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w600,
             ),
           ),
           if (item.hasAttachment) ...[
@@ -295,13 +310,14 @@ class _SubordinateActivityCard extends StatelessWidget {
                 Icon(
                   item.isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded,
                   size: 14,
-                  color: colors.onSurface.withValues(alpha: 0.5),
+                  color: colors.onSurface.withValues(alpha: 0.6),
                 ),
                 SizedBox(width: AppSpacing.s4.w),
                 Text(
                   'Terdapat Lampiran',
                   style: typography.caption.copyWith(
-                    color: colors.onSurface.withValues(alpha: 0.5),
+                    color: colors.onSurface.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],

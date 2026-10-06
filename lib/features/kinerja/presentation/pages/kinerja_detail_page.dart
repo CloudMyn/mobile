@@ -378,11 +378,12 @@ class _DetailPageActivityCard extends StatelessWidget {
             ),
             SizedBox(height: AppSpacing.s4.h),
             Text(
-              item.description,
+              item.displayTitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: typography.caption.copyWith(
-                color: colors.onSurface.withValues(alpha: 0.6),
+              style: typography.bodySmall.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.8),
+                fontWeight: FontWeight.w500,
               ),
             ),
             if ((item.startTime != null && item.endTime != null) || item.status != null) ...[
@@ -418,15 +419,27 @@ class _DetailPageActivityCard extends StatelessWidget {
   Widget _buildStatusChip(String status) {
     Color bg;
     Color fg;
-    
-    if (status == 'Selesai') {
+    String label = status;
+
+    final lower = status.toLowerCase();
+    if (lower == 'disetujui' || lower == 'approved' || lower == 'selesai') {
       bg = colors.success.withValues(alpha: 0.15);
       fg = colors.success;
-    } else {
+      label = 'Disetujui';
+    } else if (lower == 'pending' || lower == 'submitted' || lower == 'menunggu') {
       bg = colors.warning.withValues(alpha: 0.15);
       fg = colors.warning;
+      label = 'Pending';
+    } else if (lower == 'ditolak' || lower == 'rejected') {
+      bg = colors.error.withValues(alpha: 0.15);
+      fg = colors.error;
+      label = 'Ditolak';
+    } else {
+      bg = colors.outline.withValues(alpha: 0.2);
+      fg = colors.onSurface.withValues(alpha: 0.7);
+      label = 'Draft';
     }
-    
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.s8.w, vertical: AppSpacing.s2.h),
       decoration: BoxDecoration(
@@ -434,7 +447,7 @@ class _DetailPageActivityCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.r4),
       ),
       child: Text(
-        status,
+        label,
         style: typography.caption.copyWith(
           color: fg,
           fontSize: 9,
