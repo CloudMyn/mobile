@@ -19,7 +19,7 @@ abstract class KinerjaService {
     required int year,
   });
   Future<ActivityItem> createActivity({
-    required String typeId,
+    String? typeId,
     required String description,
     String? imagePath,
     String? startTime,
@@ -30,7 +30,7 @@ abstract class KinerjaService {
   });
   Future<ActivityItem> updateActivity({
     required String id,
-    required String typeId,
+    String? typeId,
     required String description,
     String? imagePath,
     String? startTime,
@@ -354,7 +354,7 @@ class MockKinerjaService implements KinerjaService {
 
   @override
   Future<ActivityItem> createActivity({
-    required String typeId,
+    String? typeId,
     required String description,
     String? imagePath,
     String? startTime,
@@ -365,15 +365,23 @@ class MockKinerjaService implements KinerjaService {
   }) async {
     await Future.delayed(_delay);
 
-    final type = _types.firstWhere((t) => t.id == typeId);
+    ActivityType? type;
+    if (typeId != null && typeId.isNotEmpty) {
+      for (final t in _types) {
+        if (t.id == typeId) {
+          type = t;
+          break;
+        }
+      }
+    }
     final isDraft = !autoSubmit || status?.toLowerCase() == 'draft' || status == 'Belum Selesai';
     final finalStatus = isDraft ? 'Draft' : 'Pending';
     final rawStatus = isDraft ? 'draft' : 'submitted';
 
     final item = ActivityItem(
       id: 'k_${DateTime.now().millisecondsSinceEpoch}',
-      typeId: typeId,
-      typeName: type.name,
+      typeId: typeId ?? '',
+      typeName: type?.name ?? '',
       description: description,
       date: date ?? DateTime.now(),
       imageUrl: imagePath,
@@ -391,7 +399,7 @@ class MockKinerjaService implements KinerjaService {
   @override
   Future<ActivityItem> updateActivity({
     required String id,
-    required String typeId,
+    String? typeId,
     required String description,
     String? imagePath,
     String? startTime,
@@ -402,20 +410,28 @@ class MockKinerjaService implements KinerjaService {
   }) async {
     await Future.delayed(_delay);
 
-    final type = _types.firstWhere((t) => t.id == typeId);
     final index = _activities.indexWhere((a) => a.id == id);
 
     if (index == -1) {
       throw Exception('Aktivitas dengan id $id tidak ditemukan');
     }
 
+    ActivityType? type;
+    if (typeId != null && typeId.isNotEmpty) {
+      for (final t in _types) {
+        if (t.id == typeId) {
+          type = t;
+          break;
+        }
+      }
+    }
     final isDraft = !autoSubmit || status?.toLowerCase() == 'draft' || status == 'Belum Selesai';
     final finalStatus = isDraft ? 'Draft' : 'Pending';
     final rawStatus = isDraft ? 'draft' : 'submitted';
 
     final updated = _activities[index].copyWith(
-      typeId: typeId,
-      typeName: type.name,
+      typeId: typeId ?? _activities[index].typeId,
+      typeName: type?.name ?? (typeId != null ? '' : _activities[index].typeName),
       description: description,
       imageUrl: imagePath,
       startTime: startTime,
@@ -531,7 +547,7 @@ class ApiKinerjaService implements KinerjaService {
 
   @override
   Future<ActivityItem> createActivity({
-    required String typeId,
+    String? typeId,
     required String description,
     String? imagePath,
     String? startTime,
@@ -546,7 +562,7 @@ class ApiKinerjaService implements KinerjaService {
       
       final shouldSubmit = autoSubmit && status != 'Belum Selesai' && status?.toLowerCase() != 'draft';
       final Map<String, dynamic> fields = {
-        'activity_type_id': typeId,
+        if (typeId != null && typeId.isNotEmpty) 'activity_type_id': typeId,
         'activity_date': dateStr,
         'description': description,
         'auto_submit': shouldSubmit ? 'true' : 'false',
@@ -590,7 +606,7 @@ class ApiKinerjaService implements KinerjaService {
   @override
   Future<ActivityItem> updateActivity({
     required String id,
-    required String typeId,
+    String? typeId,
     required String description,
     String? imagePath,
     String? startTime,
@@ -605,7 +621,7 @@ class ApiKinerjaService implements KinerjaService {
 
       final shouldSubmit = autoSubmit && status != 'Belum Selesai' && status?.toLowerCase() != 'draft';
       final Map<String, dynamic> fields = {
-        'activity_type_id': typeId,
+        if (typeId != null && typeId.isNotEmpty) 'activity_type_id': typeId,
         'activity_date': dateStr,
         'description': description,
         'auto_submit': shouldSubmit ? 'true' : 'false',

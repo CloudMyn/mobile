@@ -120,5 +120,18 @@ void main() {
       expect(submittedItem.isPending, isTrue);
       expect(submittedItem.isDraft, isFalse);
     });
+
+    test('createActivity without typeId and without imagePath succeeds', () async {
+      final item = await service.createActivity(
+        description: 'Tugas harian mandiri tanpa jenis dan foto lampiran',
+        autoSubmit: true,
+      );
+
+      expect(item.typeId, '');
+      expect(item.typeName, '');
+      expect(item.imageUrl, isNull);
+      expect(item.status, 'Pending');
+      expect(item.description, 'Tugas harian mandiri tanpa jenis dan foto lampiran');
+    });
   });
 }

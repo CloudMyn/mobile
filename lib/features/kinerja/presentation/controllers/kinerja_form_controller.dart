@@ -99,14 +99,6 @@ class KinerjaFormController extends GetxController {
         if (match != null) {
           selectedType.value = match;
         }
-      } else if (!isEditMode.value && selectedType.value == null) {
-        // Default to "Lainnya" (case-insensitive match on name containing 'lainnya')
-        final match = types.firstWhereOrNull(
-          (t) => t.name.toLowerCase().contains('lainnya'),
-        );
-        if (match != null) {
-          selectedType.value = match;
-        }
       }
     } catch (e) {
       errorTypes.value = e.toString();
@@ -247,7 +239,6 @@ class KinerjaFormController extends GetxController {
   }
 
   String? validateForm() {
-    if (selectedType.value == null) return 'Pilih jenis kegiatan terlebih dahulu';
     if (descriptionCtrl.text.trim().length < 10) {
       return 'Deskripsi minimal 10 karakter';
     }
@@ -301,7 +292,7 @@ class KinerjaFormController extends GetxController {
         // ── Edit Mode: update existing activity ──────────
         final updated = await _service.updateActivity(
           id: editingItem.value!.id,
-          typeId: selectedType.value!.id,
+          typeId: selectedType.value?.id,
           description: descriptionCtrl.text.trim(),
           imagePath: compressedImagePath.value,
           startTime: startTimeCtrl.text.trim(),
@@ -326,7 +317,7 @@ class KinerjaFormController extends GetxController {
       } else {
         // ── Create Mode: create new activity ─────────────
         final item = await _service.createActivity(
-          typeId: selectedType.value!.id,
+          typeId: selectedType.value?.id,
           description: descriptionCtrl.text.trim(),
           imagePath: compressedImagePath.value,
           startTime: startTimeCtrl.text.trim(),

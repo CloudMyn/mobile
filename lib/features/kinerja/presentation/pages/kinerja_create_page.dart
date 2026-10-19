@@ -2,18 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../design_system/components/app_button.dart';
-import '../../../../design_system/components/app_searchable_dropdown.dart';
 import '../../../../design_system/components/app_text_field.dart';
 import '../../../../design_system/components/organisms/app_top_app_bar.dart';
 import '../../../../design_system/tokens/app_colors.dart';
-import '../../../../design_system/tokens/app_radius.dart';
 import '../../../../design_system/tokens/app_spacing.dart';
-import '../../../../design_system/tokens/app_typography.dart';
 import '../../data/models/activity_item.dart';
-import '../../data/models/activity_type.dart';
 import '../../data/services/kinerja_service.dart';
 import '../controllers/kinerja_form_controller.dart';
-import 'widgets/image_picker_field.dart';
 
 class KinerjaCreatePage extends StatelessWidget {
   /// Jika null → mode create, jika tidak null → mode edit.
@@ -33,7 +28,6 @@ class KinerjaCreatePage extends StatelessWidget {
     );
 
     final colors = Theme.of(context).extension<AppColors>()!;
-    final typography = Theme.of(context).extension<AppTypography>()!;
     final isEdit = item != null;
 
     return Scaffold(
@@ -120,71 +114,6 @@ class KinerjaCreatePage extends StatelessWidget {
               ),
               SizedBox(height: AppSpacing.s16.h),
 
-              // ── Jenis Kegiatan ─────────────────────────────
-              Obx(() {
-                final isLoading = ctrl.isLoadingTypes.value;
-                final types = ctrl.types;
-                final error = ctrl.errorTypes.value;
-
-                if (!isLoading && types.isEmpty) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Jenis Kegiatan',
-                        style: typography.bodyMedium.copyWith(
-                          color: colors.onSurface,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: AppSpacing.s8.h),
-                      Container(
-                        padding: EdgeInsets.all(AppSpacing.s12.w),
-                        decoration: BoxDecoration(
-                          color: colors.error.withValues(alpha: 0.1),
-                          border: Border.all(color: colors.error.withValues(alpha: 0.5)),
-                          borderRadius: BorderRadius.circular(AppRadius.r8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline_rounded, color: colors.error, size: 20),
-                            SizedBox(width: AppSpacing.s8.w),
-                            Expanded(
-                              child: Text(
-                                error ?? 'Gagal memuat jenis kegiatan atau data kosong.',
-                                style: typography.bodySmall.copyWith(color: colors.error),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => ctrl.loadTypes(),
-                              style: TextButton.styleFrom(
-                                foregroundColor: colors.primary,
-                                textStyle: typography.labelSmall.copyWith(fontWeight: FontWeight.bold),
-                                padding: EdgeInsets.symmetric(horizontal: AppSpacing.s8.w),
-                              ),
-                              child: const Text('Coba Lagi'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  );
-                }
-
-                return AppSearchableDropdown<ActivityType>(
-                  label: 'Jenis Kegiatan',
-                  hint: isLoading ? 'Memuat jenis kegiatan...' : 'Pilih jenis kegiatan',
-                  value: ctrl.selectedType.value,
-                  items: isLoading ? [] : types,
-                  itemAsString: (ActivityType type) => type.name,
-                  onChanged: isLoading ? null : (t) {
-                    if (t != null) ctrl.selectType(t);
-                  },
-                  errorText: ctrl.selectedType.value == null ? 'Wajib dipilih' : null,
-                );
-              }),
-              SizedBox(height: AppSpacing.s16.h),
-
               // ── Deskripsi ──────────────────────────────────
               AppTextField(
                 label: 'Deskripsi Kegiatan',
@@ -201,46 +130,6 @@ class KinerjaCreatePage extends StatelessWidget {
                   return null;
                 },
               ),
-              SizedBox(height: AppSpacing.s20.h),
-
-              // ── Upload Gambar ──────────────────────────────
-              Obx(
-                () => ImagePickerField(
-                  imagePath: ctrl.originalImagePath.value,
-                  onImagePicked: (path) => ctrl.pickAndCompressImage(path),
-                  onRemove: () => ctrl.removeImage(),
-                ),
-              ),
-
-              // ── Loading kompresi ───────────────────────────
-              Obx(() {
-                if (!ctrl.isCompressing.value) {
-                  return const SizedBox.shrink();
-                }
-                return Padding(
-                  padding: EdgeInsets.only(top: AppSpacing.s12.h),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colors.primary,
-                        ),
-                      ),
-                      SizedBox(width: AppSpacing.s8.w),
-                      Text(
-                        'Mengompresi gambar...',
-                        style: typography.bodySmall.copyWith(
-                          color: colors.onSurface.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-
               SizedBox(height: AppSpacing.s24.h),
 
               // ── Tombol Simpan Draft & Ajukan ──────────────────────────────
